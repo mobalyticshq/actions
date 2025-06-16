@@ -1,0 +1,12 @@
+name: 'static-data-upload-pipeline '
+description: 'Merge new static data, validating and upload to the bucket'
+author: 'Evgeniy'
+inputs:
+  my-input:    
+    required: false    
+
+outputs:  
+
+runs:
+  using: 'node16'
+  main:  'dist/index.js'
