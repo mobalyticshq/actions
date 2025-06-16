@@ -52,7 +52,7 @@ async function bootstrapPipeline(){
 }
 function mergeJSON(){
   console.log('##Merge new static data file with old##');
-  // console.log(__dirname,__filename);
+  console.log(process.cwd());
 
   ///home/runner/work/game-static-data-extractors/game-static-data-extractors/old_static_data.json
    const data = readFileSync('/home/runner/work/game-static-data-extractors/game-static-data-extractors/old_static_data.json', 'utf8');
