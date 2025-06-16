@@ -52,12 +52,18 @@ async function bootstrapPipeline(){
 }
 function mergeJSON(){
   console.log('##Merge new static data file with old##');
-  const root = process.cwd();
-
-  ///home/runner/work/game-static-data-extractors/game-static-data-extractors/old_static_data.json
+  const root = process.cwd();  
+  const oldData = readFileSync(path.join(root,'old_static_data.json'), 'utf8');
+  const newData = readFileSync(path.join(root,'old_static_data.json'), 'utf8');
   
-   const data = readFileSync(path.join(root,'old_static_data.json'), 'utf8');
-   console.log('length:',JSON.parse(data));
+  console.log('oldData:')
+  for (const [key, value] of Object.entries(oldData)) {
+    console.log(`${key}: ${value}`);
+  }
+  console.log('newData:')
+  for (const [key, value] of Object.entries(newData)) {
+    console.log(`${key}: ${value}`);
+  }
 }
 
 async function run() {
