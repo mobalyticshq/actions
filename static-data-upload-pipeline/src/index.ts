@@ -55,15 +55,15 @@ function mergeJSON(){
   // console.log(__dirname,__filename);
 
   
-  const files = getAllFiles('/home/runner/work');
+  const files = getAllFiles('/home/runner/work/game-static-data-extractors');
   files.forEach(console.log)
 
- const files2 = getAllFiles('./');
-  files2.forEach(console.log)
+//  const files2 = getAllFiles('./');
+//   files2.forEach(console.log)
 
 
- const files3 = getAllFiles('/');
-  files3.forEach(console.log)
+//  const files3 = getAllFiles('/');
+//   files3.forEach(console.log)
   // const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
   // console.log('length:',data.length);
 }
