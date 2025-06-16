@@ -2,14 +2,9 @@ name: 'static-data-upload-pipeline'
 description: 'Merge new static data, validating and upload to the bucket'
 author: 'Evgeniy'
 inputs:
-  my-input:
-    description: 'Example input'
-    required: false
-    default: 'hello'
-
-outputs:
-  my-output:
-    description: 'Example output'
+  token:
+    required: true
+    default: ${{ github.token }}
 
 runs:
   using: 'node16'
