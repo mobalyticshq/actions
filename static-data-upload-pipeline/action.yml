@@ -1,4 +1,4 @@
-name: 'static-data-upload-pipeline '
+name: 'static-data-upload-pipeline'
 description: 'Merge new static data, validating and upload to the bucket'
 author: 'Evgeniy'
 inputs:
