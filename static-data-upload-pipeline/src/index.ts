@@ -39,11 +39,11 @@ function mergeJSON(){
   // console.log(__dirname,__filename);
 
   readdirSync('/home/runner/work/game-static-data-extractors').forEach(file => {
-      console.log(file);
+      console.log('!!!',file);
     });
 
     readdirSync('/home/runner/work/game-static-data-extractors/game-static-data-extractors').forEach(file => {
-      console.log(file);
+      console.log('$$$',file);
     });
 
   // const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
