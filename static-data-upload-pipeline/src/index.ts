@@ -38,11 +38,11 @@ function mergeJSON(){
   console.log('##Merge new static data file with old##');
   // console.log(__dirname,__filename);
 
-  readdirSync('/home/runner/work').forEach(file => {
+  readdirSync('/home/runner/work/game-static-data-extractors').forEach(file => {
       console.log('!!!',file);
     });
 
-    readdirSync('./').forEach(file => {
+    readdirSync('../').forEach(file => {
       console.log('$$$',file);
     });
 

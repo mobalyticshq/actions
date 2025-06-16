@@ -53195,10 +53195,10 @@ async function bootstrapPipeline() {
 function mergeJSON() {
     console.log('##Merge new static data file with old##');
     // console.log(__dirname,__filename);
-    (0, fs_1.readdirSync)('/home/runner/work').forEach(file => {
+    (0, fs_1.readdirSync)('/home/runner/work/game-static-data-extractors').forEach(file => {
         console.log('!!!', file);
     });
-    (0, fs_1.readdirSync)('./').forEach(file => {
+    (0, fs_1.readdirSync)('../').forEach(file => {
         console.log('$$$', file);
     });
     // const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
