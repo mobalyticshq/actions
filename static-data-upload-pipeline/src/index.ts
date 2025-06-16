@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { readFileSync } from 'fs';
+import { readFileSync,readdirSync } from 'fs';
 
 async function bootstrapPipeline(){
   try {    
@@ -37,6 +37,15 @@ async function bootstrapPipeline(){
 function mergeJSON(){
   console.log('##Merge new static data file with old##');
   console.log(__dirname,__filename);
+
+  readdirSync('/home/runner/work/game-static-data-extractors').forEach(file => {
+      console.log(file);
+    });
+
+    readdirSync('/home/runner/work/game-static-data-extractors/game-static-data-extractors').forEach(file => {
+      console.log(file);
+    });
+    
   const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
   console.log('length:',data.length);
 }
