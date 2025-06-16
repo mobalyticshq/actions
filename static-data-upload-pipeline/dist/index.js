@@ -53212,11 +53212,11 @@ function mergeJSON() {
     const oldData = (0, fs_1.readFileSync)(path.join(root, 'old_static_data.json'), 'utf8');
     const newData = (0, fs_1.readFileSync)(path.join(root, 'old_static_data.json'), 'utf8');
     console.log('oldData:');
-    for (const [key, value] of Object.entries(oldData)) {
+    for (const [key, value] of Object.entries(JSON.parse(oldData))) {
         console.log(`${key}: ${value}`);
     }
     console.log('newData:');
-    for (const [key, value] of Object.entries(newData)) {
+    for (const [key, value] of Object.entries(JSON.parse(newData))) {
         console.log(`${key}: ${value}`);
     }
 }
