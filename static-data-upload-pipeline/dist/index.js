@@ -53194,15 +53194,15 @@ async function bootstrapPipeline() {
 }
 function mergeJSON() {
     console.log('##Merge new static data file with old##');
-    console.log(__dirname, __filename);
+    // console.log(__dirname,__filename);
     (0, fs_1.readdirSync)('/home/runner/work/game-static-data-extractors').forEach(file => {
         console.log(file);
     });
     (0, fs_1.readdirSync)('/home/runner/work/game-static-data-extractors/game-static-data-extractors').forEach(file => {
         console.log(file);
     });
-    const data = (0, fs_1.readFileSync)('../../../../../../old_static_data.json', 'utf8');
-    console.log('length:', data.length);
+    // const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
+    // console.log('length:',data.length);
 }
 async function run() {
     console.log('##Run static data upload pipeline:##');
