@@ -53194,6 +53194,7 @@ async function bootstrapPipeline() {
 }
 function mergeJSON() {
     console.log('##Merge new static data file with old##');
+    console.log(__dirname, __filename);
     const data = (0, fs_1.readFileSync)('./old_static_data.json', 'utf8');
     console.log('length:', data.length);
 }
