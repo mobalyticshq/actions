@@ -53165,9 +53165,9 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(6798));
-async function run() {
+const fs_1 = __nccwpck_require__(9896);
+async function bootstrapPipeline() {
     try {
-        console.log('Run static data upload pipeline');
         const game_config = core.getInput('game_config');
         const game_specific_tests = core.getInput('game_specific_tests');
         const credentials_json = core.getInput('credentials_json');
@@ -53191,6 +53191,16 @@ async function run() {
     catch (error) {
         core.setFailed(error.message);
     }
+}
+function mergeJSON() {
+    console.log('##Merge new static data file with old##');
+    const data = (0, fs_1.readFileSync)('./old_static_data.json', 'utf8');
+    console.log('length:', data.length);
+}
+async function run() {
+    console.log('##Run static data upload pipeline:##');
+    await bootstrapPipeline();
+    mergeJSON();
 }
 run();
 

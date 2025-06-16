@@ -1,9 +1,9 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import { readFileSync } from 'fs';
 
-async function run() {
+async function bootstrapPipeline(){
   try {    
-    console.log('Run static data upload pipeline');
 
     const game_config = core.getInput('game_config');
     const game_specific_tests = core.getInput('game_specific_tests');
@@ -33,6 +33,18 @@ async function run() {
   } catch (error: any) {
     core.setFailed(error.message)
   }
+}
+function mergeJSON(){
+  console.log('##Merge new static data file with old##');
+
+  const data = readFileSync('./old_static_data.json', 'utf8');
+  console.log('length:',data.length);
+}
+
+async function run() {
+  console.log('##Run static data upload pipeline:##');
+  await bootstrapPipeline();
+  mergeJSON();
 }
 
 run()
