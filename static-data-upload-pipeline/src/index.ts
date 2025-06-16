@@ -54,18 +54,9 @@ function mergeJSON(){
   console.log('##Merge new static data file with old##');
   // console.log(__dirname,__filename);
 
-  
-  const files = getAllFiles('/home/runner/work/game-static-data-extractors');
-  files.forEach(console.log)
-
-//  const files2 = getAllFiles('./');
-//   files2.forEach(console.log)
-
-
-//  const files3 = getAllFiles('/');
-//   files3.forEach(console.log)
-  // const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
-  // console.log('length:',data.length);
+  ///home/runner/work/game-static-data-extractors/game-static-data-extractors/old_static_data.json
+   const data = readFileSync('/home/runner/work/game-static-data-extractors/game-static-data-extractors/old_static_data.json', 'utf8');
+   console.log('length:',data.length);
 }
 
 async function run() {
