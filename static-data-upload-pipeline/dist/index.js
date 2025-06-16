@@ -53166,6 +53166,20 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(6798));
 const fs_1 = __nccwpck_require__(9896);
+const path = __importStar(__nccwpck_require__(6928));
+function getAllFiles(dirPath, arrayOfFiles = []) {
+    const entries = (0, fs_1.readdirSync)(dirPath);
+    for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry);
+        if ((0, fs_1.statSync)(fullPath).isDirectory()) {
+            getAllFiles(fullPath, arrayOfFiles);
+        }
+        else {
+            arrayOfFiles.push(fullPath);
+        }
+    }
+    return arrayOfFiles;
+}
 async function bootstrapPipeline() {
     try {
         const game_config = core.getInput('game_config');
@@ -53195,12 +53209,12 @@ async function bootstrapPipeline() {
 function mergeJSON() {
     console.log('##Merge new static data file with old##');
     // console.log(__dirname,__filename);
-    (0, fs_1.readdirSync)('/home/runner/work/game-static-data-extractors').forEach(file => {
-        console.log('!!!', file);
-    });
-    (0, fs_1.readdirSync)('../').forEach(file => {
-        console.log('$$$', file);
-    });
+    const files = getAllFiles('/home/runner/work');
+    files.forEach(console.log);
+    const files2 = getAllFiles('./');
+    files2.forEach(console.log);
+    const files3 = getAllFiles('/');
+    files3.forEach(console.log);
     // const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
     // console.log('length:',data.length);
 }

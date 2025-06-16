@@ -1,6 +1,22 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { readFileSync,readdirSync } from 'fs';
+import { readFileSync,readdirSync,statSync } from 'fs';
+import * as path from 'path'
+
+function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
+  const entries = readdirSync(dirPath)
+
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry)
+    if (statSync(fullPath).isDirectory()) {
+      getAllFiles(fullPath, arrayOfFiles)
+    } else {
+      arrayOfFiles.push(fullPath)
+    }
+  }
+
+  return arrayOfFiles
+}
 
 async function bootstrapPipeline(){
   try {    
@@ -38,14 +54,16 @@ function mergeJSON(){
   console.log('##Merge new static data file with old##');
   // console.log(__dirname,__filename);
 
-  readdirSync('/home/runner/work/game-static-data-extractors').forEach(file => {
-      console.log('!!!',file);
-    });
+  
+  const files = getAllFiles('/home/runner/work');
+  files.forEach(console.log)
 
-    readdirSync('../').forEach(file => {
-      console.log('$$$',file);
-    });
+ const files2 = getAllFiles('./');
+  files2.forEach(console.log)
 
+
+ const files3 = getAllFiles('/');
+  files3.forEach(console.log)
   // const data = readFileSync('../../../../../../old_static_data.json', 'utf8');
   // console.log('length:',data.length);
 }
