@@ -29977,18 +29977,19 @@ async function run() {
     const pattern = /static_data_v\d+.\d+.\d+.json/;
     const files = response.data.files?.map((file) => file.filename);
     files?.forEach(file => {
-        console.log('for ', file, path);
         const files = (0, fs_1.readdirSync)(path.dirname(file));
         const versionedFiles = new Array();
         files.forEach(filename => {
             if (!pattern.test(filename))
                 return null;
-            const version = filename.replace("static_data_v", "").replace(".json", "");
             versionedFiles.push(filename);
         });
         const sortedFiles = versionedFiles.map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000))).sort()
             .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
-        console.log(sortedFiles);
+        if (sortedFiles.length > 0 && file === sortedFiles[sortedFiles.length - 1]) {
+            //newest version added
+            console.log(" run pipeline for ", file);
+        }
     });
     // const spreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
     // const reportSpreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
