@@ -29975,18 +29975,29 @@ async function runPipeline(newVersion, oldVersion, gameConfig, spreadsheetId, ex
     // const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(spreadsheetId,mergedData);
     console.log('');
     console.log('## Validate final static data ## ');
-    let { valid, validationReport } = await (0, validation_1.validate)(mergedData, config, tmpBucket);
-    valid = valid && await runExtensions(extensionsDir, mergedData);
+    const reports = new Array();
+    const commonReport = await (0, validation_1.validate)(mergedData, config, tmpBucket);
+    reports.push(commonReport);
+    reports.push(...await runValidationExtensions(extensionsDir, mergedData));
+    console.log(reports);
     console.log('');
-    console.log('## Create final report: ##');
-    console.log(`## Group is not array of enities: ${Array.from(validationReport.groupNotArray)}`);
-    console.log(`## Asset URLs are not available: ${Array.from(validationReport.unavailableURLs)}`);
-    for (const group of Object.keys(validationReport.groupReport)) {
-        const report = validationReport.groupReport[group];
-        for (const prop of Object.keys(report))
-            if (report[prop].size > 0) {
-                console.log(`## ${prop} for group ${group}: ${Array.from(report[prop])}`);
+    // console.log('## Create final report: ##');   
+    console.log(`## Group is not array of enities: ${Array.from(commonReport.errors[validation_1.ReportMessages.groupNotArray])}`);
+    console.log(`## Asset URLs are not available: ${Array.from(commonReport.errors[validation_1.ReportMessages.assertURLNotAvailable])}`);
+    for (const report of reports) {
+        //all report generators 
+        for (const group of Object.keys(report.byGroup)) {
+            //all groups
+            for (const entReport of report.byGroup[group]) {
+                //all entities
+                for (const error of Object.keys(entReport.errors))
+                    //kind of errors
+                    if (entReport.errors[error].size > 0) {
+                        console.log(`## Error in entity ${entReport.entity}`);
+                        console.log(`## ${error} ${Array.from(entReport.errors[error])}`);
+                    }
             }
+        }
     }
     //createReport(  
     //  mergedData,    
@@ -29996,16 +30007,14 @@ async function runPipeline(newVersion, oldVersion, gameConfig, spreadsheetId, ex
     //  reportSpreadsheetId
     //);
 }
-async function runExtensions(extensionsDir, data) {
+async function runValidationExtensions(extensionsDir, data) {
     const files = (0, fs_1.readdirSync)(extensionsDir).filter(f => f.endsWith('.js'));
-    let allValid = true;
+    const reports = new Array();
     for (const file of files) {
         const test = require(path.join(extensionsDir, file));
-        const { valid, report } = await test(data);
-        allValid && (allValid = valid);
-        console.log(report);
+        reports.push(await test(data));
     }
-    return allValid;
+    return reports;
 }
 async function run() {
     console.log('## Run static data upload pipeline: ## ');
@@ -30044,13 +30053,8 @@ async function run() {
             }
         }
 }
-run();
-// runPipeline("static_data_v0.0.2.json",
-//   "static_data_v0.0.1.json",
-//   "config.json",
-//   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
-//   path.join(__dirname, 'extensions')
-// );
+// run();
+runPipeline("static_data_v0.0.2.json", "static_data_v0.0.1.json", "config.json", "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM", path.join(__dirname, 'extensions'));
 
 
 /***/ }),
@@ -30177,13 +30181,13 @@ function mergeStaticData(newData, oldData, deprecateLostData = true) {
 
 /***/ }),
 
-/***/ 4344:
+/***/ 1798:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.validate = validate;
+exports.slugify = slugify;
 function slugify(str) {
     str = str.replace(/^\s+|\s+$/g, ''); // trim leading/trailing white space
     str = str.toLowerCase(); // convert string to lowercase
@@ -30192,6 +30196,37 @@ function slugify(str) {
         .replace(/-+/g, '-'); // remove consecutive hyphens
     return str;
 }
+
+
+/***/ }),
+
+/***/ 4344:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReportMessages = void 0;
+exports.validate = validate;
+const utils_1 = __nccwpck_require__(1798);
+var ReportMessages;
+(function (ReportMessages) {
+    ReportMessages["assertURLNotAvailable"] = "Assert URL not available";
+    ReportMessages["groupNotArray"] = "Group is not array";
+    ReportMessages["abscentID"] = "id is abscent";
+    ReportMessages["duplicatedIds"] = "id is not uniq";
+    ReportMessages["mismatchedIds"] = "id != gameId";
+    ReportMessages["duplicatedSlugs"] = "slug is not uniq";
+    ReportMessages["duplicatedGameIds"] = "gameId is not uniq";
+    ReportMessages["mismatchedSlugs"] = "slug !=slugify(name)";
+    ReportMessages["notInCamelCase"] = "not in camel case";
+    ReportMessages["abscentConfigurationForRef"] = "can't find ref in config file";
+    ReportMessages["abscentGroupForRef"] = "can't find group for ref";
+    ReportMessages["invalidRef"] = "wrong field type for ref";
+    ReportMessages["abscentIdInRef"] = "can't find entity in referenced group";
+    ReportMessages["invalidAsserts"] = "invalid assert value";
+    ReportMessages["invalidSubstitutions"] = "can't find data for substitution";
+})(ReportMessages || (exports.ReportMessages = ReportMessages = {}));
 function isCamelCase(str) {
     const pattern = /^[a-z]+(?:[A-Z][a-z0-9]*)*$/;
     return pattern.test(str);
@@ -30253,49 +30288,51 @@ function isInvalidSubstitutions(str, data) {
     });
     return false;
 }
-function deepTests(o, path, config, data, ent, tmpBucket, knownURL, validationGroupReport) {
+function subPath(path, idx) {
+    return path.split('.')[idx];
+}
+function deepTests(o, path, config, data, tmpBucket, knownURL, validationEntityReport) {
     if (Array.isArray(o)) {
         for (const i of o)
-            deepTests(i, path, config, data, ent, tmpBucket, knownURL, validationGroupReport);
+            deepTests(i, path, config, data, tmpBucket, knownURL, validationEntityReport);
     }
     else {
         if (o !== null && typeof o === 'object')
             for (const k of Object.keys(o)) {
+                const refTo = path + '.' + k;
                 //camelCase
                 if (!isCamelCase(k)) {
-                    console.log(k, o);
-                    validationGroupReport.notCamelCaseEntities.add(`[path=${path}]:[id=${ent.id}]`);
+                    validationEntityReport.errors[ReportMessages.notInCamelCase].add(subPath(refTo, 1));
                 }
                 //all ref and *Ref must be correct ( need config file)
                 if (k === 'ref' || k.endsWith('Ref')) {
-                    const refTo = path + '.' + k;
                     if (o[k] !== null && typeof o[k] !== "string") {
-                        validationGroupReport.invalidRef.add(refTo);
+                        validationEntityReport.errors[ReportMessages.invalidRef].add(subPath(refTo, 1));
                     }
                     else {
                         const value = o[k];
                         const ref = config.refs.find(ref => ref.from === refTo);
                         if (!ref) {
-                            validationGroupReport.abscentConfigurationForRef.add(refTo);
+                            validationEntityReport.errors[ReportMessages.abscentConfigurationForRef].add(subPath(refTo, 1));
                         }
                         else if (!data[ref.to]) {
-                            validationGroupReport.abscentGroupForRef.add(ref.to);
+                            validationEntityReport.errors[ReportMessages.abscentGroupForRef].add(subPath(refTo, 1));
                         }
                         else if (!data[ref.to].find(ent => ent.id === value)) {
-                            validationGroupReport.abscentIdInRef.add(refTo + ":" + value);
+                            validationEntityReport.errors[ReportMessages.abscentIdInRef].add(subPath(refTo, 1));
                         }
                     }
                 }
                 if (o[k] !== null && typeof o[k] === 'string') {
                     //check substitutions ( check all string values)                                            
                     if (isInvalidSubstitutions(o[k], data)) {
-                        validationGroupReport.invalidSubstitutions.add(o[k]);
+                        validationEntityReport.errors[ReportMessages.invalidSubstitutions].add(subPath(refTo, 1));
                     }
                     if (!isValidAssert(o[k], tmpBucket, knownURL))
-                        validationGroupReport.invalidAsserts.add(o[k]);
+                        validationEntityReport.errors[ReportMessages.invalidAsserts].add(subPath(refTo, 1));
                 }
                 if (o[k] !== null && typeof o[k] === 'object') {
-                    deepTests(o[k], path + "." + k, config, data, ent, tmpBucket, knownURL, validationGroupReport);
+                    deepTests(o[k], path + "." + k, config, data, tmpBucket, knownURL, validationEntityReport);
                 }
             }
         ;
@@ -30303,94 +30340,107 @@ function deepTests(o, path, config, data, ent, tmpBucket, knownURL, validationGr
 }
 async function validate(data, config, tmpBucket) {
     const validationReport = {
-        groupNotArray: new Set(),
-        unavailableURLs: new Set(),
-        groupReport: {},
+        errors: {
+            unavailableURLs: new Set()
+        },
+        warnings: {},
+        byGroup: {}
     };
     const knownURL = new Set();
     //groups are flat array Of entities
     for (const group of Object.keys(data)) {
-        const groupReport = {
-            entitiesWithAbscentID: new Set(),
-            entitiesWithDuplicatedIds: new Set(),
-            entitiesWithMismatchedIds: new Set(),
-            entitiesWithDuplicatedSlugs: new Set(),
-            entitiesWithDuplicatedGameIds: new Set(),
-            entitiesWithMismatchedSlugs: new Set(),
-            notCamelCaseEntities: new Set(),
-            abscentConfigurationForRef: new Set(),
-            abscentGroupForRef: new Set(),
-            invalidRef: new Set(),
-            abscentIdInRef: new Set(),
-            invalidAsserts: new Set(),
-            invalidSubstitutions: new Set(),
-        };
-        validationReport.groupReport[group] = groupReport;
+        validationReport.byGroup[group] = new Array();
+        validationReport.errors[ReportMessages.groupNotArray] = new Set();
+        validationReport.errors[ReportMessages.assertURLNotAvailable] = new Set();
         if (!Array.isArray(data[group])) {
-            validationReport.groupNotArray.add(`[${group}]`);
+            validationReport.errors["Group is not array"].add(`[${group}]`);
             continue;
         }
-        //entities has id 
-        if (data[group].find(ent => !ent.id)) {
-            groupReport.entitiesWithAbscentID.add(`[${group}]`);
-        }
-        //id  is unique in group
         const knownIds = new Set();
-        data[group].forEach(ent => {
+        const knownSlugs = new Set();
+        const knownGameIds = new Set();
+        //entities has id 
+        for (const ent of data[group]) {
+            const entityReport = {
+                entity: ent,
+                warnings: {},
+                errors: {
+                    [ReportMessages.abscentID]: new Set(),
+                    [ReportMessages.duplicatedIds]: new Set(),
+                    [ReportMessages.mismatchedIds]: new Set(),
+                    [ReportMessages.duplicatedSlugs]: new Set(),
+                    [ReportMessages.duplicatedGameIds]: new Set(),
+                    [ReportMessages.mismatchedSlugs]: new Set(),
+                    [ReportMessages.notInCamelCase]: new Set(),
+                    [ReportMessages.abscentConfigurationForRef]: new Set(),
+                    [ReportMessages.abscentGroupForRef]: new Set(),
+                    [ReportMessages.invalidRef]: new Set(),
+                    [ReportMessages.abscentIdInRef]: new Set(),
+                    [ReportMessages.invalidAsserts]: new Set(),
+                    [ReportMessages.invalidSubstitutions]: new Set(),
+                }
+            };
+            if (!ent.id)
+                entityReport.errors[ReportMessages.abscentID].add('id');
+            //  }
+            //id  is unique in group
+            // data[group].forEach(ent=>{
             if (ent.id && knownIds.has(ent.id)) {
-                groupReport.entitiesWithDuplicatedIds.add(`[${group}]:[id=${ent.id}]`);
+                // groupReport.entitiesWithDuplicatedIds.add(`[${group}]:[id=${ent.id}]`); 
+                entityReport.errors[ReportMessages.duplicatedIds].add('id');
             }
             ent.id && knownIds.add(ent.id);
-        });
-        //slug is unique
-        const knownSlugs = new Set();
-        data[group].forEach(ent => {
+            // })
+            //slug is unique
+            // data[group].forEach(ent=>{
             if (ent.slug && knownSlugs.has(ent.slug)) {
-                groupReport.entitiesWithDuplicatedSlugs.add(`[${group}]:[slug=${ent.slug}]`);
+                // groupReport.entitiesWithDuplicatedSlugs.add(`[${group}]:[slug=${ent.slug}]`); 
+                entityReport.errors[ReportMessages.duplicatedSlugs].add('slug');
             }
             ent.slug && knownSlugs.add(ent.slug);
-        });
-        //gameId is unique
-        const knownGameIds = new Set();
-        data[group].forEach(ent => {
+            // })
+            //gameId is unique
+            // data[group].forEach(ent=>{
             if (ent.gameId && knownGameIds.has(ent.gameId)) {
-                groupReport.entitiesWithDuplicatedGameIds.add(`[${group}]:[gameId=${ent.gameId}]`);
+                // groupReport.entitiesWithDuplicatedGameIds.add(`[${group}]:[gameId=${ent.gameId}]`);
+                entityReport.errors[ReportMessages.duplicatedGameIds].add('gameId');
             }
             ent.gameId && knownGameIds.add(ent.gameId);
-        });
-        //gameId && id == gamId || name && id == slugify(name)
-        data[group].forEach(ent => {
+            // })
+            //gameId && id == gamId || name && id == slugify(name)
+            // data[group].forEach(ent=>{
             if (ent.gameId && ent.id) {
                 if (ent.gameId !== ent.id) {
-                    groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                    // groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                    entityReport.errors[ReportMessages.mismatchedIds].add('id');
                 }
             }
             else if (ent.name && ent.id) {
-                if (slugify(ent.name) !== ent.id) {
-                    groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                if ((0, utils_1.slugify)(ent.name) !== ent.id) {
+                    // groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                    entityReport.errors[ReportMessages.mismatchedIds].add('id');
                 }
             }
-        });
-        //name && slug == slugify(name)
-        data[group].forEach(ent => {
+            // })
+            //name && slug == slugify(name)
+            // data[group].forEach(ent=>{
             if (ent.name && ent.slug)
-                if (slugify(ent.name) !== ent.slug) {
-                    groupReport.entitiesWithMismatchedSlugs.add(`[${group}]:[slug=${ent.slug}]`);
+                if ((0, utils_1.slugify)(ent.name) !== ent.slug) {
+                    // groupReport.entitiesWithMismatchedSlugs.add(`[${group}]:[slug=${ent.slug}]`);      
+                    entityReport.errors[ReportMessages.mismatchedSlugs].add('slug');
                 }
-        });
-        //rest tests
-        for (const ent of data[group]) {
-            deepTests(ent, group, config, data, ent, tmpBucket, knownURL, groupReport);
+            //rest tests
+            await deepTests(ent, group, config, data, tmpBucket, knownURL, entityReport);
+            validationReport.byGroup[group].push(entityReport);
         }
     }
     await Promise.all(Array.from(knownURL).map(async (url) => {
         const resp = await isCDNLinkValid(url);
         if (!resp)
-            validationReport.unavailableURLs.add(url);
+            validationReport.errors[ReportMessages.assertURLNotAvailable].add(url);
         return Promise.resolve(resp);
     }));
-    let valid = false;
-    return { valid, validationReport };
+    return validationReport;
 }
 
 

@@ -1,40 +1,24 @@
-import { Entity, StaticData } from "./types";
+import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from "./types";
+import { slugify } from "./utils";
 
+export enum ReportMessages{
+    assertURLNotAvailable = "Assert URL not available",
+    groupNotArray = "Group is not array",
+    abscentID = "id is abscent",
+    duplicatedIds="id is not uniq",
+    mismatchedIds="id != gameId",
+    duplicatedSlugs="slug is not uniq",
+    duplicatedGameIds="gameId is not uniq",
+    mismatchedSlugs="slug !=slugify(name)",
+    notInCamelCase = "not in camel case",
+    abscentConfigurationForRef="can't find ref in config file",
+    abscentGroupForRef="can't find group for ref",
+    invalidRef="wrong field type for ref",
+    abscentIdInRef="can't find entity in referenced group",
+    invalidAsserts="invalid assert value",
+    invalidSubstitutions="can't find data for substitution",
+} 
 
-function slugify(str:string) {
-  str = str.replace(/^\s+|\s+$/g, ''); // trim leading/trailing white space
-  str = str.toLowerCase(); // convert string to lowercase
-  str = str.replace(/[^a-z0-9 -]/g, '') // remove any non-alphanumeric characters
-           .replace(/\s+/g, '-') // replace spaces with hyphens
-           .replace(/-+/g, '-'); // remove consecutive hyphens
-  return str;
-}
-
-export type StaticDataConfig = {
-    refs:Array<{from:string,to:string}>;
-}
-
-type ValidationGroupReport ={
-    [key: string]:Set<string>;
-    entitiesWithAbscentID: Set<string> ;
-    entitiesWithDuplicatedIds: Set<string> ;
-    entitiesWithMismatchedIds: Set<string> ;
-    entitiesWithDuplicatedSlugs:  Set<string> ;
-    entitiesWithDuplicatedGameIds:Set<string>;
-    entitiesWithMismatchedSlugs:  Set<string> ;
-    notCamelCaseEntities:  Set<string> ;
-    abscentConfigurationForRef:  Set<string>;
-    abscentGroupForRef:  Set<string>;
-    invalidRef:  Set<string>;
-    abscentIdInRef:  Set<string>;
-    invalidAsserts:  Set<string>;
-    invalidSubstitutions:  Set<string>;
-}
-export type ValidationReport ={
-        groupNotArray: Set<string>;
-        unavailableURLs:Set<string>;
-        groupReport:{ [key: string]:ValidationGroupReport};
-};
 
 function isCamelCase(str:string) {
   const pattern = /^[a-z]+(?:[A-Z][a-z0-9]*)*$/;
@@ -103,53 +87,55 @@ function isInvalidSubstitutions(str:string,data:StaticData){
     return false;
 }
 
+function subPath(path:string,idx:number){
+    return path.split('.')[idx];
+}
+
 function deepTests(o:any,path:string,
     config:StaticDataConfig,
     data:StaticData,
-    ent:Entity,
     tmpBucket:string,
     knownURL:Set<string>,
-    validationGroupReport:ValidationGroupReport) {    
+    validationEntityReport:ValidationEntityReport) {    
 
     if(Array.isArray(o)){
         for(const i of o)         
-            deepTests(i,path,config,data,ent,tmpBucket,knownURL,validationGroupReport);        
+            deepTests(i,path,config,data,tmpBucket,knownURL,validationEntityReport);        
     }else{
         if(o !== null && typeof o === 'object')
             for(const k of Object.keys(o)){
+                const refTo = path+'.'+k;                
                 //camelCase
                 if(!isCamelCase(k)){
-                    console.log(k,o);
-                    validationGroupReport.notCamelCaseEntities.add(`[path=${path}]:[id=${ent.id}]`);                                
+                    validationEntityReport.errors[ReportMessages.notInCamelCase].add(subPath(refTo,1));                                
                 }
                 //all ref and *Ref must be correct ( need config file)
                 if(k==='ref'|| k.endsWith('Ref')){   
-                    const refTo = path+'.'+k;                
                     if(o[k]!==null && typeof o[k] !== "string"){
-                        validationGroupReport.invalidRef.add(refTo);
+                        validationEntityReport.errors[ReportMessages.invalidRef].add(subPath(refTo,1));
                     }else {                    
                         const value = o[k];
                         const ref = config.refs.find(ref=>ref.from === refTo);
                         if(!ref){
-                            validationGroupReport.abscentConfigurationForRef.add(refTo);
+                            validationEntityReport.errors[ReportMessages.abscentConfigurationForRef].add(subPath(refTo,1));
                         }else if(!data[ref.to]){
-                            validationGroupReport.abscentGroupForRef.add(ref.to);
+                            validationEntityReport.errors[ReportMessages.abscentGroupForRef].add(subPath(refTo,1));
                         }else if(!data[ref.to].find(ent=>ent.id === value)){
-                            validationGroupReport.abscentIdInRef.add(refTo+":"+value);
+                            validationEntityReport.errors[ReportMessages.abscentIdInRef].add(subPath(refTo,1));
                         }
                     }
                 }
                 if(o[k] !== null && typeof o[k] === 'string'){
                     //check substitutions ( check all string values)                                            
                     if(isInvalidSubstitutions(o[k],data)){
-                        validationGroupReport.invalidSubstitutions.add(o[k]);
+                        validationEntityReport.errors[ReportMessages.invalidSubstitutions].add(subPath(refTo,1));
                     }  
                     if(!isValidAssert(o[k],tmpBucket,knownURL))
-                        validationGroupReport.invalidAsserts.add(o[k]);                                                                                          
+                        validationEntityReport.errors[ReportMessages.invalidAsserts].add(subPath(refTo,1));                                                                                          
                 }        
 
             if (o[k] !== null && typeof o[k] === 'object') {
-                    deepTests(o[k],path+"."+k,config,data,ent,tmpBucket,knownURL,validationGroupReport);
+                    deepTests(o[k],path+"."+k,config,data,tmpBucket,knownURL,validationEntityReport);
             }        
             };
     }
@@ -159,105 +145,123 @@ function deepTests(o:any,path:string,
 
 export async function validate(data:StaticData,config:StaticDataConfig,tmpBucket:string){
     const validationReport = {
-        groupNotArray:new Set<string>(),
-        unavailableURLs:new Set<string>(),
-        groupReport:{} as { [key: string]:ValidationGroupReport},
+        errors:{
+            unavailableURLs:new Set<string>()
+        } as ValidationRecords,
+        warnings:{} as ValidationRecords,
+        byGroup:{} as { [key: string]:Array<ValidationEntityReport>}
     }
     const knownURL = new Set<string>();
     //groups are flat array Of entities
     for (const group of Object.keys(data)) {   
-        const groupReport = {
-            entitiesWithAbscentID:new Set<string>(),
-            entitiesWithDuplicatedIds:new Set<string>(),
-            entitiesWithMismatchedIds:new Set<string>(),
-            entitiesWithDuplicatedSlugs:new Set<string>(),
-            entitiesWithDuplicatedGameIds:new Set<string>(),
-            entitiesWithMismatchedSlugs:new Set<string>(),
-            notCamelCaseEntities:new Set<string>(),
-            abscentConfigurationForRef:  new Set<string>(),
-            abscentGroupForRef: new Set<string>(),
-            invalidRef: new Set<string>(),    
-            abscentIdInRef: new Set<string>(), 
-            invalidAsserts:new Set<string>(),
-            invalidSubstitutions:new Set<string>(),
-        }; 
-        validationReport.groupReport[group]=groupReport;
+
+        validationReport.byGroup[group] = new Array<ValidationEntityReport>();
+        validationReport.errors[ReportMessages.groupNotArray] = new Set();        
+        validationReport.errors[ReportMessages.assertURLNotAvailable]= new Set();
 
         if(!Array.isArray(data[group])){
-            validationReport.groupNotArray.add(`[${group}]`);
+            validationReport.errors["Group is not array"].add(`[${group}]`);
             continue;
         }
-        //entities has id 
-        if(data[group].find(ent=>!ent.id)){
-            groupReport.entitiesWithAbscentID.add(`[${group}]`);
-        }
-        //id  is unique in group
         const knownIds = new Set();
-        data[group].forEach(ent=>{
+        const knownSlugs = new Set();
+        const knownGameIds= new Set();
+
+        //entities has id 
+        for (const ent of data[group]) {
+            const entityReport = {
+                entity:ent,
+                warnings:{},
+                errors:{
+                    [ReportMessages.abscentID]:new Set<string>(),
+                    [ReportMessages.duplicatedIds]:new Set<string>(),
+                    [ReportMessages.mismatchedIds]:new Set<string>(),
+                    [ReportMessages.duplicatedSlugs]:new Set<string>(),
+                    [ReportMessages.duplicatedGameIds]:new Set<string>(),
+                    [ReportMessages.mismatchedSlugs]:new Set<string>(),
+                    [ReportMessages.notInCamelCase]:new Set<string>(),
+                    [ReportMessages.abscentConfigurationForRef]:  new Set<string>(),
+                    [ReportMessages.abscentGroupForRef]: new Set<string>(),
+                    [ReportMessages.invalidRef]: new Set<string>(),    
+                    [ReportMessages.abscentIdInRef]: new Set<string>(), 
+                    [ReportMessages.invalidAsserts]:new Set<string>(),
+                    [ReportMessages.invalidSubstitutions]:new Set<string>(),
+                }
+            } as ValidationEntityReport; 
+
+            if(!ent.id)
+                entityReport.errors[ReportMessages.abscentID].add('id');
+      //  }
+        //id  is unique in group
+        // data[group].forEach(ent=>{
             if(ent.id && knownIds.has(ent.id)){
-                groupReport.entitiesWithDuplicatedIds.add(`[${group}]:[id=${ent.id}]`); 
+                // groupReport.entitiesWithDuplicatedIds.add(`[${group}]:[id=${ent.id}]`); 
+                entityReport.errors[ReportMessages.duplicatedIds].add('id');
             }
             ent.id&&knownIds.add(ent.id)
-        })
+        // })
 
         //slug is unique
-        const knownSlugs = new Set();
-        data[group].forEach(ent=>{
+        // data[group].forEach(ent=>{
             if(ent.slug && knownSlugs.has(ent.slug)){
-                groupReport.entitiesWithDuplicatedSlugs.add(`[${group}]:[slug=${ent.slug}]`); 
+                // groupReport.entitiesWithDuplicatedSlugs.add(`[${group}]:[slug=${ent.slug}]`); 
+                entityReport.errors[ReportMessages.duplicatedSlugs].add('slug');
             }
             ent.slug&&knownSlugs.add(ent.slug)
-        })
+        // })
 
         //gameId is unique
-        const knownGameIds= new Set();
-        data[group].forEach(ent=>{
+        // data[group].forEach(ent=>{
             if(ent.gameId && knownGameIds.has(ent.gameId)){
-                groupReport.entitiesWithDuplicatedGameIds.add(`[${group}]:[gameId=${ent.gameId}]`);
+                // groupReport.entitiesWithDuplicatedGameIds.add(`[${group}]:[gameId=${ent.gameId}]`);
+                entityReport.errors[ReportMessages.duplicatedGameIds].add('gameId');
             }
             ent.gameId&&knownGameIds.add(ent.gameId)
-        })
+        // })
 
         //gameId && id == gamId || name && id == slugify(name)
-        data[group].forEach(ent=>{
+        // data[group].forEach(ent=>{
             if(ent.gameId && ent.id){
                 if(ent.gameId!==ent.id){
-                    groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                    // groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                    entityReport.errors[ReportMessages.mismatchedIds].add('id');
                 }
             }else if(ent.name && ent.id){
                 if(slugify(ent.name)!==ent.id){
-                    groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                    // groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
+                    entityReport.errors[ReportMessages.mismatchedIds].add('id');
                 }                
             }
-        })
+        // })
         
         //name && slug == slugify(name)
-        data[group].forEach(ent=>{
+        // data[group].forEach(ent=>{
             if(ent.name && ent.slug)
                 if(slugify(ent.name)!==ent.slug){
-                    groupReport.entitiesWithMismatchedSlugs.add(`[${group}]:[slug=${ent.slug}]`);      
+                    // groupReport.entitiesWithMismatchedSlugs.add(`[${group}]:[slug=${ent.slug}]`);      
+                    entityReport.errors[ReportMessages.mismatchedSlugs].add('slug');
                 }
-        })
 
         //rest tests
-        for (const ent of data[group]) {
-            deepTests(
+            await deepTests(
                 ent,
                 group,
                 config,
                 data,
-                ent,
                 tmpBucket,
                 knownURL,
-                groupReport);
+                entityReport);
+                validationReport.byGroup[group].push(entityReport);
         }        
+        
     }  
     await Promise.all(Array.from(knownURL).map(async url => {
-        const resp = await isCDNLinkValid(url)        
+        const resp = await isCDNLinkValid(url);
         if(!resp)
-            validationReport.unavailableURLs.add(url); 
+            validationReport.errors[ReportMessages.assertURLNotAvailable].add(url); 
+
         return Promise.resolve(resp);
     }));
-    let valid = false;    
-    return {valid,validationReport};
+
+    return validationReport;
 }

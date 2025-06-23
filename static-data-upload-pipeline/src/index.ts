@@ -4,9 +4,10 @@ import { readdirSync,readFileSync } from 'fs';
 import * as path from 'path'
 import { mergeStaticData } from './merge';
 import { mergeWithSpreadsheets } from './spreadsheets';
-import { validate } from './validation';
+import { ReportMessages, validate } from './validation';
 import { createReport } from './report';
-import { StaticData } from './types';
+import { StaticData, ValidationReport } from './types';
+import { report } from 'process';
 
 
 async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string,spreadsheetId:string,extensionsDir:string){
@@ -29,21 +30,35 @@ async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string
   
   console.log('');
   console.log('## Validate final static data ## ');
-  let {valid,validationReport} =await validate(mergedData,config,tmpBucket)
-  valid = valid && await runExtensions(extensionsDir,mergedData);
+  const reports = new Array<ValidationReport>();
+  const commonReport = await validate(mergedData,config,tmpBucket);
+  reports.push(commonReport);
+  reports.push(...await runValidationExtensions(extensionsDir,mergedData));
 
 
+  console.log(reports);
   console.log('');
-  console.log('## Create final report: ##');   
-  console.log(`## Group is not array of enities: ${Array.from(  validationReport.groupNotArray)}`)
-  console.log(`## Asset URLs are not available: ${Array.from(  validationReport.unavailableURLs)}`)
 
-  for(const group of Object.keys(validationReport.groupReport)){
-    const report = validationReport.groupReport[group];    
-    for(const prop of Object.keys(report))      
-      if(report[prop].size>0){
-        console.log(`## ${prop} for group ${group}: ${Array.from(report[prop])}`);
+  // console.log('## Create final report: ##');   
+  
+  console.log(`## Group is not array of enities: ${Array.from(  commonReport.errors[ReportMessages.groupNotArray])}`)
+  console.log(`## Asset URLs are not available: ${Array.from(  commonReport.errors[ReportMessages.assertURLNotAvailable])}`)
+
+  
+  for(const report of reports){    
+    //all report generators 
+    for(const group of Object.keys(report.byGroup)){      
+      //all groups
+      for(const entReport of report.byGroup[group]){        
+        //all entities
+        for(const error of Object.keys(entReport.errors)) 
+          //kind of errors
+          if(entReport.errors[error].size>0){            
+            console.log(`## Error in entity ${entReport.entity}`);
+            console.log(`## ${error} ${Array.from(entReport.errors[error])}`);
+          }
       }
+    }
   }
  
  //createReport(  
@@ -55,16 +70,14 @@ async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string
  //);
 
 }
-async function runExtensions(extensionsDir:string,data:StaticData){    
+async function runValidationExtensions(extensionsDir:string,data:StaticData){    
   const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
-  let allValid = true;
+  const reports = new Array<ValidationReport>();
   for (const file of files) {
     const test = require(path.join(extensionsDir, file));
-    const {valid,report} = await test(data); 
-    allValid &&= valid;
-    console.log(report);   
+    reports.push( await test(data));       
   }
-  return allValid;
+  return reports;
 }
 
 async function run() {
@@ -112,10 +125,10 @@ async function run() {
  
 }
 
-run();
-// runPipeline("static_data_v0.0.2.json",
-//   "static_data_v0.0.1.json",
-//   "config.json",
-//   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
-//   path.join(__dirname, 'extensions')
-// );
+// run();
+runPipeline("static_data_v0.0.2.json",
+  "static_data_v0.0.1.json",
+  "config.json",
+  "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
+  path.join(__dirname, 'extensions')
+);
