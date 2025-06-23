@@ -29958,6 +29958,34 @@ const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const fs_1 = __nccwpck_require__(9896);
 const path = __importStar(__nccwpck_require__(6928));
+async function runPipeline(latestVersion, knownVersion) {
+    const spreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
+    // const reportSpreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    // const tmpBucket = "https://cdn.mobalytics.gg";
+    console.log(`pipeline`, latestVersion, knownVersion, spreadsheetId, clientEmail);
+    // console.log('## Merge new static data file with old ## ');
+    // const {mergedData,mergeReport} = mergeStaticData(newData,oldData);  
+    // console.log('## Merge static data with spreadsheets ## ');  
+    // const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(spreadsheetId,mergedData);
+    // console.log('## Validate final static data ## ');
+    // const {valid,validationReport} =await validate(newData,config,tmpBucket)
+    // console.log('## Create final report: ##');   
+    // console.log(`## Group is not array of enities: ${Array.from(  validationReport.groupNotArray)}`)
+    // console.log(`## Asset URLs are not available: ${Array.from(  validationReport.unavailableURLs)}`)
+    // for(const group of Object.keys(validationReport.groupReport)){
+    //   const report = validationReport.groupReport[group];
+    //   for(const prop of Object.keys(report))
+    //     console.log(`## ${prop}: ${Array.from(report[prop])}`);
+    // }
+    //createReport(  
+    //  mergedData,    
+    //  mergeReport,
+    //  spreadsheetReport,    
+    //  validationReport,
+    //  reportSpreadsheetId
+    //);
+}
 async function run() {
     console.log('## Run static data upload pipeline: ## ');
     const root = process.cwd();
@@ -29989,33 +30017,10 @@ async function run() {
         if (sortedFiles.length > 0 && file === sortedFiles[sortedFiles.length - 1]) {
             //newest version added
             console.log(" run pipeline for ", file);
+            if (sortedFiles.length > 1)
+                runPipeline(file, sortedFiles[sortedFiles.length - 2]);
         }
     });
-    // const spreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
-    // const reportSpreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
-    // const clientEmail = 'spreadsheets-sync@mobalytics-1242.iam.gserviceaccount.com';
-    // const tmpBucket = "https://cdn.mobalytics.gg";
-    // console.log('## Merge new static data file with old ## ');
-    // const {mergedData,mergeReport} = mergeStaticData(newData,oldData);  
-    // console.log('## Merge static data with spreadsheets ## ');  
-    // const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(spreadsheetId,mergedData);
-    // console.log('## Validate final static data ## ');
-    // const {valid,validationReport} =await validate(newData,config,tmpBucket)
-    // console.log('## Create final report: ##');   
-    // console.log(`## Group is not array of enities: ${Array.from(  validationReport.groupNotArray)}`)
-    // console.log(`## Asset URLs are not available: ${Array.from(  validationReport.unavailableURLs)}`)
-    // for(const group of Object.keys(validationReport.groupReport)){
-    //   const report = validationReport.groupReport[group];
-    //   for(const prop of Object.keys(report))
-    //     console.log(`## ${prop}: ${Array.from(report[prop])}`);
-    // }
-    //createReport(  
-    //  mergedData,    
-    //  mergeReport,
-    //  spreadsheetReport,    
-    //  validationReport,
-    //  reportSpreadsheetId
-    //);
 }
 run();
 
