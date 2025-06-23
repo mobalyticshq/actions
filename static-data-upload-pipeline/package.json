@@ -8,7 +8,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@actions/core": "^1.11.1"
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
+    "googleapis": "^150.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.1",

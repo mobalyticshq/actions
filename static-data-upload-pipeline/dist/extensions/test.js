@@ -1,4 +1,6 @@
 module.exports = async function (data) {
 
-  return {valid:true,report:"no report"};
+  return {valid:true,report:{
+    foundProblem:new Set()
+  }};
 };

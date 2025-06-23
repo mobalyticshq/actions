@@ -1,5 +1,4 @@
 import { google } from 'googleapis';
-import axios from 'axios';
 import { Entity, StaticData } from './types';
 import { mergeStaticData } from './merge';
 import { GoogleAuth } from 'google-auth-library';

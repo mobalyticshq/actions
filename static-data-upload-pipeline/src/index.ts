@@ -9,7 +9,6 @@ import { createReport } from './report';
 import { StaticData } from './types';
 
 
-
 async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string,spreadsheetId:string,extensionsDir:string){
 
   console.log('gameConfig',gameConfig);
@@ -60,8 +59,8 @@ async function runExtensions(extensionsDir:string,data:StaticData){
   const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
   let allValid = true;
   for (const file of files) {
-    const func = require(path.join(extensionsDir, file));
-    const {valid,report} = await func(data); 
+    const test = require(path.join(extensionsDir, file));
+    const {valid,report} = await test(data); 
     allValid &&= valid;
     console.log(report);   
   }

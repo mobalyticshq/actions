@@ -30000,8 +30000,8 @@ async function runExtensions(extensionsDir, data) {
     const files = (0, fs_1.readdirSync)(extensionsDir).filter(f => f.endsWith('.js'));
     let allValid = true;
     for (const file of files) {
-        const func = require(path.join(extensionsDir, file));
-        const { valid, report } = await func(data);
+        const test = require(path.join(extensionsDir, file));
+        const { valid, report } = await test(data);
         allValid && (allValid = valid);
         console.log(report);
     }

@@ -1,5 +1,3 @@
-import { readFileSync,writeFileSync } from 'fs';
-import * as path from 'path'
 import { Entity, StaticData } from './types';
 
 export type MergeReport={    
