@@ -10,6 +10,25 @@ import { StaticData, ValidationReport } from './types';
 import { report } from 'process';
 
 
+function isValidReport(reports:ValidationReport[]){  
+  reports.forEach(report=>{
+    for(const error of Object.keys(report.errors)){
+      if(report.errors[error].size>0)
+        return false;
+    }
+
+    for(const group of Object.keys(report.byGroup)){
+      report.byGroup[group].forEach(ent=>{
+        for(const error of Object.keys(ent.errors)){
+          if(ent.errors[error].size>0)
+            return false;
+        }
+      });
+    }
+  });
+  return true;
+}
+
 async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string,spreadsheetId:string,extensionsDir:string){
 
   console.log('gameConfig',gameConfig);
@@ -35,15 +54,14 @@ async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string
   reports.push(commonReport);
   reports.push(...await runValidationExtensions(extensionsDir,mergedData));
 
-
-  console.log(reports);
-  console.log('');
-
-  // console.log('## Create final report: ##');   
   
-  console.log(`## Group is not array of enities: ${Array.from(  commonReport.errors[ReportMessages.groupNotArray])}`)
-  console.log(`## Asset URLs are not available: ${Array.from(  commonReport.errors[ReportMessages.assertURLNotAvailable])}`)
-
+  
+  if(commonReport.errors[ReportMessages.groupNotArray].size>0){
+    console.log(`## Group is not array of enities: ${Array.from(  commonReport.errors[ReportMessages.groupNotArray])}`)
+  }
+  if(commonReport.errors[ReportMessages.assertURLNotAvailable].size>0){
+    console.log(`## Asset URLs are not available: ${Array.from(  commonReport.errors[ReportMessages.assertURLNotAvailable])}`)
+  }
   
   for(const report of reports){    
     //all report generators 
@@ -60,14 +78,17 @@ async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string
       }
     }
   }
- 
- //createReport(  
- //  mergedData,    
- //  mergeReport,
- //  spreadsheetReport,    
- //  validationReport,
- //  reportSpreadsheetId
- //);
+  
+  console.log('## Create final report: ##');   
+  createReport(  
+    mergedData,    
+    reports,
+    '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs'
+  );
+  
+  if(isValidReport(reports)){
+    console.log('## static data is valid uploading! ##');   
+  }
 
 }
 async function runValidationExtensions(extensionsDir:string,data:StaticData){    

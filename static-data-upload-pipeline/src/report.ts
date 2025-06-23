@@ -1,10 +1,9 @@
 import { MergeReport } from "./merge";
 import { SpreadsheetReport } from "./spreadsheets";
-import { StaticData } from "./types";
+import { StaticData, ValidationReport } from "./types";
 
 export function createReport(mergedData:StaticData,
-    mergeReport:MergeReport,
-    spreadsheetReport:SpreadsheetReport, 
-    reportSpreadSheetId:string,){
+    reports:ValidationReport[],    
+    reportSpreadSheetId:string){
 
 }

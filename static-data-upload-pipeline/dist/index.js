@@ -29960,6 +29960,24 @@ const fs_1 = __nccwpck_require__(9896);
 const path = __importStar(__nccwpck_require__(6928));
 const merge_1 = __nccwpck_require__(9107);
 const validation_1 = __nccwpck_require__(4344);
+const report_1 = __nccwpck_require__(665);
+function isValidReport(reports) {
+    reports.forEach(report => {
+        for (const error of Object.keys(report.errors)) {
+            if (report.errors[error].size > 0)
+                return false;
+        }
+        for (const group of Object.keys(report.byGroup)) {
+            report.byGroup[group].forEach(ent => {
+                for (const error of Object.keys(ent.errors)) {
+                    if (ent.errors[error].size > 0)
+                        return false;
+                }
+            });
+        }
+    });
+    return true;
+}
 async function runPipeline(newVersion, oldVersion, gameConfig, spreadsheetId, extensionsDir) {
     console.log('gameConfig', gameConfig);
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
@@ -29979,11 +29997,12 @@ async function runPipeline(newVersion, oldVersion, gameConfig, spreadsheetId, ex
     const commonReport = await (0, validation_1.validate)(mergedData, config, tmpBucket);
     reports.push(commonReport);
     reports.push(...await runValidationExtensions(extensionsDir, mergedData));
-    console.log(reports);
-    console.log('');
-    // console.log('## Create final report: ##');   
-    console.log(`## Group is not array of enities: ${Array.from(commonReport.errors[validation_1.ReportMessages.groupNotArray])}`);
-    console.log(`## Asset URLs are not available: ${Array.from(commonReport.errors[validation_1.ReportMessages.assertURLNotAvailable])}`);
+    if (commonReport.errors[validation_1.ReportMessages.groupNotArray].size > 0) {
+        console.log(`## Group is not array of enities: ${Array.from(commonReport.errors[validation_1.ReportMessages.groupNotArray])}`);
+    }
+    if (commonReport.errors[validation_1.ReportMessages.assertURLNotAvailable].size > 0) {
+        console.log(`## Asset URLs are not available: ${Array.from(commonReport.errors[validation_1.ReportMessages.assertURLNotAvailable])}`);
+    }
     for (const report of reports) {
         //all report generators 
         for (const group of Object.keys(report.byGroup)) {
@@ -29999,13 +30018,11 @@ async function runPipeline(newVersion, oldVersion, gameConfig, spreadsheetId, ex
             }
         }
     }
-    //createReport(  
-    //  mergedData,    
-    //  mergeReport,
-    //  spreadsheetReport,    
-    //  validationReport,
-    //  reportSpreadsheetId
-    //);
+    console.log('## Create final report: ##');
+    (0, report_1.createReport)(mergedData, reports, '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs');
+    if (isValidReport(reports)) {
+        console.log('## static data is valid uploading! ##');
+    }
 }
 async function runValidationExtensions(extensionsDir, data) {
     const files = (0, fs_1.readdirSync)(extensionsDir).filter(f => f.endsWith('.js'));
@@ -30176,6 +30193,19 @@ function mergeStaticData(newData, oldData, deprecateLostData = true) {
         console.log(error);
     }
     return { mergedData, mergeReport };
+}
+
+
+/***/ }),
+
+/***/ 665:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createReport = createReport;
+function createReport(mergedData, reports, reportSpreadSheetId) {
 }
 
 
