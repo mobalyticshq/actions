@@ -29956,6 +29956,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
+const fs_1 = __nccwpck_require__(9896);
+const path = __importStar(__nccwpck_require__(6928));
 async function run() {
     console.log('## Run static data upload pipeline: ## ');
     const root = process.cwd();
@@ -29972,8 +29974,22 @@ async function run() {
         repo,
         ref: sha,
     });
+    const pattern = /static_data_v\d+.\d+.\d+.json/;
     const files = response.data.files?.map((file) => file.filename);
-    core.info(`Files:\n${files?.join('\n')}`);
+    files?.forEach(file => {
+        console.log('for ', file, path);
+        const files = (0, fs_1.readdirSync)(path.dirname(file));
+        const versionedFiles = new Array();
+        files.forEach(filename => {
+            if (!pattern.test(filename))
+                return null;
+            const version = filename.replace("static_data_v", "").replace(".json", "");
+            versionedFiles.push(filename);
+        });
+        const sortedFiles = versionedFiles.map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000))).sort()
+            .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
+        console.log(sortedFiles);
+    });
     // const spreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
     // const reportSpreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
     // const clientEmail = 'spreadsheets-sync@mobalytics-1242.iam.gserviceaccount.com';
