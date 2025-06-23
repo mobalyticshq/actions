@@ -503,15 +503,17 @@ async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: 
     }
 }
 
+//update spreadsheets
 async function updateSpreadsheets(spreadsheetId:string,
     auth:GoogleAuth,
     mergedData:StaticData,
     jsonData:StaticData,
     oldSpreadsheetsData:{ [key: string]: Array<Array<string>> },
     clientEmail:string) {  
-    //update spreadsheets
-        //remove all protections from pages
+    
+        
         console.log("## Remove all protections ##")
+        //remove all protections from pages
         await removeAllMetadata(spreadsheetId,auth);
         const newSpreadsheetData:{ [key: string]: Array<Array<string>> } = {};   
         //fill spreadsheets with merged data
@@ -567,7 +569,6 @@ export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:Static
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
 
-        console.log(auth);
         //get all data from spreadsheet
         console.log(`##Load spreadsheets ${spreadsheetId}`)
         const rawData = await getCurrentRawData(spreadsheetId,auth,spreadsheetReport);
