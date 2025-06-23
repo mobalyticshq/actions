@@ -4,11 +4,6 @@ import { Entity, StaticData } from './types';
 import { mergeStaticData } from './merge';
 import { GoogleAuth } from 'google-auth-library';
 
-// const auth = new google.auth.GoogleAuth({
-//   keyFile: 'mobalytics-1242-d49ecc3960e8.json',
-//   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-// });
-
 const sheets = google.sheets("v4");        
 
 function isImage(val:string){            
@@ -579,7 +574,8 @@ export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:Static
         //merge spreadsheet and jsonData, spreadsheet data is additional data
         const {mergedData,mergeReport} = mergeStaticData(processedData,jsonData,false);        
         console.log(`##Update spreadsheets ${spreadsheetId}`)
-        await updateSpreadsheets(spreadsheetId,auth,mergedData,jsonData,rawData,"spreadsheets-sync@mobalytics-1242.iam.gserviceaccount.com");
+        if(process.env.GOOGLE_CLIENT_EMAIL)
+        await updateSpreadsheets(spreadsheetId,auth,mergedData,jsonData,rawData,process.env.GOOGLE_CLIENT_EMAIL);
         
         return {overridedData:null,spreadsheetReport}
 
