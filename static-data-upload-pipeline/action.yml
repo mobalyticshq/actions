@@ -9,6 +9,3 @@ inputs:
 runs:
   using: 'node16'
   main:  'dist/index.js'
-  env:
-    GOOGLE_CLIENT_EMAIL: ${{ secrets.GOOGLE_CLIENT_EMAIL }}
-    GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}  
