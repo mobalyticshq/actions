@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "mobalytics-1242",
+  "private_key_id": "d49ecc3960e82327a12933128bb7dba23145b79d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC6BXPwjIV8CWpH\nFR0W9Flrr5gPWF5sRkCTVB8VWTXprPpv62pnlQmnf1uYV31ATYcty8eZmJTlJ/Sa\n/5j7gBAwXaEsuIFSOnvVhChVwzC455ScYZ67zfb8rOyPMjmT6+T+hIPQmtOM7utt\nTKP2ZQPHQn859V3/W2Y5epWUYGV7MioXakOJnhrPaUAKndRRCrofKN/P9ZXKcqvd\n8YkAaRN1n420iANhfBRYD0BmmDFVvG9kcet3LoaoEN5dWljv7DJ3cFrtJaH+qddJ\nXslVxXf1TxPKesmdbAdWzpCrtduWw1pBrOaPonaSURhS5mpRipCVuKZxKvUCbyn4\n/ndD4SdvAgMBAAECggEADVoW2E09x4lld3SsgdlIEdKot3FAVcU1HV4MXRvqIrun\nviDHomewKbWafXTKKLNn4IGf8gZhqZEUnYt7D5JBlzchOnSD08Me4FR8EKvR83Or\n1w2qtxAxijFfSWfxegyUgzA/xdlXFeaQP2gg3K6jdsnvF9nkxU9qJvYFhoDkx9LS\nfvcBGVJ8XBPXWYGvmQUFHwJ6+x4EcSWw8rVfA5TsTDOA0/sJeRE7kiwrRbrOOchX\n6dDeEPsO6aU6zhZ1C2TW5CpUYNVuoAsRbJJeodDnufHi7Oc+ZAf1GIe4qxKzVUoV\n58cxyrhH5eWPILiPjgwSlt1YGxFhtKjS7Eq+crltAQKBgQDulgHXFpXxzWnhskTr\n6UN1wB27wc/mMpE1NItI2bvzQEZh20i9GVjX5hrnm+WIxILekuQczWdqxfuzze8R\n7I0AXZXYd5mxFnbbh1wFFBexoHex/kHWoYM+bnx/gHc7yA2BCsDsLm0QdILmnLpo\nWeQS2/Idp4Igf2hZ8r3UFFVO6wKBgQDHmUWXGSZTwK4z0qGOIrzrVewe9iW1u+aS\n8HT1pnZGdctmpvgDAsQSdsH7hLUOMfSvLWAZcmyOkOCt3NjSO26+rBKkrnttIEUw\ndS2xvjiTPM7YSQ6J4XD+3gt4osoH3MhlTbgVRMvlWEiyPZcYP0ooO4VIw+suvaoZ\nwnYKEmIQjQKBgENJdR1nFkTKrOjlMQDjmY30763LPEnsyv0ZY4rZNWOmJfNlN791\nDZReJgpZ8kM/QLVq8gCZgWggjBsqohkJAL8wpZkWKfdCoaTKKQ6ZmxESc490aLcS\neAQ8fsoqvfXTNtPE56H0effhFCXb38qcR3F2LHNmkZF+vTxY9GaCkYifAoGAf725\nSu2emOVs19/K42OaEudHmb0g/0FFXO8le33QnmGPDqB3g73GbKaymV0iXvZbya05\nnq+biFZyZPM9lLbStpb7y4ebmIiZn1yvJN0/6gN1wfhnpJiyr3q+TrOopwWG/0aR\nNJN2Bs7Mn75JMAx5UmxdbedtYdmivp+02ddQCZUCgYEAi898pxs36hdQZ9iXAvYK\nQe3udhlF12iS6EVtnvTHmSW7Wktl+cNadVqaZgH+iylygAkkPNTs86uBCa3Dwu6T\nBp1o22ZRTFuVMdaI/9d/ghOQJbgZnfPkdpF+uVOuXzMvgCo7GXlOmO2tXgvX8Tyw\n/2C5DtbrmZ4izwA4AGHeZkk=\n-----END PRIVATE KEY-----\n",
+  "client_email": "spreadsheets-sync@mobalytics-1242.iam.gserviceaccount.com",
+  "client_id": "102356066452348080343",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/spreadsheets-sync%40mobalytics-1242.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

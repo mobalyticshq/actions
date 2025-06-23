@@ -1,141 +1,70 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { readFileSync,readdirSync,statSync } from 'fs';
+import { readFileSync,writeFileSync } from 'fs';
 import * as path from 'path'
-
-type Entity = {
-  id:string;
-  slug?:string;
-  deprecated?:boolean;
-}
-
-const report={  
-  merge:{
-    lostGroups:new Array<string>(),
-    newGroups:new Array<string>(),
-    newGroupNotArray:new Array<string>(),
-    oldGroupNotArray:new Array<string>(),
-    deprecatedEntities:new Map<string,Array<string>>(),
-    duplicatesInNewData:new Map<string,Array<string>>(),
-  }
-}
-const mergedJSON = new Map<String,Array<Entity> >();
-
-function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
-  const entries = readdirSync(dirPath)
-
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry)
-    if (statSync(fullPath).isDirectory()) {
-      getAllFiles(fullPath, arrayOfFiles)
-    } else {
-      arrayOfFiles.push(fullPath)
-    }
-  }
-
-  return arrayOfFiles
-}
-
-async function bootstrapPipeline(){
-  try {    
-
-    const game_config = core.getInput('game_config');
-    const game_specific_tests = core.getInput('game_specific_tests');
-    const credentials_json = core.getInput('credentials_json');
-    const tmp_assets_folder = core.getInput('tmp_assets_folder');
-    const prod_assets_folder = core.getInput('prod_assets_folder');
-    const google_spreadsheet_id = core.getInput('google_spreadsheet_id');
-
-    console.log(`Vars:`,game_config,game_specific_tests,credentials_json,tmp_assets_folder,prod_assets_folder,google_spreadsheet_id);    
-
-    const context = github.context;
-    const token = core.getInput('token');
-    const octokit = github.getOctokit(token);
-
-    const sha = context.sha;
-    const { owner, repo } = context.repo;
-
-    const response = await octokit.rest.repos.getCommit({
-      owner,
-      repo,
-      ref: sha,
-    });
-
-    const files = response.data.files?.map((file) => file.filename);
-    core.info(`Files:\n${files?.join('\n')}`);
-
-  } catch (error: any) {
-    core.setFailed(error.message)
-  }
-}
-
-function mergeGroups(newGroup:Array<Entity>,oldGroup:Array<Entity>,group:string){
-  mergedJSON.set(group,new Array());
-
-  oldGroup.forEach(oldIt => {
-    const match = newGroup.filter(newIt=>newIt.id == oldIt.id);
-    if(match.length == 0){
-      //deprecated
-      if(!report.merge.deprecatedEntities.has(group)){
-        report.merge.deprecatedEntities.set(group,[oldIt.id]);
-      }else{
-        report.merge.deprecatedEntities.get(group)?.push(oldIt.id);
-      }
-      mergedJSON.get(group)?.push({...oldIt,deprecated:true});
-    }else if(match.length > 1){
-      if(!report.merge.duplicatesInNewData.has(group)){
-        report.merge.duplicatesInNewData.set(group,[oldIt.id]);
-      }else{
-        report.merge.duplicatesInNewData.get(group)?.push(oldIt.id);
-      }
-    }else{
-      //correct
-      mergedJSON.get(group)?.push(match[0]);
-    }
-  });
-}
-
-function mergeJSON(){
-  console.log('##Merge new static data file with old##');
-  try{
-  const root = process.cwd();  
-  const oldData = JSON.parse(readFileSync(path.join(root,'old_static_data.json'), 'utf8'));
-  const newData = JSON.parse(readFileSync(path.join(root,'old_static_data.json'), 'utf8'));
-  
-
-  for (const group of Object.keys(oldData)) {
-    if(newData[group] === undefined){
-      report.merge.lostGroups.push(group);
-    }else{
-      if(!Array.isArray(oldData[group])){
-        report.merge.oldGroupNotArray.push(group);
-        continue;
-      }
-      if(!Array.isArray(newData[group])){
-        report.merge.newGroupNotArray.push(group);
-        continue;
-      }
-      mergeGroups(newData[group],oldData[group],group);
-    }
-  }
-
-  for (const group of Object.keys(newData)) {
-    if(oldData[group] === undefined){
-      report.merge.newGroups.push(group);
-    }
-  }
-
-  }catch(error){
-    core.setFailed(`error during the merge ${error}`)
-  }
-}
+import { mergeStaticData } from './merge';
+import { mergeWithSpreadsheets } from './spreadsheets';
+import { validate } from './validation';
+import { createReport } from './report';
 
 async function run() {
-  console.log('##Run static data upload pipeline:##');
-  await bootstrapPipeline();
-  mergeJSON();
-  console.log('##Report:##');
-  console.log(report);
+  console.log('## Run static data upload pipeline: ## ');
+  const root = process.cwd();  
+  // const oldData = JSON.parse(readFileSync(path.join(root,'old_static_data.json'), 'utf8'));
+  // const newData = JSON.parse(readFileSync(path.join(root,'new_static_data.json'), 'utf8'));
+  // const config = JSON.parse(readFileSync(path.join(root,'config.json'), 'utf8'));
+
+  const context = github.context;
+  const token = core.getInput('token');
+  const octokit = github.getOctokit(token);
+
+  const sha = context.sha;
+  const { owner, repo } = context.repo;
+
+  const response = await octokit.rest.repos.getCommit({
+    owner,
+    repo,
+    ref: sha,
+  });
+
+  const files = response.data.files?.map((file) => file.filename);
+  core.info(`Files:\n${files?.join('\n')}`);
+
+
+  // const spreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
+  // const reportSpreadsheetId = '1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM';
+
+  // const clientEmail = 'spreadsheets-sync@mobalytics-1242.iam.gserviceaccount.com';
+  // const tmpBucket = "https://cdn.mobalytics.gg";
+
+  // console.log('## Merge new static data file with old ## ');
+  // const {mergedData,mergeReport} = mergeStaticData(newData,oldData);  
+    
+  // console.log('## Merge static data with spreadsheets ## ');  
+  // const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(spreadsheetId,mergedData);
+
+
+  // console.log('## Validate final static data ## ');
+  // const {valid,validationReport} =await validate(newData,config,tmpBucket)
+
+  // console.log('## Create final report: ##');   
+  // console.log(`## Group is not array of enities: ${Array.from(  validationReport.groupNotArray)}`)
+  // console.log(`## Asset URLs are not available: ${Array.from(  validationReport.unavailableURLs)}`)
+  
+  // for(const group of Object.keys(validationReport.groupReport)){
+  //   const report = validationReport.groupReport[group];
+  //   for(const prop of Object.keys(report))
+  //     console.log(`## ${prop}: ${Array.from(report[prop])}`);
+  // }
+ 
+ //createReport(  
+ //  mergedData,    
+ //  mergeReport,
+ //  spreadsheetReport,    
+ //  validationReport,
+ //  reportSpreadsheetId
+ //);
+
 }
 
 run();
