@@ -15,14 +15,14 @@ export type StaticDataConfig = {
 }
 
 type ValidationGroupReport ={
-    [key: string]:any;
+    [key: string]:Set<string>;
     entitiesWithAbscentID: Set<string> ;
     entitiesWithDuplicatedIds: Set<string> ;
     entitiesWithMismatchedIds: Set<string> ;
     entitiesWithDuplicatedSlugs:  Set<string> ;
     entitiesWithDuplicatedGameIds:Set<string>;
     entitiesWithMismatchedSlugs:  Set<string> ;
-    notCamelCaseEntities:  Set<Entity> ;
+    notCamelCaseEntities:  Set<string> ;
     abscentConfigurationForRef:  Set<string>;
     abscentGroupForRef:  Set<string>;
     invalidRef:  Set<string>;
@@ -115,41 +115,43 @@ function deepTests(o:any,path:string,
         for(const i of o)         
             deepTests(i,path,config,data,ent,tmpBucket,knownURL,validationGroupReport);        
     }else{
-        for(const k of Object.keys(o)){
-            //camelCase
-            if(!isCamelCase(k)){
-                validationGroupReport.notCamelCaseEntities.add(ent);                                
-            }
-            //all ref and *Ref must be correct ( need config file)
-            if(k==='ref'|| k.endsWith('Ref')){   
-                const refTo = path+'.'+k;                
-                if(o[k]!==null && typeof o[k] !== "string"){
-                    validationGroupReport.invalidRef.add(refTo);
-                }else {                    
-                    const value = o[k];
-                    const ref = config.refs.find(ref=>ref.from === refTo);
-                    if(!ref){
-                        validationGroupReport.abscentConfigurationForRef.add(refTo);
-                    }else if(!data[ref.to]){
-                        validationGroupReport.abscentGroupForRef.add(ref.to);
-                    }else if(!data[ref.to].find(ent=>ent.id === value)){
-                        validationGroupReport.abscentIdInRef.add(refTo+":"+value);
+        if(o !== null && typeof o === 'object')
+            for(const k of Object.keys(o)){
+                //camelCase
+                if(!isCamelCase(k)){
+                    console.log(k,o);
+                    validationGroupReport.notCamelCaseEntities.add(`[path=${path}]:[id=${ent.id}]`);                                
+                }
+                //all ref and *Ref must be correct ( need config file)
+                if(k==='ref'|| k.endsWith('Ref')){   
+                    const refTo = path+'.'+k;                
+                    if(o[k]!==null && typeof o[k] !== "string"){
+                        validationGroupReport.invalidRef.add(refTo);
+                    }else {                    
+                        const value = o[k];
+                        const ref = config.refs.find(ref=>ref.from === refTo);
+                        if(!ref){
+                            validationGroupReport.abscentConfigurationForRef.add(refTo);
+                        }else if(!data[ref.to]){
+                            validationGroupReport.abscentGroupForRef.add(ref.to);
+                        }else if(!data[ref.to].find(ent=>ent.id === value)){
+                            validationGroupReport.abscentIdInRef.add(refTo+":"+value);
+                        }
                     }
                 }
-            }
-            if(o[k] !== null && typeof o[k] === 'string'){
-                //check substitutions ( check all string values)                                            
-                if(isInvalidSubstitutions(o[k],data)){
-                    validationGroupReport.invalidSubstitutions.add(o[k]);
-                }  
-                if(!isValidAssert(o[k],tmpBucket,knownURL))
-                    validationGroupReport.invalidAsserts.add(o[k]);                                                                                          
-            }        
+                if(o[k] !== null && typeof o[k] === 'string'){
+                    //check substitutions ( check all string values)                                            
+                    if(isInvalidSubstitutions(o[k],data)){
+                        validationGroupReport.invalidSubstitutions.add(o[k]);
+                    }  
+                    if(!isValidAssert(o[k],tmpBucket,knownURL))
+                        validationGroupReport.invalidAsserts.add(o[k]);                                                                                          
+                }        
 
-           if (o[k] !== null && typeof o[k] === 'object') {
-                deepTests(o[k],path+"."+k,config,data,ent,tmpBucket,knownURL,validationGroupReport);
-           }        
-        };
+            if (o[k] !== null && typeof o[k] === 'object') {
+                    deepTests(o[k],path+"."+k,config,data,ent,tmpBucket,knownURL,validationGroupReport);
+            }        
+            };
     }
     
 }
@@ -171,7 +173,7 @@ export async function validate(data:StaticData,config:StaticDataConfig,tmpBucket
             entitiesWithDuplicatedSlugs:new Set<string>(),
             entitiesWithDuplicatedGameIds:new Set<string>(),
             entitiesWithMismatchedSlugs:new Set<string>(),
-            notCamelCaseEntities:new Set<Entity>(),
+            notCamelCaseEntities:new Set<string>(),
             abscentConfigurationForRef:  new Set<string>(),
             abscentGroupForRef: new Set<string>(),
             invalidRef: new Set<string>(),    

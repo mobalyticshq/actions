@@ -577,7 +577,7 @@ export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:Static
         if(process.env.GOOGLE_CLIENT_EMAIL)
         await updateSpreadsheets(spreadsheetId,auth,mergedData,jsonData,rawData,process.env.GOOGLE_CLIENT_EMAIL);
         
-        return {overridedData:null,spreadsheetReport}
+        return {overridedData:mergedData,spreadsheetReport}
 
     }catch(error){
         console.error('Spreadsheets access error :', error);
