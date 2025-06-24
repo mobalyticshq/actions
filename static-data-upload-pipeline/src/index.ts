@@ -4,7 +4,7 @@ import { readdirSync,readFileSync } from 'fs';
 import * as path from 'path'
 import { mergeStaticData } from './merge';
 import { mergeWithSpreadsheets } from './spreadsheets';
-import {  validate } from './validation';
+import {  ReportMessages, validate } from './validation';
 import { createReport } from './report';
 import { StaticData, ValidationReport } from './types';
 
@@ -26,6 +26,35 @@ function isValidReport(reports:ValidationReport[]){
     }
   }
   return true;
+}
+
+function showReports(reports:Array<ValidationReport>){
+    for(const report of reports){    
+    //all report generators 
+    for(const error of Object.keys(report.errors)){
+      if(report.errors[error].size>0)
+        console.log(`## ${error} ${Array.from(report.errors[error])}`)
+    }
+
+    for(const group of Object.keys(report.byGroup)){      
+      //all groups
+      const errors = new Set<string>();
+      const fields = new Set<string>();
+      for(const entReport of report.byGroup[group]){                
+        //all entities
+        for(const error of Object.keys(entReport.errors)) 
+          //kind of errors
+          if(entReport.errors[error].size>0){                        
+            errors.add(error);
+            for(const field of entReport.errors[error])
+              fields.add(field)
+          }
+      }
+      if(errors.size>0){
+        console.log(`## For group ${group} errors:\n[${Array.from(errors)}]\n in fields:\n[${Array.from(fields)}}]`);
+      }
+    }
+  }
 }
 
 async function runPipeline(newVersion:string,
@@ -51,42 +80,16 @@ async function runPipeline(newVersion:string,
   
   console.log('');
   console.log('## Merge static data with spreadsheets ## ');  
-  const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(overrideSpreadsheetId,mergedData);
+  // const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(overrideSpreadsheetId,mergedData);
   
   console.log('');
   console.log('## Validate final static data ## ');
   const reports = new Array<ValidationReport>();
-  const commonReport = await validate(overridedData,config,tmpBucket);
+  const commonReport = await validate(mergedData,oldData,config,tmpBucket);
   reports.push(commonReport);
-  reports.push(...await runValidationExtensions(extensionsDir,mergedData));
-
+  reports.push(...await runValidationExtensions(extensionsDir,mergedData,oldData));
     
-  for(const report of reports){    
-    //all report generators 
-    for(const error of Object.keys(report.errors)){
-      if(report.errors[error].size>0)
-        console.log(`## ${error} ${Array.from(report.errors[error])}`)
-    }
-
-    for(const group of Object.keys(report.byGroup)){      
-      //all groups
-      const errors = new Set<string>();
-      const fields = new Set<string>();
-      for(const entReport of report.byGroup[group]){        
-        //all entities
-        for(const error of Object.keys(entReport.errors)) 
-          //kind of errors
-          if(entReport.errors[error].size>0){                        
-            errors.add(error);
-            for(const field of entReport.errors[error])
-              fields.add(field)
-          }
-      }
-      if(errors.size>0){
-        console.log(`## For group ${group} errors:\n[${Array.from(errors)}]\n in fields:\n[${Array.from(fields)}}]`);
-      }
-    }
-  }
+  showReports(reports);
 
   console.log('');
   if(isValidReport(reports)){
@@ -105,14 +108,14 @@ async function runPipeline(newVersion:string,
 
 
 }
-async function runValidationExtensions(extensionsDir:string,data:StaticData){    
+async function runValidationExtensions(extensionsDir:string,data:StaticData,oldData:StaticData){    
   const reports = new Array<ValidationReport>();
   try{
     const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
     
     for (const file of files) {
       const test = require(path.join(extensionsDir, file));
-      reports.push( await test(data));       
+      reports.push( await test(data,oldData));       
     }
   }catch(error){
     console.log(`## unable execute game specific test:${error}`);
@@ -172,8 +175,8 @@ async function run() {
 }
 
 run();
-// runPipeline("static_data_v0.0.2.json",
-//   "static_data_v0.0.1.json",
+// runPipeline("static_data_v0.0.3.json",
+//   "static_data_v0.0.2.json",
 //   "config.json",
 //   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
 //   '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs',

@@ -19,11 +19,13 @@ export type ValidationRecords = {
 export type ValidationEntityReport={
     entity:Entity;
     errors:ValidationRecords,
+    infos:ValidationRecords,
     warnings:ValidationRecords   
 }
 
 export type ValidationReport ={
     errors:ValidationRecords,
-    warnings:ValidationRecords             
+    warnings:ValidationRecords,
+    info:ValidationRecords,
     byGroup:{ [key: string]:Array<ValidationEntityReport>};
 };

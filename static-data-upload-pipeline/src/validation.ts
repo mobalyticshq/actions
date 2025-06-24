@@ -17,6 +17,11 @@ export enum ReportMessages{
     abscentIdInRef="can't find entity in referenced group",
     invalidAsserts="invalid assert value",
     invalidSubstitutions="can't find data for substitution",
+    newEntity="new entity",
+    deprecated="deprecated",
+    slugChanged="slug changed",
+    nameChanged="name changed",
+    URLChanged="url changed",
 } 
 
 
@@ -143,12 +148,13 @@ function deepTests(o:any,path:string,
 }
 
 
-export async function validate(data:StaticData,config:StaticDataConfig,tmpBucket:string){
+export async function validate(data:StaticData,oldData:StaticData,config:StaticDataConfig,tmpBucket:string){
     const validationReport = {
         errors:{
             unavailableURLs:new Set<string>()
         } as ValidationRecords,
         warnings:{} as ValidationRecords,
+        info:{} as ValidationRecords,
         byGroup:{} as { [key: string]:Array<ValidationEntityReport>}
     }
     const knownURL = new Set<string>();
@@ -167,11 +173,18 @@ export async function validate(data:StaticData,config:StaticDataConfig,tmpBucket
         const knownSlugs = new Set();
         const knownGameIds= new Set();
 
-        //entities has id 
         for (const ent of data[group]) {
             const entityReport = {
                 entity:ent,
-                warnings:{},
+                warnings:{
+                    [ReportMessages.deprecated]:new Set<string>(),
+                    [ReportMessages.slugChanged]:new Set<string>(),
+                    [ReportMessages.nameChanged]:new Set<string>(),
+                    [ReportMessages.URLChanged]:new Set<string>(),
+                },
+                infos:{
+                    [ReportMessages.newEntity]:new Set<string>(),
+                },
                 errors:{
                     [ReportMessages.abscentID]:new Set<string>(),
                     [ReportMessages.duplicatedIds]:new Set<string>(),
@@ -188,17 +201,17 @@ export async function validate(data:StaticData,config:StaticDataConfig,tmpBucket
                     [ReportMessages.invalidSubstitutions]:new Set<string>(),
                 }
             } as ValidationEntityReport; 
-
+        //entities has id 
             if(!ent.id)
                 entityReport.errors[ReportMessages.abscentID].add('id');
-      //  }
+
         //id  is unique in group
             if(ent.id && knownIds.has(ent.id)){
                 entityReport.errors[ReportMessages.duplicatedIds].add('id');
             }
             ent.id&&knownIds.add(ent.id)
 
-
+        //slug  is unique in group
             if(ent.slug && knownSlugs.has(ent.slug)){
                 entityReport.errors[ReportMessages.duplicatedSlugs].add('slug');
             }
@@ -227,6 +240,25 @@ export async function validate(data:StaticData,config:StaticDataConfig,tmpBucket
                     entityReport.errors[ReportMessages.mismatchedSlugs].add('slug');
                 }
 
+        //new entity
+            if(ent.id && oldData[group] && !oldData[group].find(e=>e.id==ent.id)){
+                entityReport.infos[ReportMessages.newEntity].add('');
+            }
+            if(ent.id && !oldData[group]){
+                entityReport.infos[ReportMessages.newEntity].add('');
+            }
+        //deprecated entity
+            if(ent.id && ent.deprecated && oldData[group] && oldData[group].find(e=>ent.id==e.id && !e.deprecated)){
+                entityReport.warnings[ReportMessages.deprecated].add('deprecated');
+            }     
+        //slug changed    
+            if(ent.id && ent.slug && oldData[group] && oldData[group].find(e=>ent.id==e.id && e.slug!==ent.slug)){
+                entityReport.warnings[ReportMessages.slugChanged].add('slug');
+            }     
+        //name changed    
+            if(ent.id && ent.name && oldData[group] && oldData[group].find(e=>ent.id==e.id && e.name!==ent.name)){
+                entityReport.warnings[ReportMessages.nameChanged].add('name');
+            }                 
         //rest tests
             await deepTests(
                 ent,
