@@ -6,3 +6,16 @@ export function slugify(str:string) {
            .replace(/-+/g, '-'); // remove consecutive hyphens
   return str;
 }
+
+
+export function isImage(val:string){            
+    if(!val|| val==='') return false;
+    return val.startsWith("https://cdn.mobalytics.gg") && (val.endsWith('.avif')||val.endsWith('.png')||val.endsWith('.webp'));
+}
+
+export function stringify(value:any){
+    if(value  instanceof Object){
+        return JSON.stringify(value)
+    }
+    return String(value);
+}

@@ -2,20 +2,11 @@ import { google } from 'googleapis';
 import { Entity, StaticData } from './types';
 import { mergeStaticData } from './merge';
 import { GoogleAuth } from 'google-auth-library';
+import { addFilterToSheet, addSheet, protect, removeAllMetadata, setColor } from './spreadsheets.utils';
+import { isImage, stringify } from './utils';
 
 const sheets = google.sheets("v4");        
 
-function isImage(val:string){            
-    if(!val|| val==='') return false;
-    return val.startsWith("https://cdn.mobalytics.gg") && (val.endsWith('.avif')||val.endsWith('.png')||val.endsWith('.webp'));
-}
-
-function toString(value:any){
-    if(value  instanceof Object){
-        return JSON.stringify(value)
-    }
-    return String(value);
-}
 
 export type SpreadsheetReport = {
     emptyPages:Set<string>,
@@ -27,162 +18,6 @@ export type SpreadsheetReport = {
     pageWithAbscentId:Set<string>,
     pagesWidthUnprocessedCells: { [key: string]: Array<{row:number,column:number}> };
 }
-
-
-function addFilterToSheet(sheetId:number,
-    startRowIndex:number,endRowIndex:number,startColumnIndex:number,endColumnIndex:number
-) {
-  const request = 
-    {
-        addFilterView: {
-          filter: {
-            title: 'Filter view',
-            range: {
-              sheetId: sheetId,
-              startRowIndex,
-              endRowIndex,
-              startColumnIndex,
-              endColumnIndex,
-            },
-            filterSpecs: [
-
-            ]
-          }
-        }
-    };
-  return request;
-}
-
-
- function  setColor(sheetId:number,
-    startRowIndex:number,
-    endRowIndex:number,
-    startColumnIndex:number,
-    endColumnIndex:number,
-    red=1.0,green=1.0,blue=1.0){
-    const request = 
-        {
-        repeatCell: {
-            range: {
-            sheetId,
-            startRowIndex,
-            endRowIndex,         
-            startColumnIndex,
-            endColumnIndex,       
-            },
-            cell: {
-            userEnteredFormat: {
-                backgroundColor: {
-                red,
-                green,
-                blue,
-                },
-            },
-            },
-            fields: 'userEnteredFormat.backgroundColor',
-        },
-        };
-    return request;
-}
-
-async function removeAllMetadata(spreadsheetId:string,auth:GoogleAuth){
-
-    const sheetData = await sheets.spreadsheets.get({
-        spreadsheetId,
-        fields: 'sheets.properties,sheets.protectedRanges,sheets.properties,sheets.filterViews.filterViewId',
-        auth: auth,
-    });
-    const requests = [];
-
-    const filterIds = (sheetData.data.sheets || [])
-        .flatMap(s => s.filterViews || [])
-        .map(v => v.filterViewId);
-
-    filterIds.forEach(id=>{
-        requests.push({
-            deleteFilterView: { filterId: id }
-        })
-    })    
-
-    for (const sheet of sheetData.data.sheets || []) {
-        requests.push({
-            clearBasicFilter: { sheetId: sheet.properties?.sheetId }
-        })
-        const ranges = sheet.protectedRanges || [];
-        for (const range of ranges) {
-        if (range.protectedRangeId != null) {
-            requests.push({
-                deleteProtectedRange: {
-                    protectedRangeId: range.protectedRangeId,
-                },
-            });
-        }
-        }
-    }
-
-    if (requests.length > 0) {
-        await sheets.spreadsheets.batchUpdate({
-            spreadsheetId,
-            auth: auth,
-            requestBody: {
-            requests: requests,
-            },
-        });
-    }
-
-}
-
- function protect(sheetId:number,rows:number,columns:number,clientEmail:string){   
-    const request = 
-        {
-            addProtectedRange: {
-            protectedRange: {
-                range: {
-                sheetId,
-                startRowIndex:0,
-                endRowIndex:rows,
-                startColumnIndex: 0,
-                endColumnIndex: columns,
-                },
-                description: 'Read-only column for users',
-                warningOnly: false,
-                editors: {
-                users: [clientEmail]
-                }
-                },
-            },
-        };
-    return request; 
-}
-
-
-async function addSheet(spreadsheetId:string,auth:GoogleAuth,title:string){
-    const response = await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        auth: auth,
-        requestBody: {
-        requests: [
-            {
-            addSheet: {
-                properties: {
-                title,
-                gridProperties: {
-                    rowCount: 1000,      
-                    columnCount: 26      
-                },
-                tabColor: {
-                    red: 0.8,
-                    green: 0.8,
-                    blue: 1
-                }
-                },
-            },
-            },
-        ],
-        },
-    });  
-}
-
 
 function applySpreadsheetsData(rawData: { [key: string]: any[][]|null },knownData:StaticData,spreadsheetReport:SpreadsheetReport){    
     const entities:StaticData={};
@@ -392,10 +227,10 @@ function entitiesToRawData(knownData:Array<Entity>|undefined,mergedData:Array<En
             const known = knownData?.find(obj=>obj.id == ent.id);
             const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
             if(known && known[header[i]]){
-                newRow.push(toString(known[header[i]]))
+                newRow.push(stringify(known[header[i]]))
                 continue;
             }else if(idColumnIdx>=0 && oldRow && oldRow[i]){
-                newRow.push(toString(oldRow[i]))                
+                newRow.push(stringify(oldRow[i]))                
             }else
                 newRow.push('');
         }
@@ -430,10 +265,11 @@ async function setMetadata(spreadsheetId:string,auth:GoogleAuth,knownData:Static
                 requests.push(setColor(sheet.properties?.sheetId,
                     1,protectedDataRange.rows,0,protectedDataRange.columns,0.8,0.8,0.8));
 
-                 requests.push(addFilterToSheet(sheet.properties?.sheetId,0,1000,0,26));
+                //  requests.push(addFilterToSheet(sheet.properties?.sheetId,0,1000,0,26));
                                  
                 requests.push( protect(sheet.properties?.sheetId,protectedDataRange.rows,protectedDataRange.columns,clientEmail));   
-                
+                // requests.push( allowFormating(sheet.properties?.sheetId));   
+
             }      
         }
     }
@@ -541,6 +377,7 @@ async function updateSpreadsheets(spreadsheetId:string,
         await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,clientEmail);
 
 }
+
 export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:StaticData) {  
     
     const spreadsheetReport = {

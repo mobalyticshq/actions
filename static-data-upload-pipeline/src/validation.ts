@@ -6,10 +6,10 @@ export enum ReportMessages{
     groupNotArray = "Group is not array",
     abscentID = "id is abscent",
     duplicatedIds="id is not uniq",
-    mismatchedIds="id != gameId",
+    mismatchedIds="id!=gameId||id!=slugify(name)",
     duplicatedSlugs="slug is not uniq",
     duplicatedGameIds="gameId is not uniq",
-    mismatchedSlugs="slug !=slugify(name)",
+    mismatchedSlugs="slug!=slugify(name)",
     notInCamelCase = "not in camel case",
     abscentConfigurationForRef="can't find ref in config file",
     abscentGroupForRef="can't find group for ref",
@@ -104,34 +104,34 @@ function deepTests(o:any,path:string,
     }else{
         if(o !== null && typeof o === 'object')
             for(const k of Object.keys(o)){
-                const refTo = path+'.'+k;                
+                const prop = path+'.'+k;                
                 //camelCase
                 if(!isCamelCase(k)){
-                    validationEntityReport.errors[ReportMessages.notInCamelCase].add(subPath(refTo,1));                                
+                    validationEntityReport.errors[ReportMessages.notInCamelCase].add(subPath(prop,1));                                
                 }
                 //all ref and *Ref must be correct ( need config file)
                 if(k==='ref'|| k.endsWith('Ref')){   
                     if(o[k]!==null && typeof o[k] !== "string"){
-                        validationEntityReport.errors[ReportMessages.invalidRef].add(subPath(refTo,1));
+                        validationEntityReport.errors[ReportMessages.invalidRef].add(subPath(prop,1));
                     }else {                    
                         const value = o[k];
-                        const ref = config.refs.find(ref=>ref.from === refTo);
+                        const ref = config.refs.find(ref=>ref.from === prop);
                         if(!ref){
-                            validationEntityReport.errors[ReportMessages.abscentConfigurationForRef].add(subPath(refTo,1));
+                            validationEntityReport.errors[ReportMessages.abscentConfigurationForRef].add(subPath(prop,1));
                         }else if(!data[ref.to]){
-                            validationEntityReport.errors[ReportMessages.abscentGroupForRef].add(subPath(refTo,1));
+                            validationEntityReport.errors[ReportMessages.abscentGroupForRef].add(subPath(prop,1));
                         }else if(!data[ref.to].find(ent=>ent.id === value)){
-                            validationEntityReport.errors[ReportMessages.abscentIdInRef].add(subPath(refTo,1));
+                            validationEntityReport.errors[ReportMessages.abscentIdInRef].add(subPath(prop,1));
                         }
                     }
                 }
                 if(o[k] !== null && typeof o[k] === 'string'){
                     //check substitutions ( check all string values)                                            
                     if(isInvalidSubstitutions(o[k],data)){
-                        validationEntityReport.errors[ReportMessages.invalidSubstitutions].add(subPath(refTo,1));
+                        validationEntityReport.errors[ReportMessages.invalidSubstitutions].add(subPath(prop,1));
                     }  
                     if(!isValidAssert(o[k],tmpBucket,knownURL))
-                        validationEntityReport.errors[ReportMessages.invalidAsserts].add(subPath(refTo,1));                                                                                          
+                        validationEntityReport.errors[ReportMessages.invalidAsserts].add(subPath(prop,1));                                                                                          
                 }        
 
             if (o[k] !== null && typeof o[k] === 'object') {
@@ -193,52 +193,37 @@ export async function validate(data:StaticData,config:StaticDataConfig,tmpBucket
                 entityReport.errors[ReportMessages.abscentID].add('id');
       //  }
         //id  is unique in group
-        // data[group].forEach(ent=>{
             if(ent.id && knownIds.has(ent.id)){
-                // groupReport.entitiesWithDuplicatedIds.add(`[${group}]:[id=${ent.id}]`); 
                 entityReport.errors[ReportMessages.duplicatedIds].add('id');
             }
             ent.id&&knownIds.add(ent.id)
-        // })
 
-        //slug is unique
-        // data[group].forEach(ent=>{
+
             if(ent.slug && knownSlugs.has(ent.slug)){
-                // groupReport.entitiesWithDuplicatedSlugs.add(`[${group}]:[slug=${ent.slug}]`); 
                 entityReport.errors[ReportMessages.duplicatedSlugs].add('slug');
             }
             ent.slug&&knownSlugs.add(ent.slug)
-        // })
 
         //gameId is unique
-        // data[group].forEach(ent=>{
             if(ent.gameId && knownGameIds.has(ent.gameId)){
-                // groupReport.entitiesWithDuplicatedGameIds.add(`[${group}]:[gameId=${ent.gameId}]`);
                 entityReport.errors[ReportMessages.duplicatedGameIds].add('gameId');
             }
             ent.gameId&&knownGameIds.add(ent.gameId)
-        // })
 
         //gameId && id == gamId || name && id == slugify(name)
-        // data[group].forEach(ent=>{
             if(ent.gameId && ent.id){
                 if(ent.gameId!==ent.id){
-                    // groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
                     entityReport.errors[ReportMessages.mismatchedIds].add('id');
                 }
             }else if(ent.name && ent.id){
                 if(slugify(ent.name)!==ent.id){
-                    // groupReport.entitiesWithMismatchedIds.add(`[${group}]:[id=${ent.id}]`);
                     entityReport.errors[ReportMessages.mismatchedIds].add('id');
                 }                
             }
-        // })
         
         //name && slug == slugify(name)
-        // data[group].forEach(ent=>{
             if(ent.name && ent.slug)
                 if(slugify(ent.name)!==ent.slug){
-                    // groupReport.entitiesWithMismatchedSlugs.add(`[${group}]:[slug=${ent.slug}]`);      
                     entityReport.errors[ReportMessages.mismatchedSlugs].add('slug');
                 }
 

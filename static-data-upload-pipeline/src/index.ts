@@ -4,39 +4,45 @@ import { readdirSync,readFileSync } from 'fs';
 import * as path from 'path'
 import { mergeStaticData } from './merge';
 import { mergeWithSpreadsheets } from './spreadsheets';
-import { ReportMessages, validate } from './validation';
+import {  validate } from './validation';
 import { createReport } from './report';
 import { StaticData, ValidationReport } from './types';
-import { report } from 'process';
 
 
 function isValidReport(reports:ValidationReport[]){  
-  reports.forEach(report=>{
+  for(const report of reports){
     for(const error of Object.keys(report.errors)){
       if(report.errors[error].size>0)
         return false;
     }
 
     for(const group of Object.keys(report.byGroup)){
-      report.byGroup[group].forEach(ent=>{
+      for( const ent of report.byGroup[group]){
         for(const error of Object.keys(ent.errors)){
           if(ent.errors[error].size>0)
             return false;
         }
-      });
+      }
     }
-  });
+  }
   return true;
 }
 
-async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string,spreadsheetId:string,extensionsDir:string){
-
-  console.log('gameConfig',gameConfig);
-
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+async function runPipeline(newVersion:string,
+  oldVersion:string,
+  gameConfig:string,
+  overrideSpreadsheetId:string,
+  reportSpreadsheetId:string,extensionsDir:string){
+  
   const tmpBucket = "https://cdn.mobalytics.gg";
 
-  console.log(`pipeline`,newVersion,oldVersion,spreadsheetId,clientEmail);
+  console.log(`## Run static data upload pipeline for`);
+  console.log(`## New version is ${newVersion}`);
+  console.log(`## Old version is ${oldVersion}`);
+  console.log(`## Spreadsheest ID for override ${overrideSpreadsheetId} `);
+  console.log(`## Spreadsheest ID for report ${overrideSpreadsheetId} `);
+
+  console.log('');
   console.log('## Merge new static data file with old ## ');
   const config = JSON.parse(readFileSync(gameConfig, 'utf8'));
   const oldData = JSON.parse(readFileSync(oldVersion, 'utf8'));
@@ -45,58 +51,71 @@ async function runPipeline(newVersion:string,oldVersion:string,gameConfig:string
   
   console.log('');
   console.log('## Merge static data with spreadsheets ## ');  
-  // const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(spreadsheetId,mergedData);
+  const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(overrideSpreadsheetId,mergedData);
   
   console.log('');
   console.log('## Validate final static data ## ');
   const reports = new Array<ValidationReport>();
-  const commonReport = await validate(mergedData,config,tmpBucket);
+  const commonReport = await validate(overridedData,config,tmpBucket);
   reports.push(commonReport);
   reports.push(...await runValidationExtensions(extensionsDir,mergedData));
 
-  
-  
-  if(commonReport.errors[ReportMessages.groupNotArray].size>0){
-    console.log(`## Group is not array of enities: ${Array.from(  commonReport.errors[ReportMessages.groupNotArray])}`)
-  }
-  if(commonReport.errors[ReportMessages.assertURLNotAvailable].size>0){
-    console.log(`## Asset URLs are not available: ${Array.from(  commonReport.errors[ReportMessages.assertURLNotAvailable])}`)
-  }
-  
+    
   for(const report of reports){    
     //all report generators 
+    for(const error of Object.keys(report.errors)){
+      if(report.errors[error].size>0)
+        console.log(`## ${error} ${Array.from(report.errors[error])}`)
+    }
+
     for(const group of Object.keys(report.byGroup)){      
       //all groups
+      const errors = new Set<string>();
+      const fields = new Set<string>();
       for(const entReport of report.byGroup[group]){        
         //all entities
         for(const error of Object.keys(entReport.errors)) 
           //kind of errors
-          if(entReport.errors[error].size>0){            
-            console.log(`## Error in entity ${entReport.entity}`);
-            console.log(`## ${error} ${Array.from(entReport.errors[error])}`);
+          if(entReport.errors[error].size>0){                        
+            errors.add(error);
+            for(const field of entReport.errors[error])
+              fields.add(field)
           }
+      }
+      if(errors.size>0){
+        console.log(`## For group ${group} errors:\n[${Array.from(errors)}]\n in fields:\n[${Array.from(fields)}}]`);
       }
     }
   }
-  
-  console.log('## Create final report: ##');   
+
+  console.log('');
+  if(isValidReport(reports)){
+    console.log('## Static data is valid! Uploading! ##');   
+  }else{
+    console.log('## Static data is not valid!##');   
+  }
+
+  console.log('');
+  console.log('## Create spreadsheet report: ##');   
   createReport(  
-    mergedData,    
     reports,
-    '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs'
+    reportSpreadsheetId    
   );
   
-  if(isValidReport(reports)){
-    console.log('## static data is valid uploading! ##');   
-  }
+
 
 }
 async function runValidationExtensions(extensionsDir:string,data:StaticData){    
-  const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
   const reports = new Array<ValidationReport>();
-  for (const file of files) {
-    const test = require(path.join(extensionsDir, file));
-    reports.push( await test(data));       
+  try{
+    const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
+    
+    for (const file of files) {
+      const test = require(path.join(extensionsDir, file));
+      reports.push( await test(data));       
+    }
+  }catch(error){
+    console.log(`## unable execute game specific test:${error}`);
   }
   return reports;
 }
@@ -106,9 +125,15 @@ async function run() {
   const root = process.cwd();    
 
   const context = github.context;
-  const googleSpreadsheetId = core.getInput('google_spreadsheet_id');
+  const overrideSpreadsheetId = core.getInput('override_spreadsheet_id');
+  const reportSpreadsheetId = core.getInput('report_spreadsheet_id');
   const gameConfig = core.getInput('game_config');
-  console.log('googleSpreadsheetId',googleSpreadsheetId);
+  const extensions = core.getInput('game_specific_tests');
+
+  console.log('spreadsheetId for override:',overrideSpreadsheetId);
+  console.log('spreadsheetId for report:',reportSpreadsheetId);
+  console.log('folder with game specific tests:',extensions);
+  
   const token = core.getInput('token');
   const octokit = github.getOctokit(token);
 
@@ -140,16 +165,17 @@ async function run() {
         //newest version added
         console.log(" run pipeline for ",file);
         if(sortedFiles.length>1)
-          await runPipeline(file,sortedFiles[sortedFiles.length-2],gameConfig,googleSpreadsheetId,"extensions");
+          await runPipeline(file,sortedFiles[sortedFiles.length-2],gameConfig,overrideSpreadsheetId,reportSpreadsheetId,extensions);
       }      
     }
  
 }
 
-// run();
-runPipeline("static_data_v0.0.2.json",
-  "static_data_v0.0.1.json",
-  "config.json",
-  "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
-  path.join(__dirname, 'extensions')
-);
+run();
+// runPipeline("static_data_v0.0.2.json",
+//   "static_data_v0.0.1.json",
+//   "config.json",
+//   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
+//   '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs',
+//   path.join(__dirname, 'tests')
+// );
