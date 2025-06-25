@@ -1,13 +1,14 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { readdirSync,readFileSync } from 'fs';
+import { readdirSync,readFileSync,existsSync } from 'fs';
 import * as path from 'path'
 import { mergeStaticData } from './merge';
-import { mergeWithSpreadsheets } from './spreadsheets';
+import { mergeWithSpreadsheets, updateSpreadsheets } from './spreadsheets';
 import {  ReportMessages, validate } from './validation';
 import { createReport } from './report';
 import { StaticData, ValidationReport } from './types';
-
+import { initSlugify } from './utils';
+initSlugify();
 
 function isValidReport(reports:ValidationReport[]){  
   for(const report of reports){
@@ -59,7 +60,6 @@ function showReports(reports:Array<ValidationReport>){
 
 async function runPipeline(newVersion:string,
   oldVersion:string,
-  gameConfig:string,
   overrideSpreadsheetId:string,
   reportSpreadsheetId:string,extensionsDir:string){
   
@@ -71,6 +71,12 @@ async function runPipeline(newVersion:string,
   console.log(`## Spreadsheest ID for override ${overrideSpreadsheetId} `);
   console.log(`## Spreadsheest ID for report ${overrideSpreadsheetId} `);
 
+  let gameConfig = path.join(path.dirname(newVersion),"config.json");
+  if(!await existsSync(gameConfig)){
+    gameConfig = path.join(path.dirname(newVersion),"../config.json");
+  }
+  console.log(`## Game config  ${gameConfig}`);
+
   console.log('');
   console.log('## Merge new static data file with old ## ');
   const config = JSON.parse(readFileSync(gameConfig, 'utf8'));
@@ -80,7 +86,7 @@ async function runPipeline(newVersion:string,
   
   console.log('');
   console.log('## Merge static data with spreadsheets ## ');  
-  // const {overridedData,spreadsheetReport} = await mergeWithSpreadsheets(overrideSpreadsheetId,mergedData);
+  const {overridedData,spreadsheetReport,spreadsheetData} = await mergeWithSpreadsheets(overrideSpreadsheetId,mergedData);
   
   console.log('');
   console.log('## Validate final static data ## ');
@@ -94,18 +100,20 @@ async function runPipeline(newVersion:string,
   console.log('');
   if(isValidReport(reports)){
     console.log('## Static data is valid! Uploading! ##');   
+    if(spreadsheetData){
+      await updateSpreadsheets(overrideSpreadsheetId,overridedData,mergedData,spreadsheetData)
+    }
   }else{
     console.log('## Static data is not valid!##');   
   }
 
   console.log('');
-  console.log('## Create spreadsheet report: ##');   
-  createReport(  
+  console.log(`## Create spreadsheet report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId} ##`);   
+  await createReport(  
     reports,
     reportSpreadsheetId    
   );
-  
-
+  console.log('##Spreadsheet report done ##');   
 
 }
 async function runValidationExtensions(extensionsDir:string,data:StaticData,oldData:StaticData){    
@@ -125,12 +133,11 @@ async function runValidationExtensions(extensionsDir:string,data:StaticData,oldD
 
 async function run() {
   console.log('## Run static data upload pipeline: ## ');
-  const root = process.cwd();    
 
   const context = github.context;
   const overrideSpreadsheetId = core.getInput('override_spreadsheet_id');
   const reportSpreadsheetId = core.getInput('report_spreadsheet_id');
-  const gameConfig = core.getInput('game_config');
+  // const gameConfig = core.getInput('game_config');
   const extensions = core.getInput('game_specific_tests');
 
   console.log('spreadsheetId for override:',overrideSpreadsheetId);
@@ -152,6 +159,7 @@ async function run() {
   const pattern = /static_data_v\d+.\d+.\d+.json/;
 
   const files = response.data.files?.map((file) => file.filename);
+
   if(files)
     for(const file of files){
       const files = readdirSync( path.dirname(file));
@@ -168,17 +176,17 @@ async function run() {
         //newest version added
         console.log(" run pipeline for ",file);
         if(sortedFiles.length>1)
-          await runPipeline(file,sortedFiles[sortedFiles.length-2],gameConfig,overrideSpreadsheetId,reportSpreadsheetId,extensions);
+          await runPipeline(file,sortedFiles[sortedFiles.length-2],overrideSpreadsheetId,reportSpreadsheetId,extensions);
       }      
     }
  
 }
 
+
 // run();
-runPipeline("static_data_v0.0.3.json",
-  "static_data_v0.0.2.json",
-  "config.json",
+runPipeline("prod/static_data_v0.0.3.json",
+  "prod/static_data_v0.0.2.json",  
   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
   '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs',
-  path.join(__dirname, 'tests')
+  path.join(__dirname, 'extensions')
 );

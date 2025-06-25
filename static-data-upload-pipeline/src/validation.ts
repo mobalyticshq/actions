@@ -1,8 +1,9 @@
+import slugify from "slugify";
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from "./types";
-import { slugify } from "./utils";
 
 export enum ReportMessages{
-    assertURLNotAvailable = "Assert URL not available",
+    assetURLNotAvailable = "Asset URL not available",
+    assetTooBig = "Asset too big",
     groupNotArray = "Group is not array",
     abscentID = "id is abscent",
     duplicatedIds="id is not uniq",
@@ -19,48 +20,78 @@ export enum ReportMessages{
     invalidSubstitutions="can't find data for substitution",
     numberNotAllowed="number is not allowed",
     newEntity="new entity",
-    deprecated="deprecated",
+    deprecated="entity deprecated",
     slugChanged="slug changed",
     nameChanged="name changed",
     URLChanged="url changed",
     fieldDisappear="field disappear",
-} 
+    assetChanged="asset changed",
 
+} 
+const assetExtensions = [
+    ".jpeg" ,".jpg", ".png", ".gif", ".webp", ".svg", ".avif",".webm", ".mp4"
+]
+
+const assetSizeLimit = 100*1024*1024;//100MB
 
 function isCamelCase(str:string) {
   const pattern = /^[a-z]+(?:[A-Z][a-z0-9]*)*$/;
   return pattern.test(str);
 }
 
-async function isCDNLinkValid(url:string) {
-  try {    
-    const res = await fetch(url,{ method: 'HEAD' });        
-    return res.ok;
-  } catch (err) {        
-    return false;
-  }
+async function isCDNLinkValid(url:string,reports:{
+    report: ValidationEntityReport;
+    path: string;
+    }[]) {
+    try {    
+        const res = await fetch(url,{ method: 'HEAD' });             
+        if(res.ok){
+            const length =  Number(res.headers.get('content-length'));
+            if(!isNaN(length)&& length>assetSizeLimit){
+                reports.forEach(report=>report.report.errors[ReportMessages.assetTooBig].add(report.path));     
+            }
+        }else{
+            reports.forEach(report=>report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));     
+        }
+    } catch (err) {        
+       reports.forEach(report=>report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));     
+    }
 }
 
-async function isValidAssert(val:string,tmpBucket:string,knownURL:Set<string>){            
+async function validateAsset(val:string,tmpBucket:string,path:string,report:ValidationEntityReport,
+    knownAssets:Map<string,Array<{report:ValidationEntityReport,path:string}>>){            
     //check assets extensions    
     //assets must be in TMP bucket 
     //assets area available            
-    if(!val|| val==='') return true;
+    if(!val|| val==='') 
+        return true;
 
     //TODO: should we test everything
-    if(val.startsWith("https://")){
+    if(val.startsWith("http://") || val.startsWith("https://")){
         //this is assert         
-        if(!val.startsWith(tmpBucket)) return false;//tmp bucket asserts allowed only
-        if(!(val.endsWith('.avif')||val.endsWith('.png')||val.endsWith('.webp'))) return false;//allowed  extensions        
-        knownURL.add(val)
+        if(!val.startsWith(tmpBucket)) 
+            return false;//tmp bucket asserts allowed only
+        if(!assetExtensions.find(ext=>val.endsWith(ext))){
+            return false;//allowed  extensions        
+        }
+        if(knownAssets.has(val))
+            knownAssets.get(val)?.push({report,path});
+        else
+            knownAssets.set(val,[{report,path}])
         return true;
     }
-    //if(val.endsWith(".dds")) return true; //wrong extension    
-    if(val.endsWith('.avif')||val.endsWith('.png')||val.endsWith('.webp')){
-        return false;//asserts must be in bucket
-    }
+
+    if(!assetExtensions.find(ext=>val.endsWith(ext))){
+        return false;
+    }     
     
     return true;
+}
+
+function isAsset(val:string){
+    if(val.startsWith('https://cdn.mobalytics.gg'))
+        return true;
+    return false;
 }
 
 function findSubstitutions(str:string) {
@@ -92,24 +123,61 @@ function isInvalidSubstitutions(str:string,data:StaticData){
     return false;
 }
 
+function getAllPaths(o:any,path:string,paths:Set<string>,assets:Map<string,string>){    
+    if(o==null)
+        return;
 
-function fieldDisappear(newObject:Entity,oldObject?:Entity){
+    if( typeof o === 'string'){
+        if(isAsset(o))
+            assets.set(path,o);
+    }else if(Array.isArray(o)){
+        let idx = 0;
+        for(const i of o){
+            getAllPaths(i,`${path}[${idx}]`,paths,assets);            
+            idx++;
+        }
+    }else if(typeof o === 'object'){
+        for(const k of Object.keys(o)){
+            const prop = path+'.'+k;                      
+            paths.add(prop);
+            if(o[k]!=null)
+                getAllPaths(o[k],prop,paths,assets);                
+        };
+    }
+}
+
+function fieldChanged(newObject:Entity,oldObject?:Entity){
     if(!oldObject)
-        return null;
-    for(const prop of Object.keys(newObject)){
-        if(oldObject[prop]===undefined && prop !="deprecated"){
-            return prop;
+        return {abscentPaths:[],changedAssets:[]}
+    const abscentPaths = new Set<string>();
+    const assetsChanges = new Set<string>();
+    const oldAssets = new Map<string,string>();
+    const oldPaths = new Set<string>();
+    const newAssets = new Map<string,string>();
+    const newPaths = new Set<string>();
+    const changedAssets = new Array<string>();
+    getAllPaths(oldObject,"",oldPaths,oldAssets);
+    getAllPaths(newObject,"",newPaths,newAssets);    
+    
+    for(const path of newAssets){
+        if(oldAssets.has(path[0]) && oldAssets.get(path[0])!=path[1])
+            changedAssets.push(path[0]);
+    }
+
+    for(const path of oldPaths){
+        if(!newPaths.has(path) && path !== ".deprecated"){
+            abscentPaths.add(path);
         }
     }
-    return null;
+    return {abscentPaths:Array.from(abscentPaths),changedAssets};
 }
 
 function deepTests(o:any,path:string,
     config:StaticDataConfig,
     data:StaticData,
     tmpBucket:string,
-    knownURL:Set<string>,
-    validationEntityReport:ValidationEntityReport) {    
+    knownAssets:Map<string,Array<{report:ValidationEntityReport,path:string}>>,
+    report:ValidationEntityReport) {    
 
     if(o==null)
         return;
@@ -117,42 +185,45 @@ function deepTests(o:any,path:string,
     if( typeof o === 'string'){
         //check substitutions ( check all string values)                                            
         if(isInvalidSubstitutions(o,data)){
-            validationEntityReport.errors[ReportMessages.invalidSubstitutions].add(path);
+            report.errors[ReportMessages.invalidSubstitutions].add(path);
         }  
         //check on assert
-        if(!isValidAssert(o,tmpBucket,knownURL))
-            validationEntityReport.errors[ReportMessages.invalidAsserts].add(path);                                                                                          
+        if(!validateAsset(o,tmpBucket,path,report,knownAssets))
+            report.errors[ReportMessages.invalidAsserts].add(path);                                                                                          
     }else if(Array.isArray(o)){
-        for(const i of o)         
-            deepTests(i,path,config,data,tmpBucket,knownURL,validationEntityReport);            
+        let idx = 0;
+        for(const i of o){
+            deepTests(i,`${path}[${idx}]`,config,data,tmpBucket,knownAssets,report);            
+            idx++;
+        }
     }else if(typeof o === 'object'){
         for(const k of Object.keys(o)){
             const prop = path+'.'+k;                
             //camelCase
             if(!isCamelCase(k)){
-                validationEntityReport.errors[ReportMessages.notInCamelCase].add(prop);                                
+                report.errors[ReportMessages.notInCamelCase].add(prop);                                
             }
             //all ref and *Ref must be correct ( need config file)
             if(k==='ref'|| k.endsWith('Ref')){   
                 if(o[k]!==null && typeof o[k] !== "string"){
-                    validationEntityReport.errors[ReportMessages.invalidRef].add(prop);
+                    report.errors[ReportMessages.invalidRef].add(prop);
                 }else {                    
                     const value = o[k];
                     const ref = config.refs.find(ref=>ref.from === prop);
                     if(!ref){
-                        validationEntityReport.errors[ReportMessages.abscentConfigurationForRef].add(prop);
+                        report.errors[ReportMessages.abscentConfigurationForRef].add(prop);
                     }else if(!data[ref.to]){
-                        validationEntityReport.errors[ReportMessages.abscentGroupForRef].add(prop);
+                        report.errors[ReportMessages.abscentGroupForRef].add(prop);
                     }else if(!data[ref.to].find(ent=>ent.id === value)){
-                        validationEntityReport.errors[ReportMessages.abscentIdInRef].add(prop);
+                        report.errors[ReportMessages.abscentIdInRef].add(prop);
                     }
                 }
             }   
             if(o[k]!=null)
-                deepTests(o[k],prop,config,data,tmpBucket,knownURL,validationEntityReport);                
+                deepTests(o[k],prop,config,data,tmpBucket,knownAssets,report);                
         };
     }else if(typeof o === 'number'){
-        validationEntityReport.errors[ReportMessages.numberNotAllowed].add(path);                                                                                          
+        report.errors[ReportMessages.numberNotAllowed].add(path);                                                                                          
     }
     
 }
@@ -167,13 +238,13 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
         infos:{} as ValidationRecords,
         byGroup:{} as { [key: string]:Array<ValidationEntityReport>}
     }
-    const knownURL = new Set<string>();
+    const knownAssets = new Map<string,Array<{report:ValidationEntityReport,path:string}>>();
+
     //groups are flat array Of entities
     for (const group of Object.keys(data)) {   
 
         validationReport.byGroup[group] = new Array<ValidationEntityReport>();
         validationReport.errors[ReportMessages.groupNotArray] = new Set();        
-        validationReport.errors[ReportMessages.assertURLNotAvailable]= new Set();
 
         if(!Array.isArray(data[group])){
             validationReport.errors["Group is not array"].add(group);
@@ -188,6 +259,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                 entity:ent,
                 warnings:{
                     [ReportMessages.fieldDisappear]:new Set<string>(),
+                    [ReportMessages.assetChanged]:new Set<string>(),
                     [ReportMessages.deprecated]:new Set<string>(),
                     [ReportMessages.slugChanged]:new Set<string>(),
                     [ReportMessages.nameChanged]:new Set<string>(),
@@ -197,6 +269,8 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                     [ReportMessages.newEntity]:new Set<string>(),
                 },
                 errors:{
+                    [ReportMessages.assetTooBig]: new Set<string>(),
+                    [ReportMessages.assetURLNotAvailable]: new Set<string>(),
                     [ReportMessages.abscentID]:new Set<string>(),
                     [ReportMessages.duplicatedIds]:new Set<string>(),
                     [ReportMessages.mismatchedIds]:new Set<string>(),
@@ -273,10 +347,13 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
             }        
         //field disappear
             if(ent.id && oldData[group]){
-                const field = fieldDisappear(ent,oldData[group].find(e=>ent.id==e.id));
-                if(field){
-                    entityReport.warnings[ReportMessages.fieldDisappear].add(`${group}.${field}`);
+                const {abscentPaths,changedAssets} = fieldChanged(ent,oldData[group].find(e=>ent.id==e.id));
+                for(const field of abscentPaths){                 
+                    entityReport.warnings[ReportMessages.fieldDisappear].add(`${group}${field}`);
                 }
+                for(const field of changedAssets){                 
+                    entityReport.warnings[ReportMessages.assetChanged].add(`${group}${field}`);
+                }                
             }      
         //rest tests
             await deepTests(
@@ -285,18 +362,19 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                 config,
                 data,
                 tmpBucket,
-                knownURL,
+                knownAssets,
                 entityReport);
                 validationReport.byGroup[group].push(entityReport);
         }        
         
     }  
-    await Promise.all(Array.from(knownURL).map(async url => {
-        const resp = await isCDNLinkValid(url);
-        if(!resp)
-            validationReport.errors[ReportMessages.assertURLNotAvailable].add(url); 
-
-        return Promise.resolve(resp);
+    
+    await Promise.all(Array.from(knownAssets).map(async assetReport => {
+        const reports = assetReport[1];
+        if(reports.length>0){
+            await isCDNLinkValid(assetReport[0],reports);                     
+        }
+        Promise.resolve(true);
     }));
 
     return validationReport;

@@ -297,7 +297,7 @@ async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: 
                  for(let i=0;i<data[sheet.properties?.title].length;++i)
                      for(let j=0;j<data[sheet.properties?.title][i].length;++j){
                         const cell = data[sheet.properties?.title][i][j];
-                        if(isImage(cell))
+                        if(isImage(cell.toLowerCase()))
                         {
                             requests.push({
                             updateCells: {
@@ -334,14 +334,22 @@ async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: 
 }
 
 //update spreadsheets
-async function updateSpreadsheets(spreadsheetId:string,
-    auth:GoogleAuth,
+export async function updateSpreadsheets(spreadsheetId:string,    
     mergedData:StaticData,
     jsonData:StaticData,
-    oldSpreadsheetsData:{ [key: string]: Array<Array<string>> },
-    clientEmail:string) {  
+    oldSpreadsheetsData:{ [key: string]: Array<Array<string>> }) {  
     
-        
+    if(process.env.GOOGLE_CLIENT_EMAIL){
+        console.log(`## Update spreadsheets ${spreadsheetId}`)
+    
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: process.env.GOOGLE_CLIENT_EMAIL,
+                private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+        });
+
         console.log("## Remove all protections ##")
         //remove all protections from pages
         await removeAllMetadata(spreadsheetId,auth);
@@ -374,8 +382,13 @@ async function updateSpreadsheets(spreadsheetId:string,
         }
         await updateFormulas(spreadsheetId,auth,newSpreadsheetData);
 
-        await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,clientEmail);
 
+        await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,process.env.GOOGLE_CLIENT_EMAIL);
+
+        console.log(`## Spreadsheets https://docs.google.com/spreadsheets/d/${spreadsheetId} updated`);
+    }else{
+        console.log(`can't edit spreadsheet need to set email`);
+    }
 }
 
 export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:StaticData) {  
@@ -402,22 +415,21 @@ export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:Static
 
         //get all data from spreadsheet
         console.log(`##Load spreadsheets ${spreadsheetId}`)
-        const rawData = await getCurrentRawData(spreadsheetId,auth,spreadsheetReport);
+        const spreadsheetData = await getCurrentRawData(spreadsheetId,auth,spreadsheetReport);
         //parse and validate data
         console.log(`##Create enities from spreadsheet and override them`)
-        const processedData = applySpreadsheetsData(rawData,jsonData,spreadsheetReport);
+        const processedData = applySpreadsheetsData(spreadsheetData,jsonData,spreadsheetReport);
         console.log(`##Merge JSON with spreadsheets`)
         //merge spreadsheet and jsonData, spreadsheet data is additional data
         const {mergedData,mergeReport} = mergeStaticData(processedData,jsonData,false);        
-        console.log(`##Update spreadsheets ${spreadsheetId}`)
-        if(process.env.GOOGLE_CLIENT_EMAIL)
-        await updateSpreadsheets(spreadsheetId,auth,mergedData,jsonData,rawData,process.env.GOOGLE_CLIENT_EMAIL);
         
-        return {overridedData:mergedData,spreadsheetReport}
+        // await updateSpreadsheets(spreadsheetId,auth,mergedData,jsonData,rawData);
+        
+        return {overridedData:mergedData,spreadsheetReport,spreadsheetData}
 
     }catch(error){
         console.error('Spreadsheets access error :', error);
     }
 
-    return {overridedData:jsonData,spreadsheetReport}
+    return {overridedData:jsonData,spreadsheetReport,spreadsheetData:null};
 }

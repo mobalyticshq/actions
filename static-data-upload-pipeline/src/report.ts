@@ -148,12 +148,16 @@ function prepareData(reports:ValidationReport[]){
 
     for(const report of reports){    
         //all report generators 
-        if(report.errors && Object.keys(report.errors).length>0){
-            spreadsheetData[mainReportName].push(['ERRORS'])
+        if(report.errors && Object.keys(report.errors).length>0){                        
+            let flag=false;
             for(const error of Object.keys(report.errors)){                
                 if(report.errors[error].size>0){
                     //add line with name of error                    
                     for (const value of report.errors[error]) {
+                        if(!flag){
+                            spreadsheetData[mainReportName].push(['ERRORS']);
+                            flag = true;
+                        }
                         spreadsheetData[mainReportName].push([error,value])
                     }
                     spreadsheetData[mainReportName].push([''])
@@ -161,11 +165,15 @@ function prepareData(reports:ValidationReport[]){
             }
         }
         if(report.warnings && Object.keys(report.warnings).length>0){
-            spreadsheetData[mainReportName].push(['WARNINGS'])
             for(const warning of Object.keys(report.warnings)){                
+                let flag = false;
                 if(report.warnings[warning].size>0){
                     //add line with name of warning                    
                     for (const value of report.warnings[warning]) {
+                        if(!flag){
+                            spreadsheetData[mainReportName].push(['WARNINGS']);
+                            flag = true;
+                        }
                         spreadsheetData[mainReportName].push([warning,value])
                     }
                     spreadsheetData[mainReportName].push([''])
@@ -174,11 +182,15 @@ function prepareData(reports:ValidationReport[]){
         }
         
         if(report.infos && Object.keys(report.infos).length>0){            
-            spreadsheetData[mainReportName].push(['INFOS'])
+            let flag  = false;
             for(const info of Object.keys(report.infos)){                        
                 if(report.infos[info].size>0){
                     //add line with name of info                                        
                     for (const value of report.infos[info]) {
+                        if(!flag){
+                            spreadsheetData[mainReportName].push(['INFOS']);
+                            flag = true;
+                        }                        
                         spreadsheetData[mainReportName].push([info,value])
                     }
                     spreadsheetData[mainReportName].push([''])
