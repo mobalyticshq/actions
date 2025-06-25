@@ -174,11 +174,11 @@ async function run() {
  
 }
 
-run();
-// runPipeline("static_data_v0.0.3.json",
-//   "static_data_v0.0.2.json",
-//   "config.json",
-//   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
-//   '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs',
-//   path.join(__dirname, 'tests')
-// );
+// run();
+runPipeline("static_data_v0.0.3.json",
+  "static_data_v0.0.2.json",
+  "config.json",
+  "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
+  '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs',
+  path.join(__dirname, 'tests')
+);

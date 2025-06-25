@@ -26,6 +26,6 @@ export type ValidationEntityReport={
 export type ValidationReport ={
     errors:ValidationRecords,
     warnings:ValidationRecords,
-    info:ValidationRecords,
+    infos:ValidationRecords,
     byGroup:{ [key: string]:Array<ValidationEntityReport>};
 };

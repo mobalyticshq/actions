@@ -12,7 +12,7 @@ export = async function (data:StaticData,oldData:StaticData): Promise<Validation
     warnings:{
 
     },  
-    info:{
+    infos:{
 
     },                     
     byGroup:{

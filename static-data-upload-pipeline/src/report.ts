@@ -1,6 +1,4 @@
-import { MergeReport } from "./merge";
-import { SpreadsheetReport } from "./spreadsheets";
-import { StaticData, ValidationRecords, ValidationReport } from "./types";
+import { Entity, StaticData, ValidationEntityReport, ValidationRecords, ValidationReport } from "./types";
 
 import { google } from 'googleapis';
 
@@ -8,31 +6,39 @@ import { GoogleAuth } from 'google-auth-library';
 import { addSheet, deleteSheet, setColor } from "./spreadsheets.utils";
 import { stringify } from "./utils";
 
-const reportName= "pipeline report";
+const mainReportName= "main report";
 const sheets = google.sheets("v4");     
 
 type ColoredCell = {row:number,col:number,r:number,g:number,b:number};
+
+function subPath(path:string,idx:number){
+    return path.split('.')[idx];
+}
+
+function skipBeginPath(path:string){
+    return path.substring(path.indexOf('.')+1)
+}
 
 async function prepareSheets(spreadsheetId:string,auth:GoogleAuth){
     const sheetsData = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
 
     //prepare sheets
     if(sheetsData.data.sheets){            
-        const report = sheetsData.data.sheets.find(sheet=>sheet.properties?.title === reportName);
+        const report = sheetsData.data.sheets.find(sheet=>sheet.properties?.title === mainReportName);
         if(!report){
-            addSheet(spreadsheetId,auth,reportName);
+            addSheet(spreadsheetId,auth,mainReportName);
         }
 
         for(let i=0;i<sheetsData.data.sheets.length;++i){
             const sheet = sheetsData.data.sheets[i];
-            if(sheet.properties && sheet.properties.sheetId!=null && sheet.properties?.title!==reportName){
+            if(sheet.properties && sheet.properties.sheetId!=null && sheet.properties?.title!==mainReportName){
                 await deleteSheet(spreadsheetId,auth,sheet.properties.sheetId);
             }    
-            if(sheet.properties?.sheetId && sheet.properties?.title==reportName){
+            if(sheet.properties?.sheetId && sheet.properties?.title==mainReportName){
                 await sheets.spreadsheets.values.clear({
                     spreadsheetId,
                     auth,
-                    range: reportName, 
+                    range: mainReportName, 
                 });
             }
         }
@@ -75,28 +81,121 @@ async function fillColors(
         requests:requests}});  
 }
 
+function validateRecords(
+    spreadsheetData:{ [key: string]: Array<Array<string>> },
+    records:ValidationRecords,
+    coloredCells:{ [key: string]: Array<ColoredCell>},
+    group:string, 
+    row:Array<string>,
+    header:Array<string>,r:number,g:number,b:number){
+
+    for(const key of Object.keys(records)){
+        //kind of errors                
+        let msg ='';
+        let colNumber =0;
+        for(const prop of header){
+            //warnings in this field
+            records[key].forEach(path =>{
+                if(subPath(path,1)==prop){
+                    msg+=`${key} (${skipBeginPath(path)})\n`;
+                    coloredCells[group].push({
+                        row:spreadsheetData[group]?spreadsheetData[group].length:1,
+                        col:colNumber+1,
+                        r,g,b
+                    });
+                }
+            });
+            colNumber++;
+        }
+        if(msg.length>0)
+            row.length==0?row.push(msg):row[0]=row[0]+msg;                        
+    }
+}
+function appendRow(
+    spreadsheetData:{ [key: string]: Array<Array<string>> },
+    coloredCells:{ [key: string]: Array<ColoredCell>},
+    group:string, 
+    entity:Entity, 
+    row:Array<string>,
+    header:Array<string>){
+
+    if(row.length>0){
+        for(const prop of header){
+            if(entity[prop]){
+                row.push(stringify(entity[prop]));
+            }else
+                row.push('');
+        }                        
+        if(!spreadsheetData[group]){
+            spreadsheetData[group]=new Array<Array<string>>();
+            //add header                                            
+            spreadsheetData[group].push(["report messages",...header]);
+            for(let i=0;i<spreadsheetData[group][0].length;++i)
+                coloredCells[group].push({
+                    row:0,
+                    col:i,
+                    r:143./255,g:176./255,b:106./255                          
+            });
+        }
+        spreadsheetData[group].push(row);
+    }
+}
 
 function prepareData(reports:ValidationReport[]){
     const spreadsheetData:{ [key: string]: Array<Array<string>> } = {};           
-    spreadsheetData[reportName] = new Array<Array<string>>();
+    spreadsheetData[mainReportName] = new Array<Array<string>>();
     const coloredCells:{ [key: string]: Array<ColoredCell>} = {};   
 
     for(const report of reports){    
         //all report generators 
-        for(const error of Object.keys(report.errors)){                
-            if(report.errors[error].size>0){
-                //add line with name of error                    
-                for (const value of report.errors[error]) {
-                    spreadsheetData[reportName].push([error,value])
+        if(report.errors && Object.keys(report.errors).length>0){
+            spreadsheetData[mainReportName].push(['ERRORS'])
+            for(const error of Object.keys(report.errors)){                
+                if(report.errors[error].size>0){
+                    //add line with name of error                    
+                    for (const value of report.errors[error]) {
+                        spreadsheetData[mainReportName].push([error,value])
+                    }
+                    spreadsheetData[mainReportName].push([''])
                 }
-                spreadsheetData[reportName].push([''])
             }
         }
+        if(report.warnings && Object.keys(report.warnings).length>0){
+            spreadsheetData[mainReportName].push(['WARNINGS'])
+            for(const warning of Object.keys(report.warnings)){                
+                if(report.warnings[warning].size>0){
+                    //add line with name of warning                    
+                    for (const value of report.warnings[warning]) {
+                        spreadsheetData[mainReportName].push([warning,value])
+                    }
+                    spreadsheetData[mainReportName].push([''])
+                }
+            }
+        }
+        
+        if(report.infos && Object.keys(report.infos).length>0){            
+            spreadsheetData[mainReportName].push(['INFOS'])
+            for(const info of Object.keys(report.infos)){                        
+                if(report.infos[info].size>0){
+                    //add line with name of info                                        
+                    for (const value of report.infos[info]) {
+                        spreadsheetData[mainReportName].push([info,value])
+                    }
+                    spreadsheetData[mainReportName].push([''])
+                }
+            }        
+        }                
 
         for(const group of Object.keys(report.byGroup)){      
             //all groups
             //get header for group
-            coloredCells[group] = new Array<{row:number,col:number,r:number,g:number,b:number}>();
+            const groupErrors = `${group} errors`;
+            const groupWarnings = `${group} warnings`;
+            const groupInfos = `${group} infos`;
+            coloredCells[groupErrors] = new Array<{row:number,col:number,r:number,g:number,b:number}>();
+            coloredCells[groupWarnings] = new Array<{row:number,col:number,r:number,g:number,b:number}>();
+            coloredCells[groupInfos] = new Array<{row:number,col:number,r:number,g:number,b:number}>();
+
             const headerSet = new Set<string>();
             report.byGroup[group].forEach(record=>{
                 for (const prop of Object.keys(record.entity)) {    
@@ -105,96 +204,40 @@ function prepareData(reports:ValidationReport[]){
             });
 
             const header = Array.from(headerSet);                
-            let rowNumber =0;
             for(const entReport of report.byGroup[group]){                            
                 //all entities
-                const row = new Array<string>();      
-                //check errors              
-                for(const error of Object.keys(entReport.errors)){
-                    //kind of errors                
-                    if(entReport.errors[error].size>0){                                                           
-                        row.length==0?row.push(error):row[0]=row[0]+'\n'+error;                        
-                        let colNumber =0;
-                        for(const prop of header){
-                            //error in this field
-                            if(entReport.errors[error].has(prop)){
-                                coloredCells[group].push({
-                                    row:rowNumber+1,
-                                    col:colNumber+1,
-                                    r:181./255, 
-                                    g:49./255, 
-                                    b:49./255
-                                });
-                            }
-                            colNumber++;
-                        }
-                    }
-                }
+                const rowError = new Array<string>();      
+                const rowWarning = new Array<string>();      
+                const rowInfo = new Array<string>();    
+                validateRecords(spreadsheetData,
+                    entReport.errors,
+                    coloredCells,
+                    groupErrors,
+                    rowError,
+                    header,
+                    181./255, 49./255, 49./255);  
 
-                //check warnings
-                for(const warning of Object.keys(entReport.warnings)){
-                    //kind of warning
-                    if(entReport.warnings[warning].size>0){                                                           
-                        row.length==0?row.push(warning):row[0]=row[0]+'\n'+warning;
-                        let colNumber =0;
-                        for(const prop of header){
-                            //warnings in this field
-                            if(entReport.warnings[warning].has(prop)){
-                                coloredCells[group].push({
-                                    row:rowNumber+1,
-                                    col:colNumber+1,
-                                    r:181./255, 
-                                    g:181./255, 
-                                    b:49./255
-                                });
-                            }
-                            colNumber++;
-                        }                        
-                    }
-                }
-                //check info
-                for(const info of Object.keys(entReport.infos)){
-                    //kind of info                
-                    if(entReport.infos[info].size>0){           
-                        row.length==0?row.push(info):row[0]=row[0]+'\n'+info;
-                        let colNumber =0;
-                        for(const prop of header){
-                            //infos in this field
-                            if(entReport.infos[info].has(prop)){
-                                coloredCells[group].push({
-                                    row:rowNumber+1,
-                                    col:colNumber+1,
-                                    r:49./255, 
-                                    g:181./255, 
-                                    b:49./255
-                                });
-                            }
-                            colNumber++;
-                        }                             
-                    }
-                }   
+                validateRecords(spreadsheetData,
+                    entReport.warnings,
+                    coloredCells,
+                    groupWarnings,
+                    rowWarning,header,
+                    181./255, 181./255, 49./255
+                );
+               
+                validateRecords(spreadsheetData,
+                    entReport.infos,
+                    coloredCells,
+                    groupInfos,
+                    rowInfo,
+                    header,
+                    49./255, 181./255, 49./255                    
+                );            
 
-                if(row.length>0){
-                    for(const prop of header){
-                        if(entReport.entity[prop]){
-                            row.push(stringify(entReport.entity[prop]));
-                        }else
-                            row.push('');
-                    }                        
-                    if(!spreadsheetData[group]){
-                        spreadsheetData[group]=new Array<Array<string>>();
-                        //add header                                            
-                        spreadsheetData[group].push(["report messages",...header]);
-                        for(let i=0;i<spreadsheetData[group][0].length;++i)
-                            coloredCells[group].push({
-                                row:0,
-                                col:i,
-                                r:143./255,g:176./255,b:106./255                          
-                        });
-                    }
-                    spreadsheetData[group].push(row);
-                    rowNumber++;
-                }
+
+               appendRow(spreadsheetData,coloredCells,groupErrors,entReport.entity,rowError,header);
+               appendRow(spreadsheetData,coloredCells,groupWarnings,entReport.entity,rowWarning,header);
+               appendRow(spreadsheetData,coloredCells,groupInfos,entReport.entity,rowInfo,header);
             }
         }
     }
@@ -236,7 +279,7 @@ export async function createReport(reports:ValidationReport[],
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
 
-        await prepareSheets(spreadsheetId,auth);
+        await prepareSheets(spreadsheetId,auth);        
         
         const {spreadsheetData,coloredCells} = prepareData(reports);
         

@@ -17,11 +17,13 @@ export enum ReportMessages{
     abscentIdInRef="can't find entity in referenced group",
     invalidAsserts="invalid assert value",
     invalidSubstitutions="can't find data for substitution",
+    numberNotAllowed="number is not allowed",
     newEntity="new entity",
     deprecated="deprecated",
     slugChanged="slug changed",
     nameChanged="name changed",
     URLChanged="url changed",
+    fieldDisappear="field disappear",
 } 
 
 
@@ -78,8 +80,6 @@ function isInvalidSubstitutions(str:string,data:StaticData){
     const subs = findSubstitutions(str);
     subs.forEach(sub=>{
         const [index, entity] = sub.split(":");        
-        //TODO:is it necessery?
-        //!isNaN(Number(index))
         if(entity){
             const [group,id] = entity.split(".");
             if(!data[group])
@@ -92,8 +92,16 @@ function isInvalidSubstitutions(str:string,data:StaticData){
     return false;
 }
 
-function subPath(path:string,idx:number){
-    return path.split('.')[idx];
+
+function fieldDisappear(newObject:Entity,oldObject?:Entity){
+    if(!oldObject)
+        return null;
+    for(const prop of Object.keys(newObject)){
+        if(oldObject[prop]===undefined && prop !="deprecated"){
+            return prop;
+        }
+    }
+    return null;
 }
 
 function deepTests(o:any,path:string,
@@ -103,46 +111,48 @@ function deepTests(o:any,path:string,
     knownURL:Set<string>,
     validationEntityReport:ValidationEntityReport) {    
 
-    if(Array.isArray(o)){
+    if(o==null)
+        return;
+
+    if( typeof o === 'string'){
+        //check substitutions ( check all string values)                                            
+        if(isInvalidSubstitutions(o,data)){
+            validationEntityReport.errors[ReportMessages.invalidSubstitutions].add(path);
+        }  
+        //check on assert
+        if(!isValidAssert(o,tmpBucket,knownURL))
+            validationEntityReport.errors[ReportMessages.invalidAsserts].add(path);                                                                                          
+    }else if(Array.isArray(o)){
         for(const i of o)         
-            deepTests(i,path,config,data,tmpBucket,knownURL,validationEntityReport);        
-    }else{
-        if(o !== null && typeof o === 'object')
-            for(const k of Object.keys(o)){
-                const prop = path+'.'+k;                
-                //camelCase
-                if(!isCamelCase(k)){
-                    validationEntityReport.errors[ReportMessages.notInCamelCase].add(subPath(prop,1));                                
-                }
-                //all ref and *Ref must be correct ( need config file)
-                if(k==='ref'|| k.endsWith('Ref')){   
-                    if(o[k]!==null && typeof o[k] !== "string"){
-                        validationEntityReport.errors[ReportMessages.invalidRef].add(subPath(prop,1));
-                    }else {                    
-                        const value = o[k];
-                        const ref = config.refs.find(ref=>ref.from === prop);
-                        if(!ref){
-                            validationEntityReport.errors[ReportMessages.abscentConfigurationForRef].add(subPath(prop,1));
-                        }else if(!data[ref.to]){
-                            validationEntityReport.errors[ReportMessages.abscentGroupForRef].add(subPath(prop,1));
-                        }else if(!data[ref.to].find(ent=>ent.id === value)){
-                            validationEntityReport.errors[ReportMessages.abscentIdInRef].add(subPath(prop,1));
-                        }
+            deepTests(i,path,config,data,tmpBucket,knownURL,validationEntityReport);            
+    }else if(typeof o === 'object'){
+        for(const k of Object.keys(o)){
+            const prop = path+'.'+k;                
+            //camelCase
+            if(!isCamelCase(k)){
+                validationEntityReport.errors[ReportMessages.notInCamelCase].add(prop);                                
+            }
+            //all ref and *Ref must be correct ( need config file)
+            if(k==='ref'|| k.endsWith('Ref')){   
+                if(o[k]!==null && typeof o[k] !== "string"){
+                    validationEntityReport.errors[ReportMessages.invalidRef].add(prop);
+                }else {                    
+                    const value = o[k];
+                    const ref = config.refs.find(ref=>ref.from === prop);
+                    if(!ref){
+                        validationEntityReport.errors[ReportMessages.abscentConfigurationForRef].add(prop);
+                    }else if(!data[ref.to]){
+                        validationEntityReport.errors[ReportMessages.abscentGroupForRef].add(prop);
+                    }else if(!data[ref.to].find(ent=>ent.id === value)){
+                        validationEntityReport.errors[ReportMessages.abscentIdInRef].add(prop);
                     }
                 }
-                if(o[k] !== null && typeof o[k] === 'string'){
-                    //check substitutions ( check all string values)                                            
-                    if(isInvalidSubstitutions(o[k],data)){
-                        validationEntityReport.errors[ReportMessages.invalidSubstitutions].add(subPath(prop,1));
-                    }  
-                    if(!isValidAssert(o[k],tmpBucket,knownURL))
-                        validationEntityReport.errors[ReportMessages.invalidAsserts].add(subPath(prop,1));                                                                                          
-                }        
-
-            if (o[k] !== null && typeof o[k] === 'object') {
-                    deepTests(o[k],path+"."+k,config,data,tmpBucket,knownURL,validationEntityReport);
-            }        
-            };
+            }   
+            if(o[k]!=null)
+                deepTests(o[k],prop,config,data,tmpBucket,knownURL,validationEntityReport);                
+        };
+    }else if(typeof o === 'number'){
+        validationEntityReport.errors[ReportMessages.numberNotAllowed].add(path);                                                                                          
     }
     
 }
@@ -154,7 +164,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
             unavailableURLs:new Set<string>()
         } as ValidationRecords,
         warnings:{} as ValidationRecords,
-        info:{} as ValidationRecords,
+        infos:{} as ValidationRecords,
         byGroup:{} as { [key: string]:Array<ValidationEntityReport>}
     }
     const knownURL = new Set<string>();
@@ -166,7 +176,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
         validationReport.errors[ReportMessages.assertURLNotAvailable]= new Set();
 
         if(!Array.isArray(data[group])){
-            validationReport.errors["Group is not array"].add(`[${group}]`);
+            validationReport.errors["Group is not array"].add(group);
             continue;
         }
         const knownIds = new Set();
@@ -177,6 +187,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
             const entityReport = {
                 entity:ent,
                 warnings:{
+                    [ReportMessages.fieldDisappear]:new Set<string>(),
                     [ReportMessages.deprecated]:new Set<string>(),
                     [ReportMessages.slugChanged]:new Set<string>(),
                     [ReportMessages.nameChanged]:new Set<string>(),
@@ -199,66 +210,74 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                     [ReportMessages.abscentIdInRef]: new Set<string>(), 
                     [ReportMessages.invalidAsserts]:new Set<string>(),
                     [ReportMessages.invalidSubstitutions]:new Set<string>(),
+                    [ReportMessages.numberNotAllowed]:new Set<string>(),
                 }
             } as ValidationEntityReport; 
         //entities has id 
             if(!ent.id)
-                entityReport.errors[ReportMessages.abscentID].add('id');
+                entityReport.errors[ReportMessages.abscentID].add(`${group}.id`);
 
         //id  is unique in group
             if(ent.id && knownIds.has(ent.id)){
-                entityReport.errors[ReportMessages.duplicatedIds].add('id');
+                entityReport.errors[ReportMessages.duplicatedIds].add(`${group}.id`);
             }
             ent.id&&knownIds.add(ent.id)
 
         //slug  is unique in group
             if(ent.slug && knownSlugs.has(ent.slug)){
-                entityReport.errors[ReportMessages.duplicatedSlugs].add('slug');
+                entityReport.errors[ReportMessages.duplicatedSlugs].add(`${group}.slug`);
             }
             ent.slug&&knownSlugs.add(ent.slug)
 
         //gameId is unique
             if(ent.gameId && knownGameIds.has(ent.gameId)){
-                entityReport.errors[ReportMessages.duplicatedGameIds].add('gameId');
+                entityReport.errors[ReportMessages.duplicatedGameIds].add(`${group}.gameId`);
             }
             ent.gameId&&knownGameIds.add(ent.gameId)
 
         //gameId && id == gamId || name && id == slugify(name)
             if(ent.gameId && ent.id){
                 if(ent.gameId!==ent.id){
-                    entityReport.errors[ReportMessages.mismatchedIds].add('id');
+                    entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
                 }
             }else if(ent.name && ent.id){
                 if(slugify(ent.name)!==ent.id){
-                    entityReport.errors[ReportMessages.mismatchedIds].add('id');
+                    entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
                 }                
             }
         
         //name && slug == slugify(name)
             if(ent.name && ent.slug)
                 if(slugify(ent.name)!==ent.slug){
-                    entityReport.errors[ReportMessages.mismatchedSlugs].add('slug');
+                    entityReport.errors[ReportMessages.mismatchedSlugs].add(`${group}.slug`);
                 }
 
         //new entity
             if(ent.id && oldData[group] && !oldData[group].find(e=>e.id==ent.id)){
-                entityReport.infos[ReportMessages.newEntity].add('');
+                entityReport.infos[ReportMessages.newEntity].add(`${group}`);
             }
             if(ent.id && !oldData[group]){
-                entityReport.infos[ReportMessages.newEntity].add('');
+                entityReport.infos[ReportMessages.newEntity].add(`${group}`);
             }
         //deprecated entity
             if(ent.id && ent.deprecated && oldData[group] && oldData[group].find(e=>ent.id==e.id && !e.deprecated)){
-                entityReport.warnings[ReportMessages.deprecated].add('deprecated');
+                entityReport.warnings[ReportMessages.deprecated].add(`${group}.deprecated`);
             }     
         //slug changed    
             if(ent.id && ent.slug && oldData[group] && oldData[group].find(e=>ent.id==e.id && e.slug!==ent.slug)){
-                entityReport.warnings[ReportMessages.slugChanged].add('slug');
+                entityReport.warnings[ReportMessages.slugChanged].add(`${group}.slug`);
             }     
         //name changed    
             if(ent.id && ent.name && oldData[group] && oldData[group].find(e=>ent.id==e.id && e.name!==ent.name)){
-                entityReport.warnings[ReportMessages.nameChanged].add('name');
-            }                 
+                entityReport.warnings[ReportMessages.nameChanged].add(`${group}.name`);
+            }        
+        //field disappear
+            if(ent.id && oldData[group]){
+                const field = fieldDisappear(ent,oldData[group].find(e=>ent.id==e.id));
+                if(field){
+                    entityReport.warnings[ReportMessages.fieldDisappear].add(`${group}.${field}`);
+                }
+            }      
         //rest tests
             await deepTests(
                 ent,
