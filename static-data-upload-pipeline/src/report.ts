@@ -16,7 +16,7 @@ function subPath(path:string,idx:number){
 }
 
 function skipBeginPath(path:string){
-    return path.substring(path.indexOf('.')+1)?.replace(/\[\d+\]/g, '')
+    return path.substring(path.indexOf('.')+1);
 }
 
 async function prepareSheets(spreadsheetId:string,auth:GoogleAuth){

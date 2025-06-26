@@ -7,12 +7,15 @@ import { mergeWithSpreadsheets, updateSpreadsheets } from './spreadsheets';
 import { validate } from './validation';
 import { createReport } from './report';
 import { StaticData, StaticDataConfig, ValidationReport } from './types';
-import { initSlugify } from './utils';
-const { exec } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(exec);
+import { initSlugify, sendSlack } from './utils';
+import { spawn, exec} from 'child_process';
+import { promisify } from 'util';
+const execAsync = promisify(exec);
 
 initSlugify();
+
+
+
 
 function isValidReport(reports:ValidationReport[]){  
   for(const report of reports){
@@ -62,32 +65,75 @@ function showReports(reports:Array<ValidationReport>){
   }
 }
 
+function syncBuckets(source:string, target:string): Promise<{copied:Array<string>}>  {
+return new Promise((resolve, reject) => {
+    
+    const prefix = `Copying ${source}`;
+    const proc = spawn('gsutil', ['-m', 'rsync', '-r', '-d', '-c', source, target]);
 
-async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string){
+    const copied = new Array<string>();
+
+    proc.stdout.on('data', (data:string) => {
+      const lines = data.toString().split('\n');
+      for (const line of lines) {
+        if (line.startsWith(prefix)) {
+          const match = line.replace(prefix,target).replace('gs://','https://');          
+          if (match) copied.push(match.substring(0,match.indexOf('[Content-Type')).trim());
+        } 
+      }
+    });
+
+    proc.stderr.on('data', (data) => {
+      const lines = data.toString().split('\n');
+      for (const line of lines) {
+        if (line.startsWith(prefix)) {
+          const match = line.replace(prefix,target).replace('gs://','https://');
+          match.substring(0,match.indexOf('[Content-Type')).trim();
+          if (match) copied.push(match.substring(0,match.indexOf('[Content-Type')).trim());
+        } 
+      }
+    });
+
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(`gsutil exit with ${code}`));
+      }
+      resolve({ copied });
+    });
+  });
+}
+
+
+async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string,cfClientID:string){
      console.log('## Sync tmp assets bucket with prod bucket ##');  
       const assetCmd = `gsutil -m rsync -r  -c  ${tmpAssetFolder} ${prodAssetFolder} `;
       console.log(assetCmd)
-      const { stdout, stderr } = await execAsync(assetCmd);
+      const { copied } = await syncBuckets(tmpAssetFolder,prodAssetFolder);
 
-      const lines = stdout.split('\n');
-      const copied = [];
+      if(copied.length>0){
+        console.log(`## Reset cloudflare cache for ${copied.length} files ##`);  
 
-      const prefix = `Copying ${tmpAssetFolder}`;
-      for (const line of lines) {
-        if (line.startsWith(prefix)) {
-          const match = line.replace(prefix,prodAssetFolder).replace('gs://','https://');
-          match.substring(0,match.indexOf('[Content-Type')).trim();
-          if (match) copied.push(match);
-        } 
+        const chunks: string[][] = [];
+        const chunkSize = 100;
+        for (let i = 0; i < copied.length; i += chunkSize) {
+          chunks.push(copied.slice(i, i + chunkSize));
+        }
+        for(const chunk of chunks){        
+          const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfClientID}/purge_cache`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.CF_AUTH_TOKEN}`
+            },
+            body: JSON.stringify({files:chunk})
+          });
+          if(response.status!=200){
+            console.log('Error during CF cache reset',{response});            
+          }
+        }
       }
 
-      console.log('updatedFiles:', copied);
 
-      if (stderr) console.error('stderr:', stderr);
-      console.log('## Assets synced ##');  
-
-
-      console.log('## Reset cloudflare cache ##');  
 }
 
 async function runPipeline(versions:Array<string>,  
@@ -96,12 +142,15 @@ async function runPipeline(versions:Array<string>,
   reportSpreadsheetId:string,
   tmpAssetFolder:string,
   prodAssetFolder:string,
+  cfClientID:string,
   testsDir:string){
     
   console.log(`## Newest version is ${versions[versions.length-1]}`);
   console.log(`## Oldest version is ${versions[0]}`);
   console.log(`## Spreadsheest ID for override ${overrideSpreadsheetId} `);
   console.log(`## Spreadsheest ID for report ${overrideSpreadsheetId} `);
+
+  sendSlack(`Start game static data update pipeline for ${versions[versions.length-1]}`);
 
   const tmpAssetPrefix = tmpAssetFolder.replace("gs://","https://");
   const prodAssetPrefix = prodAssetFolder.replace("gs://","https://");
@@ -190,20 +239,20 @@ async function runPipeline(versions:Array<string>,
       if (stderr) console.error('stderr:', stderr);
       console.log('## Bucket synced ##');  
 
-      await updateAssets(tmpAssetFolder,prodAssetFolder);
+      await updateAssets(tmpAssetFolder,prodAssetFolder,cfClientID);
  
-
-
       console.log('## Report in slack ##');  
 
-
+      sendSlack(`Static data ${versions[versions.length-1]} is valid and uploaded`,':arrow_up:');
       console.log('## All done!!! ##');  
     }else{
       console.log('## Static data is not valid!##');   
+      sendSlack(`Static data ${versions[versions.length-1]} is not valid. Static data not updated`,':no_entry:');
     }
 
   }catch(error){
     console.log(`## Error during pipeline ${error}`);   
+    sendSlack(`Error during static data update pipeline for ${versions[versions.length-1]} error:${error} `,':bangbang:');
   }
 
 }
@@ -231,9 +280,9 @@ async function run() {
   const reportSpreadsheetId = core.getInput('report_spreadsheet_id');
   const tmpAssetFolder = core.getInput('tmp_assets_folder');
   const prodAssetFolder = core.getInput('prod_assets_folder');
+  const cfClientID = core.getInput('cf_client');
 
   const tests = core.getInput('game_specific_tests');
-
 
   console.log(`## Run static data upload pipeline for ${staticDataPath}`);
 
@@ -243,6 +292,7 @@ async function run() {
   console.log('folder with game specific tests:',tests);
   console.log('folder for tmp assets:',tmpAssetFolder);
   console.log('folder for prod assets:',prodAssetFolder);
+  console.log('CF client ID:',cfClientID);
 
 
   const token = core.getInput('token');
@@ -293,6 +343,7 @@ async function run() {
             reportSpreadsheetId,
             tmpAssetFolder,
             prodAssetFolder,
+            cfClientID,
             tests);
         }
       }      
@@ -301,10 +352,15 @@ async function run() {
 }
 
 
+
 run();
-// runPipeline(["example-game/prod/static_data/static_data_v0.0.71.json"],
+// runPipeline(
+//   [
+//     "example-game/prod/static_data/static_data_v0.0.3.json",
+//   "example-game/prod/static_data/static_data_v0.0.7.json"
+//   ],"example-game/prod/static_data",
 //   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
 //   '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs',
-//   "https://cdn.mobalytics.gg","https://cdn.mobalytics11111.gg",
+//   "https://cdn.mobalytics.gg","https://cdn.mobalytics11111.gg",'58627447cce2af0e4ee564c895bfec1b',
 //   path.join(__dirname, 'tests')
 // );

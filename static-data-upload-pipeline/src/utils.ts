@@ -68,3 +68,44 @@ export function stringify(value:any){
     }
     return String(value);
 }
+
+export function tryParse(value:string){
+    try{
+        return JSON.parse(value);
+    }catch{
+
+    }
+    return value;
+}
+
+export async function sendSlack(slackMessage:string,iconEmoji = ':rocket:') {    
+    const channel = '#notifications-static-data-upload';
+    const username = 'Static data service';    
+
+    const payload = {
+        text: slackMessage,
+        channel: channel,
+        username: username,
+        as_user: 'true',
+        link_names: 'true',
+        icon_emoji: iconEmoji,
+    };
+
+    const body = new URLSearchParams({ payload: JSON.stringify(payload) });
+
+    const response = await fetch(`https://hooks.slack.com/services/${process.env.SLACK_BOT_TOKEN}`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+    });
+
+    if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Slack API error:', errorText);
+    } else {
+    console.log('✅ Slack message sent!');
+    }
+
+}

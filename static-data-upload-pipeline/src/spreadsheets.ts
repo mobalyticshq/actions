@@ -3,7 +3,7 @@ import { Entity, StaticData } from './types';
 import { mergeStaticData } from './merge';
 import { GoogleAuth } from 'google-auth-library';
 import { addFilterToSheet, addSheet, protect, removeAllMetadata, setColor } from './spreadsheets.utils';
-import { isImage, stringify } from './utils';
+import { isImage, stringify, tryParse } from './utils';
 
 const sheets = google.sheets("v4");        
 
@@ -68,12 +68,13 @@ function applySpreadsheetsData(rawData: { [key: string]: any[][]|null },knownDat
             const obj:{ [key: string]: any}={};
             for(let j = 0;j<rawData[group][0].length;j++){                
                 const field = rawData[group][0][j] as string;
-                //add new field to entity
-                if(field!=='' && !field.endsWith('_override') && field!=='deprecated')
+                //add unknown field to entity only
+                if(field!=='' && !field.endsWith('_override') && field!=='deprecated' && !knownFields.has(field))
                     if(j>=rawData[group][i].length){
                         obj[field]='';
-                    }else                              
-                        rawData[group][i][j]?obj[field]=rawData[group][i][j]:obj[field]='';                        
+                    }else if(rawData[group][i][j])
+                        obj[field]=tryParse(rawData[group][i][j]);
+                    
                 }
             //check id is exist    
             if(obj.id===''|| !obj.id){
@@ -91,7 +92,7 @@ function applySpreadsheetsData(rawData: { [key: string]: any[][]|null },knownDat
                     const originalField = field.replace('_override','');                    
                     //override known field 
                     if(knownFields.has(originalField) && rawData[group][i][j] && originalField !== 'id'&& rawData[group][i][j]!==''){
-                        ent[originalField] = rawData[group][i][j];
+                        ent[originalField] = tryParse(rawData[group][i][j]);
                     }                
                 }                
             }            
