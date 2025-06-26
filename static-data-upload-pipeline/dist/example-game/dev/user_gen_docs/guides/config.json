@@ -1,0 +1,178 @@
+{
+  "config": {
+    "name": "Guide",
+    "plural_name": "Guides",
+    "index": 2,
+    "description": "Create a Guide",
+    "permissions": {
+      "regular_user_can_modify": true
+    },
+    "availableWidgets": [
+      {
+        "typeName": "NgfDocumentCmSectionAuto1V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionAuto3V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionAuto400V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionVideoAdV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetCardGridV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetContentVariantsV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetCrossPageTabBarV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDiscoveryPreviewCompactV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDiscoveryPreviewV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDocumentsFeedV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetGameDataCardGridV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetPromoBannerHorizontalV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetPromoBannerNetboardV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetRichTextSimplifiedV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetRichTextV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetTableOfContentV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetUGTierListV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetVideoV2"
+      },
+      {
+        "typeName": "NgfDocumentUgWidgetHeaderV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetStrengthsAndWeaknessesV1"
+      }
+    ]
+  },
+  "tags": [
+    {
+      "slug": "class",
+      "name": "Classes",
+      "values": [
+        {"name": "barbarian", "slug": "barbarian"},
+        {"name": "rogue", "slug": "rogue"},
+        {"name": "necromancer", "slug": "necromancer"},
+        {"name": "sorcerer", "slug": "sorcerer"}
+      ]
+    },
+    {
+      "slug": "season",
+      "name": "Season",
+      "values": [
+        {"name": "First season", "slug": "season1"},
+        {"name": "Second season", "slug": "season2"},
+        {"name": "Third season", "slug": "season3"}
+      ]
+    },
+    {
+      "slug": "rank",
+      "name": "Rank",
+      "values": [
+        {"name": "A Rank", "slug": "A Rank"},
+        {"name": "S Rank", "slug": "S Rank"}
+      ]
+    },
+    {
+      "slug": "attribute",
+      "name": "Attribute",
+      "values": [
+        {"name": "Fire", "slug": "Fire"},
+        {"name": "Ice", "slug": "Ice"},
+        {"name": "Electric", "slug": "Electric"},
+        {"name": "Physical", "slug": "Physical"},
+        {"name": "Ether", "slug": "Ether"}
+      ]
+    },
+    {
+      "slug": "specialty",
+      "name": "Specialty",
+      "values": [
+        {"name": "Attack", "slug": "Attack"},
+        {"name": "Stun", "slug": "Stun"},
+        {"name": "Anomaly", "slug": "Anomaly"},
+        {"name": "Support", "slug": "Support"},
+        {"name": "Defense", "slug": "Defense"}
+      ]
+    }
+  ],
+  "seo_template": {
+    "title": "Example Game: Guide test template title",
+    "description": "Example Game: Guide test template description",
+    "ogImage": "https://cdn.mobalytics.gg/assets/diablo-4/images/og-images/index.jpg",
+    "schemaMarkup": ""
+  },
+  "doc_template": {
+    "type": "guides",
+    "data": {
+      "childrenIds": [
+        "root"
+      ]
+    },
+    "content": [
+      {
+        "__typename": "NgfDocumentCmSectionAuto1V1",
+        "id": "root",
+        "meta": {
+          "config": null
+        },
+        "data": {
+          "childrenIds": [
+            "867c06cb-d4b0-444b-b7c4-e6e2562ccc34"
+          ]
+        }
+      },
+      {
+        "__typename": "NgfDocumentCmSectionVideoAdV1",
+        "id": "867c06cb-d4b0-444b-b7c4-e6e2562ccc34",
+        "meta": {
+          "config": {
+            "movable": true,
+            "editable": true,
+            "removable": true
+          }
+        },
+        "data": {
+          "childrenIds": [
+            "fde0e09a-25da-4371-ae40-7d043b5843ea"
+          ]
+        }
+      },
+      {
+        "__typename": "NgfDocumentUgWidgetHeaderV1",
+        "id": "fde0e09a-25da-4371-ae40-7d043b5843ea",
+        "meta": {
+          "config": null
+        },
+        "data": {
+          "title": "New header widget"
+        }
+      }
+    ]
+  }
+}

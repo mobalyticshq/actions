@@ -1,0 +1,236 @@
+{
+  "widgets": {
+    "NgfDocumentCmSectionAuto1V1": {
+      "displayName": "1 column",
+      "description": "Auto",
+      "type": "SECTION"
+    },
+    "NgfDocumentCmSectionAuto3V1": {
+      "displayName": "3 columns",
+      "description": "Auto",
+      "type": "SECTION"
+    },
+    "NgfDocumentCmSectionAuto400V1": {
+      "displayName": "2 columns",
+      "description": "580 x 400",
+      "type": "SECTION"
+    },
+    "NgfDocumentCmSectionVideoAdV1": {
+      "displayName": "2 columns",
+      "description": "Auto x 400 Video Ad",
+      "type": "SECTION"
+    },
+    "NgfDocumentCmWidgetCardGridV1": {
+      "displayName": "Card Grid V1",
+      "description": "Cards displayed in a grid with title, subtitle, and image.",
+      "fullDescription": "Cards in a grid with title, subtitle, and image, where each card is a link restricted to the mobalytics.gg domain.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetCardGridV2": {
+      "displayName": "Card Grid V2",
+      "description": "Cards displayed in a grid with title, subtitle, and image.",
+      "fullDescription": "Cards in a grid with title, subtitle, and image, where each card is a link restricted to the mobalytics.gg domain.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetContentVariantsV1": {
+      "displayName": "Content Variants",
+      "description": "Display content variations with tabs.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetCrossPageTabBarV1": {
+      "displayName": "Tab Bar",
+      "description": "Navigation and cross-linking between pages.",
+      "fullDescription": "The tab bar enables navigation and cross-linking between pages. It must be added separately to each page.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetDiscoveryPreviewCompactV1": {
+      "displayName": "Discovery Preview Compact V1",
+      "description": "Auto-updatable compact preview of documents e.g. Builds.",
+      "fullDescription": "Documents Preview Compact lists a specific type of documents (e.g. builds or guides), filtered and sorted by defined criteria.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetDiscoveryPreviewCompactV2": {
+      "displayName": "Discovery Preview Compact V2",
+      "description": "Auto-updatable compact preview of documents e.g. Builds.",
+      "fullDescription": "Documents Preview Compact lists a specific type of documents (e.g. builds or guides), filtered and sorted by defined criteria.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetDiscoveryPreviewV1": {
+      "displayName": "Discovery Preview V1",
+      "description": "Auto-updatable preview of documents e.g. Builds.",
+      "fullDescription": "Documents Preview lists a specific type of documents (e.g. builds or guides), filtered and sorted by defined criteria.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetDiscoveryPreviewV2": {
+      "displayName": "Discovery Preview V2",
+      "description": "Auto-updatable preview of documents e.g. Builds.",
+      "fullDescription": "Documents Preview lists a specific type of documents (e.g. builds or guides), filtered and sorted by defined criteria.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetDocumentsFeedV1": {
+      "displayName": "Documents Feed V1",
+      "description": "Auto-updatable feed of documents e.g. Builds.",
+      "fullDescription": "Documents Feed lists a specific type of documents (e.g. builds or guides), filtered and sorted by defined criteria.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetDocumentsFeedV2": {
+      "displayName": "Documents Feed V2",
+      "description": "Auto-updatable feed of documents e.g. Builds.",
+      "fullDescription": "Documents Feed lists a specific type of documents (e.g. builds or guides), filtered and sorted by defined criteria.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetGameDataCardGridV1": {
+      "displayName": "Game Data Card Grid V1",
+      "description": "Card grid populated with game data entities.",
+      "fullDescription": "Cards displayed as a grid, filled with game data entities like champions, heroes, weapons, skills, etc.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetGameDataCardGridV2": {
+      "displayName": "Game Data Card Grid V2",
+      "description": "Card grid populated with game data entities.",
+      "fullDescription": "Cards displayed as a grid, filled with game data entities like champions, heroes, weapons, skills, etc.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetGameDataTierListV1": {
+      "displayName": "Game Data Tier List",
+      "description": "Tier List of Game Data entities e.g. Champions",
+      "fullDescription": "Tier list of Game Data entities, such as Champions, Weapons, Skills, etc. To assign a tier, navigate to the Game Entity page and select a tier from the dropdown in the control bar.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetPromoBannerHorizontalV1": {
+      "displayName": "Promo Banner Horizontal",
+      "description": "Horizontally oriented Promo Banner.",
+      "fullDescription": "Customizable horizontal promo banner for different platforms and user types.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetPromoBannerNetboardV1": {
+      "displayName": "Promo Banner Netboard",
+      "description": "Large, eye-catching Netboard banner.",
+      "fullDescription": "Customizable, large eye-catching promo banner for various platforms and user types.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetRichTextSimplifiedV1": {
+      "displayName": "Rich Text Simplified V1",
+      "description": "Rich text formatting, and game data.",
+      "fullDescription": "Text editor with formatting options: bold, italic, game data, and more.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetRichTextSimplifiedV2": {
+      "displayName": "Rich Text simplified V2",
+      "description": "Rich text formatting and game data.",
+      "fullDescription": "Text editor with formatting options: bold, italic, colored text, headings, game data, and more.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetRichTextV1": {
+      "displayName": "Rich Text",
+      "description": "Rich text formatting, images, videos, and game data.",
+      "fullDescription": "Text editor with formatting options: bold, italic, colored text, headings, images, videos, game data, and more.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetRichTextV2": {
+      "displayName": "Rich Text V2",
+      "description": "Rich text formatting, images, videos, and game data.",
+      "fullDescription": "Text editor with formatting options: bold, italic, colored text, headings, images, videos, game data, and more.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetTableOfContentV1": {
+      "displayName": "Table of Contents",
+      "description": "Generate a table of contents for a document.",
+      "fullDescription": "Automatically generate a table of contents for a document based on its content.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetUGTierListV1": {
+      "displayName": "Documents Tier List V1",
+      "description": "Tier List of documents e.g. Builds.",
+      "fullDescription": "Tier list of documents, such as builds. To assign a tier, navigate to the document page and select a tier from the dropdown in the control bar.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetUGTierListV2": {
+      "displayName": "Documents Tier List V2",
+      "description": "Tier List of documents e.g. Builds.",
+      "fullDescription": "Tier list of documents, such as builds. To assign a tier, navigate to the document page and select a tier from the dropdown in the control bar.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetVideoV1": {
+      "displayName": "Video V1",
+      "description": "Embed a video from a video hosting service.",
+      "fullDescription": "Embed a video from one of the supported video hosting services - YouTube, Vimeo, or Twitch.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetVideoV2": {
+      "displayName": "Video V2",
+      "description": "Embed a video from a video hosting service.",
+      "fullDescription": "Embed a video from one of the supported video hosting services - YouTube, Vimeo, or Twitch.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentStWidgetDocumentsDiscoveryV1": {
+      "displayName": "Documents Discovery",
+      "description": "Discover documents of a certain type using filters.",
+      "fullDescription": "Documents Discovery allows listing documents of a certain type (e.g. builds or guides) using various filters.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentStWidgetHeaderV1": {
+      "displayName": "Header V1",
+      "description": "Introduce users to the page content.",
+      "fullDescription": "Designed to introduce users to the page content, the widget uses its title as the <h1> tag for SEO value.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentStWidgetHeaderV2": {
+      "displayName": "Header V2",
+      "description": "Introduce users to the page content.",
+      "fullDescription": "Designed to introduce users to the page content, the widget uses its title as the <h1> tag for SEO value.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentStWidgetHomePageHeaderV1": {
+      "displayName": "Home Page Header V1",
+      "description": "Use on the Home Page to introduce users to a game.",
+      "fullDescription": "Designed for the Home Page to introduce users to a game, the widget uses the game name and title as the <h1> tag for SEO value.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentStWidgetHomePageHeaderV2": {
+      "displayName": "Home Page Header V2",
+      "description": "Use on the Home Page to introduce users to a game.",
+      "fullDescription": "Designed for the Home Page to introduce users to a game, the widget uses the game name and title as the <h1> tag for SEO value.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentStWidgetLinksGridManualV1": {
+      "displayName": "Cards Gallery V1",
+      "description": "Cards gallery, adjustable for various screen sizes.",
+      "fullDescription": "Cards displayed as a gallery, adjustable for various screen sizes. Widget layout auto-adjusts based on the number of cards.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentStWidgetLinksGridManualV2": {
+      "displayName": "Cards Gallery V2",
+      "description": "Cards gallery, adjustable for various screen sizes.",
+      "fullDescription": "Cards displayed as a gallery, adjustable for various screen sizes. Widget layout auto-adjusts based on the number of cards.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentUgWidgetHeaderV1": {
+      "displayName": "Header",
+      "description": "Universal page header for builds and guides.",
+      "fullDescription": "Universal page header for builds and guides, the widget uses the game name, document type, and document name as the <h1> tag for SEO value.",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetWikiDiscoveryDetailedV1": {
+      "displayName": "Wiki Discovery Detailed",
+      "description": "Wiki Discovery Detailed",
+      "fullDescription": "Wiki Discovery Detailed",
+      "type": "WIDGET"
+    },
+    "NgfDocumentCmWidgetStrengthsAndWeaknessesV1": {
+      "displayName": "Strengths And Weaknesses V1",
+      "description": "Strengths and weaknesses of a game entity.",
+      "fullDescription": "Strengths and weaknesses of a game entity, such as a champion, hero, weapon, skill, etc.",
+      "type": "WIDGET"
+    }
+  },
+  "NgfDocumentCmWidgetBuilderV1": {
+    "validSlots": [
+      {"slug": "helm"},
+      {"slug": "chest"},
+      {"slug": "boots"},
+      {"slug": "amulet"},
+      {"slug": "druid-amulet"}
+    ]
+  }
+}

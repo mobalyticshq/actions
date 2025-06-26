@@ -1,0 +1,83 @@
+{
+  "config": {
+    "availableWidgets": [
+      {
+        "typeName": "NgfDocumentCmSectionAuto1V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionAuto3V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionAuto400V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionVideoAdV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetCardGridV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetContentVariantsV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetCrossPageTabBarV1",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDiscoveryPreviewCompactV2",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDiscoveryPreviewV2",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDocumentsFeedV2",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetGameDataCardGridV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetPromoBannerHorizontalV1",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetPromoBannerNetboardV1",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetRichTextSimplifiedV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetRichTextV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetTableOfContentV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetUGTierListV2",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetVideoV2"
+      },
+      {
+        "typeName": "NgfDocumentStWidgetDocumentsDiscoveryV1",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentStWidgetHeaderV2",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentStWidgetHomePageHeaderV2",
+        "prohibitedForRegularUser": true
+      },
+      {
+        "typeName": "NgfDocumentStWidgetLinksGridManualV2",
+        "prohibitedForRegularUser": true
+      }
+    ]
+  }
+}

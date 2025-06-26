@@ -1,0 +1,577 @@
+{
+  "config": {
+    "name": "Guide",
+    "plural_name": "Guides",
+    "index": 2,
+    "description": "Create a Guide",
+    "permissions": {
+      "regular_user_can_modify": false
+    },
+    "displayMetadata": {
+      "iconTagGroupSlug": "champion",
+      "subTitleTagGroupSlug": "category"
+    },
+    "availableWidgets": [
+      {
+        "typeName": "NgfDocumentCmSectionAuto1V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionAuto3V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionAuto400V1"
+      },
+      {
+        "typeName": "NgfDocumentCmSectionVideoAdV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetCardGridV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetContentVariantsV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetCrossPageTabBarV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDiscoveryPreviewCompactV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDiscoveryPreviewV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetDocumentsFeedV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetGameDataCardGridV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetPromoBannerHorizontalV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetPromoBannerNetboardV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetRichTextSimplifiedV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetRichTextV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetTableOfContentV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetUGTierListV2"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetVideoV2"
+      },
+      {
+        "typeName": "NgfDocumentUgWidgetHeaderV1"
+      },
+      {
+        "typeName": "NgfDocumentCmWidgetStrengthsAndWeaknessesV1"
+      }
+    ]
+  },
+  "tags": [
+    {
+      "slug": "tier",
+      "name": "Tier",
+      "useGroupName": true,
+      "inputProhibitedForRegularUser": true,
+      "noValue": {
+        "name": "All Tiers",
+        "iconUrl": "https://cdn.mobalytics.gg/assets/common/icons/all-option.svg"
+      },
+      "defaultSlug": null,
+      "required": false,
+      "values": [
+        {
+          "slug": "s",
+          "name": "S",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/common/icons/hex-tiers/S.svg"
+        },
+        {
+          "slug": "a",
+          "name": "A",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/common/icons/hex-tiers/A.svg"
+        },
+        {
+          "slug": "b",
+          "name": "B",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/common/icons/hex-tiers/B.svg"
+        },
+        {
+          "slug": "c",
+          "name": "C",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/common/icons/hex-tiers/C.svg"
+        },
+        {
+          "slug": "d",
+          "name": "D",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/common/icons/hex-tiers/D.svg"
+        }
+      ]
+    },
+    {
+      "slug": "archived",
+      "name": "Archived, should not be seen",
+      "noValue": {
+        "name": "Archived"
+      },
+      "required": false,
+      "archived": true,
+      "values": [
+        {
+          "slug": "archived1",
+          "name": "Archived 1"
+        },
+        {
+          "slug": "archived2",
+          "name": "Archived 2"
+        }
+      ]
+    },
+    {
+      "slug": "season",
+      "name": "Season",
+      "noValue": {
+        "name": "All seasons"
+      },
+      "defaultSlug": "season3",
+      "required": true,
+      "values": [
+        {
+          "slug": "archived-season",
+          "name": "Archived season",
+          "archived": true
+        },
+        {
+          "slug": "season1",
+          "name": "First season"
+        },
+        {
+          "slug": "season2",
+          "name": "Second season"
+        },
+        {
+          "slug": "season3",
+          "name": "Third season"
+        }
+      ]
+    },
+    {
+      "slug": "category",
+      "name": "Category",
+      "noValue": {
+        "name": "Any Category"
+      },
+      "defaultSlug": null,
+      "required": true,
+      "multiselect": true,
+      "values": [
+        {
+          "slug": "tier-list",
+          "name": "Tier List"
+        },
+        {
+          "slug": "news",
+          "name": "News"
+        },
+        {
+          "slug": "guides",
+          "name": "Guides"
+        },
+        {
+          "slug": "champions",
+          "name": "Champions"
+        },
+        {
+          "slug": "patch-notes",
+          "name": "Patch Notes"
+        }
+      ]
+    },
+    {
+      "slug": "champion",
+      "name": "Champion",
+      "noValue": {
+        "name": "Any Champion"
+      },
+      "defaultSlug": null,
+      "required": false,
+      "multiselect": true,
+      "values": [
+        {
+          "slug": "nilah",
+          "name": "Nilah",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/nilah.png"
+        },
+        {
+          "slug": "tahmkench",
+          "name": "Tahm Kench",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/tahmkench.png"
+        },
+        {
+          "slug": "lillia",
+          "name": "Lillia",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/lillia.png"
+        },
+        {
+          "slug": "briar",
+          "name": "Briar",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/briar.png"
+        },
+        {
+          "slug": "seraphine",
+          "name": "Seraphine",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/seraphine.png"
+        },
+        {
+          "slug": "elderdragon",
+          "name": "Elder",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/elderdragon.png"
+        },
+        {
+          "slug": "smolder",
+          "name": "Smolder",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/smolder.png"
+        },
+        {
+          "slug": "milio",
+          "name": "Milio",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/milio.png"
+        },
+        {
+          "slug": "olaf",
+          "name": "Olaf",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/olaf.png"
+        },
+        {
+          "slug": "ahri",
+          "name": "Ahri",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/ahri.png"
+        },
+        {
+          "slug": "twitch",
+          "name": "Twitch",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/twitch.png"
+        },
+        {
+          "slug": "wintersoldier",
+          "name": "Winter soldier",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/wintersoldier.png"
+        },
+        {
+          "slug": "hecarim",
+          "name": "Hecarim",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/hecarim.png"
+        },
+        {
+          "slug": "zoe",
+          "name": "Zoe",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/zoe.png"
+        },
+        {
+          "slug": "zilean",
+          "name": "Zilean",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/zilean.png"
+        },
+        {
+          "slug": "ziggs",
+          "name": "Ziggs",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/ziggs.png"
+        },
+        {
+          "slug": "wukong",
+          "name": "Wukong",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/wukong.png"
+        },
+        {
+          "slug": "warwick",
+          "name": "Warwick",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/warwick.png"
+        },
+        {
+          "slug": "vex",
+          "name": "Vex",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/vex.png"
+        },
+        {
+          "slug": "veigar",
+          "name": "Veigar",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/veigar.png"
+        },
+        {
+          "slug": "varus",
+          "name": "Varus",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/varus.png"
+        },
+        {
+          "slug": "tristana",
+          "name": "Tristana",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/tristana.png"
+        },
+        {
+          "slug": "taric",
+          "name": "Taric",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/taric.png"
+        },
+        {
+          "slug": "syndra",
+          "name": "Syndra",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/syndra.png"
+        },
+        {
+          "slug": "swain",
+          "name": "Swain",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/swain.png"
+        },
+        {
+          "slug": "soraka",
+          "name": "Soraka",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/soraka.png"
+        },
+        {
+          "slug": "shen",
+          "name": "Shen",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/shen.png"
+        },
+        {
+          "slug": "ryze",
+          "name": "Ryze",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/ryze.png"
+        },
+        {
+          "slug": "rumble",
+          "name": "Rumble",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/rumble.png"
+        },
+        {
+          "slug": "rakan",
+          "name": "Rakan",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/rakan.png"
+        },
+        {
+          "slug": "poppy",
+          "name": "Poppy",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/poppy.png"
+        },
+        {
+          "slug": "nunu",
+          "name": "Nunu",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/nunu.png"
+        },
+        {
+          "slug": "norra-and-yuumi",
+          "name": "Norra",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/norra-and-yuumi.png"
+        },
+        {
+          "slug": "nomsy",
+          "name": "Nomsy",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/nomsy.png"
+        },
+        {
+          "slug": "nami",
+          "name": "Nami",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/nami.png"
+        },
+        {
+          "slug": "morgana",
+          "name": "Morgana",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/morgana.png"
+        },
+        {
+          "slug": "kassadin",
+          "name": "Kassadin",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/kassadin.png"
+        },
+        {
+          "slug": "karma",
+          "name": "Karma",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/karma.png"
+        },
+        {
+          "slug": "kalista",
+          "name": "Kalista",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/kalista.png"
+        },
+        {
+          "slug": "jinx",
+          "name": "Jinx",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/jinx.png"
+        },
+        {
+          "slug": "jayce",
+          "name": "Jayce",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/jayce.png"
+        },
+        {
+          "slug": "hwei",
+          "name": "Hwei",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/hwei.png"
+        },
+        {
+          "slug": "gwen",
+          "name": "Gwen",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/gwen.png"
+        },
+        {
+          "slug": "fiora",
+          "name": "Fiora",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/fiora.png"
+        },
+        {
+          "slug": "ezreal",
+          "name": "Ezreal",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/ezreal.png"
+        },
+        {
+          "slug": "elise",
+          "name": "Elise",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/elise.png"
+        },
+        {
+          "slug": "cassiopeia",
+          "name": "Cassiopeia",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/cassiopeia.png"
+        },
+        {
+          "slug": "blitzcrank",
+          "name": "Blitzcrank",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/blitzcrank.png"
+        },
+        {
+          "slug": "bard",
+          "name": "Bard",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/bard.png"
+        },
+        {
+          "slug": "katarina",
+          "name": "Katarina",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/katarina.png"
+        },
+        {
+          "slug": "xerath",
+          "name": "Xerath",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/xerath.png"
+        },
+        {
+          "slug": "camille",
+          "name": "Camille",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/camille.png"
+        },
+        {
+          "slug": "nasus",
+          "name": "Nasus",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/nasus.png"
+        },
+        {
+          "slug": "shyvana",
+          "name": "Shyvana",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/shyvana.png"
+        },
+        {
+          "slug": "neeko",
+          "name": "Neeko",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/neeko.png"
+        },
+        {
+          "slug": "mordekaiser",
+          "name": "Mordekaiser",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/mordekaiser.png"
+        },
+        {
+          "slug": "kogmaw",
+          "name": "Kog'Maw",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/kogmaw.png"
+        },
+        {
+          "slug": "jax",
+          "name": "Jax",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/jax.png"
+        },
+        {
+          "slug": "galio",
+          "name": "Galio",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/galio.png"
+        },
+        {
+          "slug": "diana",
+          "name": "Diana",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/diana.png"
+        },
+        {
+          "slug": "ashe",
+          "name": "Ashe",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/ashe.png"
+        },
+        {
+          "slug": "akali",
+          "name": "Akali",
+          "imageUrl": "https://cdn.mobalytics.gg/assets/tft/images/champions/icons/set12/akali.png"
+        }
+      ]
+    }
+  ],
+  "seo_template": {
+    "title": "Example Game: Guide test template title",
+    "description": "Example Game: Guide test template description",
+    "ogImage": "https://cdn.mobalytics.gg/assets/diablo-4/images/og-images/index.jpg",
+    "schemaMarkup": "{\r\n  \"@context\": \"https:\/\/schema.org\",\r\n  \"@type\": \"Article\",\r\n  \"headline\": \"{{document.data.name}} - Monster Hunter Wilds\",\r\n  \"description\": \"Detailed Monster Hunter Wilds guide: {{document.data.name}} by {{document.author.name}}\",\r\n  \"url\": \"https:\/\/mobalytics.gg\/mhw\/guides\/{{document.featured.slug}}\",\r\n  \"author\": {\r\n    \"@type\": \"Organization\",\r\n    \"name\": \"{{document.author.name}}\",\r\n    \"url\": \"https:\/\/mobalytics.gg\/mhw\/profile\/{{document.author.id}}\"\r\n  },\r\n  \"publisher\": {\r\n    \"@type\": \"Organization\",\r\n    \"name\": \"Mobalytics\",\r\n    \"url\": \"https:\/\/mobalytics.gg\",\r\n    \"logo\": {\r\n      \"@type\": \"ImageObject\",\r\n      \"url\": \"https:\/\/cdn.mobalytics.gg\/assets\/common\/icons\/mobalytics-logo\/logo-mobalytics-expanded-fixed.svg\"\r\n    }\r\n  },\r\n  \"mainEntityOfPage\": \"https:\/\/mobalytics.gg\/mhw\/guides\/{{document.featured.slug}}\"\r\n}"
+  },
+  "doc_template": {
+    "type": "guides",
+    "data": {
+      "name": "My New Guide",
+      "season": {
+        "slug": "current-season"
+      },
+      "childrenIds": [
+        "root"
+      ]
+    },
+    "content": [
+      {
+        "__typename": "NgfDocumentCmSectionAuto1V1",
+        "id": "root",
+        "meta": {
+          "config": null
+        },
+        "data": {
+          "childrenIds": [
+            "867c06cb-d4b0-444b-b7c4-e6e2562ccc34"
+          ]
+        }
+      },
+      {
+        "__typename": "NgfDocumentCmSectionVideoAdV1",
+        "id": "867c06cb-d4b0-444b-b7c4-e6e2562ccc34",
+        "meta": {
+          "config": {
+            "movable": true,
+            "editable": true,
+            "removable": true
+          }
+        },
+        "data": {
+          "childrenIds": [
+            "fde0e09a-25da-4371-ae40-7d043b5843ea"
+          ]
+        }
+      },
+      {
+        "__typename": "NgfDocumentUgWidgetHeaderV1",
+        "id": "fde0e09a-25da-4371-ae40-7d043b5843ea",
+        "meta": {
+          "config": null
+        },
+        "data": {
+          "title": "New header widget"
+        }
+      }
+    ]
+  }
+}

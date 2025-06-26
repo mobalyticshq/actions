@@ -1,0 +1,85 @@
+{
+    "spells": [
+        {
+            "id": "1",
+            "slug": "lizard_fireball",
+            "name": "Lizard Fireball",
+            "spellDamageType": "magical",
+            "spellType": "direct",
+            "classSlug": "lizard_warrior",
+            "spellRange": 120,
+            "spellDamage": 1000
+        },
+        {
+            "id": "2",
+            "slug": "perun_thunder",
+            "name": "Perun Thunder",
+            "spellDamageType": "magical",
+            "spellType": "aoe",
+            "classSlug": "slavic_hero",
+            "spellRange": 120,
+            "spellRadius": 20,
+            "spellDamage": 500
+        },
+        {
+            "id": "3",
+            "slug": "slavic_balls_torture",
+            "name": "Slavic Balls Torture",
+            "classSlug": "slavic_hero",
+            "spellDamageType": "physical",
+            "spellType": "direct",
+            "spellRange": 10,
+            "spellDamage": 500,
+            "spellDamageOverTime": 5,
+            "spellDamageOverTimeDuration": 5
+        },
+        {
+            "id": "4",
+            "slug": "baikal_water",
+            "name": "Baikal Water",
+            "classSlug": "slavic_woman",
+            "spellType": "buff",
+            "spellBuffType": "heal",
+            "spellRange": 120,
+            "spellHeal": 500,
+            "spellHealOverTime": 5,
+            "spellHealOverTimeDuration": 10
+        },
+        {
+            "id": "5",
+            "slug": "lizard_ass_bite",
+            "name": "Lizard Ass Bite",
+            "classSlug": "lizard_warrior",
+            "spellDamageType": "physical",
+            "spellType": "direct",
+            "spellRange": 10,
+            "spellDamage": 500
+        }
+    ],
+    "classes": [
+        {
+            "id": "1",
+            "slug": "slavic_hero",
+            "name": "Slavic Hero",
+            "race": "slavic"
+        },
+        {
+            "id": "3",
+            "slug": "lizard_warrior",
+            "name": "Lizard Warrior",
+            "race": "lizard"
+        },
+        {
+            "id": "4",
+            "slug": "slavic_woman",
+            "name": "Slavic Woman",
+            "race": "slavic"
+        },
+        {
+            "id": "5",
+            "slug": "slavic_mage",
+            "name": "Slavic Mage",
+            "race": "slavic"
+        }
+    ]
+}
