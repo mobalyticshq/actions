@@ -1,1 +1,30 @@
-{"weapons":[{"id":"w1","gameId":"w1","recomendationsRef":["w2"],"stats":[{"value":"10","ref":"strength"},{"value":"5","ref":"dexterity"}],"deprecated":true},{"id":"w2","gameId":"w2","recomendationsRef":["w3"],"deprecated":true},{"id":"w3","gameId":"w3","recomendationsRef":["w1","w2"],"deprecated":true}],"chars":[{"id":"strength","name1":"Strength","deprecated":true},{"id":"dexterity","name1":"Dexterity","deprecated":true}]}
+{
+  "weapons": [
+    {
+      "id": "w1",
+      "gameId": "w1",
+      "iconUrl": "https://cdn.mobalytics.gg/tmpAssets/6.png",
+      "recomendationsRef": ["w2"],
+      "stats": [
+          {"value": "10", "ref": "strength"},
+          {"value": "5", "ref": "dexterity"}
+      ]
+    }, 
+    {
+      "id": "w2",
+      "iconUrl": "https://cdn.mobalytics.gg/tmpAssets/6.png",
+      "gameId": "w2",
+      "recomendationsRef": ["w3"]
+    },
+    {
+      "id": "w3",
+      "iconUrl": "https://cdn.mobalytics.gg/tmpAssets/6.png",
+      "gameId": "w3",
+      "recomendationsRef": ["w1", "w2"]
+    }    
+  ],
+  "chars": [
+    {"id": "strength", "name": "Strength"},
+    {"id": "dexterity", "name": "Dexterity"}
+  ]
+}
