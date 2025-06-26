@@ -65,16 +65,22 @@ function showReports(reports:Array<ValidationReport>){
 
 async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string){
      console.log('## Sync tmp assets bucket with prod bucket ##');  
-      const assetCmd = `gsutil -m rsync -r -d -c -av --itemize-changes ${tmpAssetFolder} ${prodAssetFolder} `;
+      const assetCmd = `gsutil -m rsync -r  -c  ${tmpAssetFolder} ${prodAssetFolder} `;
       console.log(assetCmd)
       const { stdout, stderr } = await execAsync(assetCmd);
 
-      const updatedFiles = stdout?.split('\n').
-        filter((line:string) => line.startsWith('>f')).
-        map((line:string) => line.trim().split(/\s+/).pop());
+      const lines = stdout.split('\n');
+      const copied = [];
 
-      console.log('updatedFiles:', updatedFiles);
-      
+      for (const line of lines) {
+        if (line.startsWith('Copying')) {
+          const match = line.match(/to (gs:\/\/.*)$/);
+          if (match) copied.push(match[1]);
+        } 
+      }
+
+      console.log('updatedFiles:', copied);
+
       if (stderr) console.error('stderr:', stderr);
       console.log('## Assets synced ##');  
 
