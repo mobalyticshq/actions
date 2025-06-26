@@ -72,10 +72,12 @@ async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string){
       const lines = stdout.split('\n');
       const copied = [];
 
+      const prefix = `Copying ${tmpAssetFolder}`;
       for (const line of lines) {
-        if (line.startsWith('Copying')) {
-          const match = line.match(/to (gs:\/\/.*)$/);
-          if (match) copied.push(match[1]);
+        if (line.startsWith(prefix)) {
+          const match = line.replace(prefix,prodAssetFolder).replace('gs://','https://');
+          match.substring(0,match.indexOf('[Content-Type')).trim();
+          if (match) copied.push(match);
         } 
       }
 
