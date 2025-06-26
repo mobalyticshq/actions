@@ -1,5 +1,0 @@
-{    
-    "refs": [ 
-        {"from":"weapons.weaponTypeRef", "to": "weaponType.id"}
-    ]    
-}
