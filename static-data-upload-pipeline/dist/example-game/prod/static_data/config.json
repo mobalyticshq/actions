@@ -1,0 +1,11 @@
+{
+    "rootQuery": "poe2",
+    "gqlTypesPrefix": "Poe2",
+    "filters": [
+        ""
+    ],
+    "refs": [ 
+        {"from":"weapons.stats.ref", "to": "chars"},
+        {"from":"weapons.recomendationsRef", "to": "weapons"}
+    ]
+}
