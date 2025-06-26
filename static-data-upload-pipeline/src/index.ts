@@ -4,7 +4,7 @@ import { readdirSync,readFileSync,existsSync, writeFileSync } from 'fs';
 import * as path from 'path'
 import { mergeStaticData, replaceAssets } from './merge';
 import { mergeWithSpreadsheets, updateSpreadsheets } from './spreadsheets';
-import {  ReportMessages, validate } from './validation';
+import { validate } from './validation';
 import { createReport } from './report';
 import { StaticData, StaticDataConfig, ValidationReport } from './types';
 import { initSlugify } from './utils';
@@ -60,6 +60,26 @@ function showReports(reports:Array<ValidationReport>){
       }
     }
   }
+}
+
+
+async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string){
+     console.log('## Sync tmp assets bucket with prod bucket ##');  
+      const assetCmd = `gsutil -m rsync -r -d -c -av --itemize-changes ${tmpAssetFolder} ${prodAssetFolder} `;
+      console.log(assetCmd)
+      const { stdout, stderr } = await execAsync(assetCmd);
+
+      const updatedFiles = stdout?.split('\n').
+        filter((line:string) => line.startsWith('>f')).
+        map((line:string) => line.trim().split(/\s+/).pop());
+
+      console.log('updatedFiles:', updatedFiles);
+      
+      if (stderr) console.error('stderr:', stderr);
+      console.log('## Assets synced ##');  
+
+
+      console.log('## Reset cloudflare cache ##');  
 }
 
 async function runPipeline(versions:Array<string>,  
@@ -144,29 +164,32 @@ async function runPipeline(versions:Array<string>,
       console.log(`## Update static data file ${versions[versions.length-1]}`);              
       writeFileSync(versions[versions.length-1],JSON.stringify(overridedData),'utf8')
 
+      
       if(spreadsheetData){
        console.log(`## Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);  
        await updateSpreadsheets(overrideSpreadsheetId,overridedData,staticData,spreadsheetData,tmpAssetPrefix);
        console.log(`## spreadsheet updated`);
       }
-      console.log('## Sync static data file with bucket ##');  
+      
+      
+      console.log('## Sync static data file with bucket ##');        
       const dst = `gs://${process.env.GCP_BUCKET_NAME}/${staticDataPath}/`;
       const src = `${path.dirname(versions[versions.length-1])}`
-      const { stdout, stderr } = await execAsync(
-       `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
-      );
+      const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
+      console.log(cmd);
+      const { stdout, stderr } = await execAsync(cmd);
       console.log('stdout:', stdout);
       if (stderr) console.error('stderr:', stderr);
       console.log('## Bucket synced ##');  
 
-      console.log('## Sync tmp assets bucket with prod bucket ##');  
-      const { stdoutAssets, stderrAssets } = await execAsync(
-       `gsutil -m rsync -r -d -c ${tmpAssetFolder} ${prodAssetFolder} `
-      );
-      console.log('stdout:', stdoutAssets);
-      if (stderr) console.error('stderr:', stderrAssets);
-      console.log('## Assets synced ##');  
+      await updateAssets(tmpAssetFolder,prodAssetFolder);
+ 
 
+
+      console.log('## Report in slack ##');  
+
+
+      console.log('## All done!!! ##');  
     }else{
       console.log('## Static data is not valid!##');   
     }
