@@ -12,11 +12,11 @@ const sheets = google.sheets("v4");
 type ColoredCell = {row:number,col:number,r:number,g:number,b:number};
 
 function subPath(path:string,idx:number){
-    return path.split('.')[idx];
+    return path.split('.')[idx]?.replace(/\[\d+\]/g, '');
 }
 
 function skipBeginPath(path:string){
-    return path.substring(path.indexOf('.')+1)
+    return path.substring(path.indexOf('.')+1)?.replace(/\[\d+\]/g, '')
 }
 
 async function prepareSheets(spreadsheetId:string,auth:GoogleAuth){
@@ -88,9 +88,9 @@ function validateRecords(
     group:string, 
     row:Array<string>,
     header:Array<string>,r:number,g:number,b:number){
-
+    
     for(const key of Object.keys(records)){
-        //kind of errors                
+        //kind of errors                        
         let msg ='';
         let colNumber =0;
         for(const prop of header){
@@ -214,7 +214,6 @@ function prepareData(reports:ValidationReport[]){
                     headerSet.add(prop);
                 }
             });
-
             const header = Array.from(headerSet);                
             for(const entReport of report.byGroup[group]){                            
                 //all entities
@@ -290,13 +289,16 @@ export async function createReport(reports:ValidationReport[],
             },
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
-
+        console.log("## prepare sheets");
         await prepareSheets(spreadsheetId,auth);        
         
+        console.log("## prepare data");
         const {spreadsheetData,coloredCells} = prepareData(reports);
         
+        console.log("## fill pages sheets");
         await fillPages(spreadsheetData,spreadsheetId,auth);
 
+        console.log("## fill colors");
         await fillColors(coloredCells,spreadsheetId,auth);
 
     }catch(error){

@@ -69,7 +69,7 @@ function applySpreadsheetsData(rawData: { [key: string]: any[][]|null },knownDat
             for(let j = 0;j<rawData[group][0].length;j++){                
                 const field = rawData[group][0][j] as string;
                 //add new field to entity
-                if(field!=='' && !field.endsWith('_override'))
+                if(field!=='' && !field.endsWith('_override') && field!=='deprecated')
                     if(j>=rawData[group][i].length){
                         obj[field]='';
                     }else                              
@@ -200,38 +200,65 @@ function entitiesToRawData(knownData:Array<Entity>|undefined,mergedData:Array<En
         for (const prop of Object.keys(ent)) {    
             knownFields.add(prop)
         }
-    })
-    const idColumnIdx =rows&&rows.length>0? rows[0].findIndex(val=>val==='id'):-1;
+    })    
+    // const idColumnIdx =rows&&rows.length>0? rows[0].findIndex(val=>val==='id'):-1;
 
     const header = Array.from(knownFields)
+
     //add header from spreadsheets to known header
-    if(rows&&rows.length>0){
-        if(idColumnIdx>=0){
-            //add header from spreadsheets to known header
-            for(let j=0;j<rows[0].length;j++){
-                const field = rows[0][j] as string;
-                if(!header.includes(field)){
-                    header.push(field);
-                }
-            }
+    const newFields = new Set<string>();
+    mergedData.forEach(ent=>{
+        for (const prop of Object.keys(ent)) {    
+            if(!knownFields.has(prop))
+                newFields.add(prop)
         }
-    }    
+    })
+    header.push(...Array.from(newFields));
+
+    // if(rows&&rows.length>0){
+    //     if(idColumnIdx>=0){
+    //         //add header from spreadsheets to known header
+    //         for(let j=0;j<rows[0].length;j++){
+    //             const field = rows[0][j] as string;
+    //             if(!header.includes(field)){
+    //                 header.push(field);
+    //             }
+    //         }
+    //     }
+    // }    
 
     const resultRows = new Array<Array<string>>()
     //add header
     resultRows.push(header);    
 
-    mergedData.forEach(ent=>{
+    knownData?.forEach(ent=>{
+        const newRow = [];
+        for(let i=0;i<header.length;i++){
+            const known = mergedData?.find(obj=>obj.id == ent.id);
+            // const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
+            if(known && known[header[i]]){
+                newRow.push(stringify(known[header[i]]))
+                // continue;
+            // }else if(idColumnIdx>=0 && oldRow && oldRow[i]){
+                // newRow.push(stringify(oldRow[i]))                
+            }else if(known)
+                newRow.push('');
+        }
+        resultRows.push(newRow);
+    })
+
+    mergedData?.forEach(ent=>{
         const newRow = [];
         for(let i=0;i<header.length;i++){
             const known = knownData?.find(obj=>obj.id == ent.id);
-            const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
-            if(known && known[header[i]]){
-                newRow.push(stringify(known[header[i]]))
-                continue;
-            }else if(idColumnIdx>=0 && oldRow && oldRow[i]){
-                newRow.push(stringify(oldRow[i]))                
-            }else
+            const newEntity = mergedData?.find(obj=>obj.id == ent.id);
+            // const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
+            if(!known && newEntity && newEntity[header[i]]){
+                newRow.push(stringify(newEntity[header[i]]))
+                // continue;
+            // }else if(idColumnIdx>=0 && oldRow && oldRow[i]){
+                // newRow.push(stringify(oldRow[i]))                
+            }else if(!known && newEntity)
                 newRow.push('');
         }
         resultRows.push(newRow);
@@ -282,7 +309,7 @@ async function setMetadata(spreadsheetId:string,auth:GoogleAuth,knownData:Static
              
 }
 
-async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: string]: Array<Array<string>> }){
+async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: string]: Array<Array<string>> },tmpBucket:string){
     const response = await sheets.spreadsheets.get({
         spreadsheetId,
         auth: auth,        
@@ -297,7 +324,7 @@ async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: 
                  for(let i=0;i<data[sheet.properties?.title].length;++i)
                      for(let j=0;j<data[sheet.properties?.title][i].length;++j){
                         const cell = data[sheet.properties?.title][i][j];
-                        if(isImage(cell.toLowerCase()))
+                        if(isImage(cell.toLowerCase(),tmpBucket))
                         {
                             requests.push({
                             updateCells: {
@@ -337,11 +364,12 @@ async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: 
 export async function updateSpreadsheets(spreadsheetId:string,    
     mergedData:StaticData,
     jsonData:StaticData,
-    oldSpreadsheetsData:{ [key: string]: Array<Array<string>> }) {  
+    oldSpreadsheetsData:{ [key: string]: Array<Array<string>> },
+    tmpBucket:string) {  
     
     if(process.env.GOOGLE_CLIENT_EMAIL){
+        
         console.log(`## Update spreadsheets ${spreadsheetId}`)
-    
         const auth = new google.auth.GoogleAuth({
             credentials: {
                 client_email: process.env.GOOGLE_CLIENT_EMAIL,
@@ -350,26 +378,26 @@ export async function updateSpreadsheets(spreadsheetId:string,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
 
+
         console.log("## Remove all protections ##")
         //remove all protections from pages
         await removeAllMetadata(spreadsheetId,auth);
         const newSpreadsheetData:{ [key: string]: Array<Array<string>> } = {};   
+
+        console.log(`## Append data ##`)
         //fill spreadsheets with merged data
         for (const group of Object.keys(mergedData)) {           
             //add new sheet if needed
-            if(!oldSpreadsheetsData[group]){                
-                console.log(`## Add page ${group} ##`)
+            if(!oldSpreadsheetsData[group]){                                
                 await addSheet(spreadsheetId,auth,group);
             }             
             
-            newSpreadsheetData[group] = entitiesToRawData(jsonData[group],mergedData[group],oldSpreadsheetsData[group]) 
-            console.log(`## Clear page ${group} ##`)
+            newSpreadsheetData[group] = entitiesToRawData(jsonData[group],mergedData[group],oldSpreadsheetsData[group])             
             await sheets.spreadsheets.values.clear({
                 spreadsheetId,
                 auth,
                 range: group, 
             });
-            console.log(`## Append data for page ${group} ##`)
             await sheets.spreadsheets.values.append({
                spreadsheetId: spreadsheetId,
                auth: auth,
@@ -380,9 +408,10 @@ export async function updateSpreadsheets(spreadsheetId:string,
                }
             }); 
         }
-        await updateFormulas(spreadsheetId,auth,newSpreadsheetData);
+        console.log(`## Update formulas ##`)
+        await updateFormulas(spreadsheetId,auth,newSpreadsheetData,tmpBucket);
 
-
+        console.log(`## Update metadata ##`)
         await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,process.env.GOOGLE_CLIENT_EMAIL);
 
         console.log(`## Spreadsheets https://docs.google.com/spreadsheets/d/${spreadsheetId} updated`);
@@ -422,9 +451,7 @@ export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:Static
         console.log(`##Merge JSON with spreadsheets`)
         //merge spreadsheet and jsonData, spreadsheet data is additional data
         const {mergedData,mergeReport} = mergeStaticData(processedData,jsonData,false);        
-        
-        // await updateSpreadsheets(spreadsheetId,auth,mergedData,jsonData,rawData);
-        
+                
         return {overridedData:mergedData,spreadsheetReport,spreadsheetData}
 
     }catch(error){

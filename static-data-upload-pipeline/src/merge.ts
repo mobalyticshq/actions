@@ -22,9 +22,9 @@ function mergeGroup(mergedData:StaticData,newGroup:Array<Entity>,oldGroup:Array<
       mergeReport.deprecatedEntities[group]||=new Set();
       mergeReport.deprecatedEntities[group].add(oldIt.id);
       
-      if(deprecateLostData)
+      if(deprecateLostData){
         mergedData[group].push({...oldIt,deprecated:true});    
-      else
+      }else
         mergedData[group].push(oldIt);    
     }else{
       //merged already - duplicate of ID
@@ -95,9 +95,9 @@ export function mergeStaticData(newData:StaticData,oldData:StaticData,deprecateL
       if(newData[group] === undefined){         
         mergeReport.lostGroups.add(group); 
         mergedData[group]=[];
-        if(deprecateLostData)
+        if(deprecateLostData){
           oldData[group].forEach(it => mergedData[group].push({...it,deprecated:true}));     
-        else
+        }else
           oldData[group].forEach(it => mergedData[group].push(it));     
       }else{        
         if(!Array.isArray(newData[group])){
@@ -122,7 +122,32 @@ export function mergeStaticData(newData:StaticData,oldData:StaticData,deprecateL
     }
 
   }catch(error){
-    console.log(error)
+    console.log(`Error during the merge ${error}`)
   }
   return {mergedData,mergeReport}
+}
+
+
+
+export function replaceAssets(o:any,oldPrefix:string,newPrefix:string){
+    if(o==null)
+        return;
+
+    if(Array.isArray(o)){        
+        for(let i=0;i<o.length;++i){
+            if(o[i] && typeof o[i] == 'string'){
+              o[i] = o[i].replace(oldPrefix,newPrefix);
+            }else if(typeof o[i] === 'object')
+              replaceAssets(o[i],oldPrefix,newPrefix);                        
+        }
+    }else if(typeof o === 'object'){
+        for(const k of Object.keys(o)){
+            if(o[k]){
+              if(typeof o[k] == 'string'){
+                o[k] = o[k].replace(oldPrefix,newPrefix);
+              } else 
+                replaceAssets(o[k],oldPrefix,newPrefix);
+            }
+        };
+    }
 }

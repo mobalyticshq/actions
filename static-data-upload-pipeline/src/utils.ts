@@ -1,7 +1,9 @@
-import slugify from "slugify";
+import * as slugify_ from "slugify";
 
-export const initSlugify =()=> 
-    slugify.extend({
+
+export const initSlugify =()=>
+
+    slugify_.default.extend({
     "+": "-plus",
     "-": "-",
     "*": "-",
@@ -35,9 +37,21 @@ export const initSlugify =()=>
     " ": "-",
     });
 
-export function isImage(val:string){            
+export function slugify(value:string){
+    return slugify_.default(value,
+    {
+    replacement: '-',  // replace spaces with replacement character, defaults to `-`
+    remove: undefined, // remove characters that match regex, defaults to `undefined`
+    lower: true,      // convert to lower case, defaults to `false`
+    strict: false,     // strip special characters except replacement, defaults to `false`
+    locale: 'vi',      // language code of the locale to use
+    trim: true         // trim leading and trailing replacement chars, defaults to `true`
+    }        
+    );
+}
+export function isImage(val:string,prefix:string="https://cdn.mobalytics.gg"){            
     if(!val|| val==='') return false;
-    return val.startsWith("https://cdn.mobalytics.gg") && 
+    return val.startsWith(prefix) && 
     (val.endsWith('.avif')||
     val.endsWith('.svg')||
     val.endsWith('.gif')||

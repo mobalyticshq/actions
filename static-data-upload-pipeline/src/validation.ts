@@ -1,5 +1,5 @@
-import slugify from "slugify";
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from "./types";
+import { slugify } from "./utils";
 
 export enum ReportMessages{
     assetURLNotAvailable = "Asset URL not available",
@@ -34,8 +34,9 @@ const assetExtensions = [
 
 const assetSizeLimit = 100*1024*1024;//100MB
 
+//cameCalse and numbers
 function isCamelCase(str:string) {
-  const pattern = /^[a-z]+(?:[A-Z][a-z0-9]*)*$/;
+  const pattern = /^[a-z][a-zA-Z0-9]*$/;
   return pattern.test(str);
 }
 
@@ -205,17 +206,28 @@ function deepTests(o:any,path:string,
             }
             //all ref and *Ref must be correct ( need config file)
             if(k==='ref'|| k.endsWith('Ref')){   
-                if(o[k]!==null && typeof o[k] !== "string"){
+                if(o[k]!==null &&  typeof o[k] !== "string" && !Array.isArray(o[k]) ){
                     report.errors[ReportMessages.invalidRef].add(prop);
                 }else {                    
                     const value = o[k];
-                    const ref = config.refs.find(ref=>ref.from === prop);
+                    const _prop = prop.replace(/\[\d+\]/g, '');
+                    const ref = config.refs?.find(ref=>ref.from === _prop);
                     if(!ref){
                         report.errors[ReportMessages.abscentConfigurationForRef].add(prop);
                     }else if(!data[ref.to]){
                         report.errors[ReportMessages.abscentGroupForRef].add(prop);
-                    }else if(!data[ref.to].find(ent=>ent.id === value)){
-                        report.errors[ReportMessages.abscentIdInRef].add(prop);
+                    }else {
+                        if(typeof o[k] == "string"){
+                            if(!data[ref.to].find(ent=>ent.id === value)){
+                                report.errors[ReportMessages.abscentIdInRef].add(prop);
+                            }
+                        }else if(Array.isArray(o[k])){
+                            o[k].forEach(id=>{
+                                if(!data[ref.to].find(ent=>ent.id === id)){
+                                    report.errors[ReportMessages.abscentIdInRef].add(prop);
+                                }   
+                            })
+                        }
                     }
                 }
             }   
