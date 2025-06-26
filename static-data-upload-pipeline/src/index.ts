@@ -70,7 +70,6 @@ async function runPipeline(versions:Array<string>,
   prodAssetFolder:string,
   testsDir:string){
     
-  console.log(`## Run static data upload pipeline for ${staticDataPath}`);
   console.log(`## Newest version is ${versions[versions.length-1]}`);
   console.log(`## Oldest version is ${versions[0]}`);
   console.log(`## Spreadsheest ID for override ${overrideSpreadsheetId} `);
@@ -194,7 +193,6 @@ async function runValidationExtensions(extensionsDir:string,data:StaticData,oldD
 }
 
 async function run() {
-  console.log('## Run static data upload pipeline: ## ');
 
   const context = github.context;
   const staticDataPath = core.getInput('static_data_path');
@@ -205,12 +203,16 @@ async function run() {
 
   const tests = core.getInput('game_specific_tests');
 
+
+  console.log(`## Run static data upload pipeline for ${staticDataPath}`);
+
   console.log('bucket for static data:',process.env.GCP_BUCKET_NAME);
   console.log('spreadsheetId for override:',overrideSpreadsheetId);
   console.log('spreadsheetId for report:',reportSpreadsheetId);
   console.log('folder with game specific tests:',tests);
   console.log('folder for tmp assets:',tmpAssetFolder);
   console.log('folder for prod assets:',prodAssetFolder);
+
 
   const token = core.getInput('token');
   const octokit = github.getOctokit(token);
