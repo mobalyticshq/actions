@@ -117,7 +117,7 @@ async function getCurrentRawData(spreadsheetId:string,auth:GoogleAuth,spreadshee
     });
     const rawData: { [key: string]: Array<Array<string>> } = {};    
     
-    console.log(`## Current spreadsheet structure:##`);
+    console.log(`## Current spreadsheet structure:`);
     console.log(sheetsData.data.sheets);
 
     if(sheetsData.data.sheets)
@@ -194,7 +194,7 @@ function getRange(enities:Array<{[key:string]:any}>){
     return {rows:enities.length+1,columns:headerSet.size};
 }
 
-function entitiesToRawData(knownData:Array<Entity>|undefined,mergedData:Array<Entity>,rows:any[][]|null){
+function entitiesToRawData(knownData:Array<Entity>|undefined,mergedData:Array<Entity>){
 
     const knownFields = new Set<string>();
     knownData?.forEach(ent=>{
@@ -380,12 +380,12 @@ export async function updateSpreadsheets(spreadsheetId:string,
         });
 
 
-        console.log("## Remove all protections ##")
+        console.log("## Remove all protections")
         //remove all protections from pages
         await removeAllMetadata(spreadsheetId,auth);
         const newSpreadsheetData:{ [key: string]: Array<Array<string>> } = {};   
 
-        console.log(`## Append data ##`)
+        console.log(`## Append data`)
         //fill spreadsheets with merged data
         for (const group of Object.keys(mergedData)) {           
             //add new sheet if needed
@@ -393,7 +393,7 @@ export async function updateSpreadsheets(spreadsheetId:string,
                 await addSheet(spreadsheetId,auth,group);
             }             
             
-            newSpreadsheetData[group] = entitiesToRawData(jsonData[group],mergedData[group],oldSpreadsheetsData[group])             
+            newSpreadsheetData[group] = entitiesToRawData(jsonData[group],mergedData[group])             
             await sheets.spreadsheets.values.clear({
                 spreadsheetId,
                 auth,
@@ -409,10 +409,10 @@ export async function updateSpreadsheets(spreadsheetId:string,
                }
             }); 
         }
-        console.log(`## Update formulas ##`)
+        console.log(`## Update formulas`)
         await updateFormulas(spreadsheetId,auth,newSpreadsheetData,tmpBucket);
 
-        console.log(`## Update metadata ##`)
+        console.log(`## Update metadata`)
         await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,process.env.GOOGLE_CLIENT_EMAIL);
 
         console.log(`## Spreadsheets https://docs.google.com/spreadsheets/d/${spreadsheetId} updated`);

@@ -59,7 +59,7 @@ async function isCDNLinkValid(url:string,reports:{
     }
 }
 
-async function validateAsset(val:string,tmpBucket:string,path:string,report:ValidationEntityReport,
+function validateAsset(val:string,tmpBucket:string,path:string,report:ValidationEntityReport,
     knownAssets:Map<string,Array<{report:ValidationEntityReport,path:string}>>){            
     //check assets extensions    
     //assets must be in TMP bucket 
@@ -68,10 +68,12 @@ async function validateAsset(val:string,tmpBucket:string,path:string,report:Vali
         return true;
 
     //TODO: should we test everything
-    if(val.startsWith("http://") || val.startsWith("https://")){
+    if(val.startsWith("http://") || val.startsWith("https://")){        
         //this is assert         
-        if(!val.startsWith(tmpBucket)) 
+        console.log(val,tmpBucket)
+        if(!val.startsWith(tmpBucket)){ 
             return false;//tmp bucket asserts allowed only
+        }
         if(!assetExtensions.find(ext=>val.endsWith(ext))){
             return false;//allowed  extensions        
         }
@@ -82,7 +84,7 @@ async function validateAsset(val:string,tmpBucket:string,path:string,report:Vali
         return true;
     }
 
-    if(!assetExtensions.find(ext=>val.endsWith(ext))){
+    if(assetExtensions.find(ext=>val.endsWith(ext))){
         return false;
     }     
     

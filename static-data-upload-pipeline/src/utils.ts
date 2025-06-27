@@ -1,6 +1,5 @@
 import * as slugify_ from "slugify";
 
-
 export const initSlugify =()=>
 
     slugify_.default.extend({
@@ -78,7 +77,7 @@ export function tryParse(value:string){
     return value;
 }
 
-export async function sendSlack(slackMessage:string,iconEmoji = ':rocket:') {    
+export async function sendSlack(slackMessage:string,iconEmoji = ':receipt:') {    
     const channel = '#notifications-static-data-upload';
     const username = 'Static data service';    
 
@@ -102,10 +101,8 @@ export async function sendSlack(slackMessage:string,iconEmoji = ':rocket:') {
     });
 
     if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Slack API error:', errorText);
-    } else {
-    console.log('✅ Slack message sent!');
-    }
+        const errorText = await response.text();
+        console.error('❌ Slack API error:', errorText);
+    } 
 
 }

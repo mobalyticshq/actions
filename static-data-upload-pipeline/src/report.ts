@@ -300,9 +300,9 @@ export async function createReport(reports:ValidationReport[],
 
         console.log("## fill colors");
         await fillColors(coloredCells,spreadsheetId,auth);
-
+        return true;
     }catch(error){
         console.error('Report spreadsheets access error :', error);
     }
-
+    return false;
 }

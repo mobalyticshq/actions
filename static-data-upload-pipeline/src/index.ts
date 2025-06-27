@@ -10,6 +10,7 @@ import { StaticData, StaticDataConfig, ValidationReport } from './types';
 import { initSlugify, sendSlack } from './utils';
 import { spawn, exec} from 'child_process';
 import { promisify } from 'util';
+import { logColors, logger } from './logger';
 const execAsync = promisify(exec);
 
 initSlugify();
@@ -41,7 +42,7 @@ function showReports(reports:Array<ValidationReport>){
     //all report generators 
     for(const error of Object.keys(report.errors)){
       if(report.errors[error].size>0)
-        console.log(`## ${error} ${Array.from(report.errors[error])}`)
+        console.log(`⚠️${logColors.yellow} ${error} ${logColors.blue} ${Array.from(report.errors[error])} ${logColors.reset}`)
     }
 
     for(const group of Object.keys(report.byGroup)){      
@@ -59,7 +60,7 @@ function showReports(reports:Array<ValidationReport>){
           }
       }
       if(errors.size>0){
-        console.log(`## For group ${group} errors:\n[${Array.from(errors)}]\n in fields:\n[${Array.from(fields)}}]`);
+        console.log(`⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errors)}]\n in fields:\n${logColors.blue}[${Array.from(fields)}}]${logColors.reset}`);
       }
     }
   }
@@ -69,7 +70,7 @@ function syncBuckets(source:string, target:string): Promise<{copied:Array<string
 return new Promise((resolve, reject) => {
     
     const prefix = `Copying ${source}`;
-    const proc = spawn('gsutil', ['-m', 'rsync', '-r', '-d', '-c', source, target]);
+    const proc = spawn('gsutil', ['-m', 'rsync', '-r', '-c', source, target]);
 
     const copied = new Array<string>();
 
@@ -105,35 +106,34 @@ return new Promise((resolve, reject) => {
 
 
 async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string,cfClientID:string){
-     console.log('## Sync tmp assets bucket with prod bucket ##');  
-      const assetCmd = `gsutil -m rsync -r  -c  ${tmpAssetFolder} ${prodAssetFolder} `;
-      console.log(assetCmd)
-      const { copied } = await syncBuckets(tmpAssetFolder,prodAssetFolder);
+  console.log('🔄 Sync tmp assets bucket with prod bucket');  
+  const assetCmd = `gsutil -m rsync -r  -c  ${tmpAssetFolder} ${prodAssetFolder} `;
+  console.log(assetCmd)
+  const { copied } = await syncBuckets(tmpAssetFolder,prodAssetFolder);
 
-      if(copied.length>0){
-        console.log(`## Reset cloudflare cache for ${copied.length} files ##`);  
+  if(copied.length>0){
+    console.log(`🔄 Reset cloudflare cache for ${copied.length} files`);  
 
-        const chunks: string[][] = [];
-        const chunkSize = 100;
-        for (let i = 0; i < copied.length; i += chunkSize) {
-          chunks.push(copied.slice(i, i + chunkSize));
-        }
-        for(const chunk of chunks){        
-          const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfClientID}/purge_cache`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.CF_AUTH_TOKEN}`
-            },
-            body: JSON.stringify({files:chunk})
-          });
-          if(response.status!=200){
-            console.log('Error during CF cache reset',{response});            
-          }
-        }
+    const chunks: string[][] = [];
+    const chunkSize = 100;
+    for (let i = 0; i < copied.length; i += chunkSize) {
+      chunks.push(copied.slice(i, i + chunkSize));
+    }
+    for(const chunk of chunks){        
+      const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfClientID}/purge_cache`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CF_AUTH_TOKEN}`
+        },
+        body: JSON.stringify({files:chunk})
+      });
+      if(response.status!=200){
+        console.log('⚠️ Error during CF cache reset',{response});            
       }
-
-
+    }
+    console.log(`✅ Cloudflare reset`);  
+  }
 }
 
 async function runPipeline(versions:Array<string>,  
@@ -144,16 +144,24 @@ async function runPipeline(versions:Array<string>,
   prodAssetFolder:string,
   cfClientID:string,
   testsDir:string){
-    
-  console.log(`## Newest version is ${versions[versions.length-1]}`);
-  console.log(`## Oldest version is ${versions[0]}`);
-  console.log(`## Spreadsheest ID for override ${overrideSpreadsheetId} `);
-  console.log(`## Spreadsheest ID for report ${overrideSpreadsheetId} `);
+              
+  logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);  
 
-  sendSlack(`Start game static data update pipeline for ${versions[versions.length-1]}`);
+  console.log(`ℹ️ Newest version is ${versions[versions.length-1]}`);
+  console.log(`ℹ️ Oldest version is ${versions[0]}`);
+  console.log(`ℹ️ Spreadsheest ID for override ${overrideSpreadsheetId} `);
+  console.log(`ℹ️ Spreadsheest ID for report ${overrideSpreadsheetId} `);
+
+  const repo = process.env.GITHUB_REPOSITORY;
+  const runId = process.env.GITHUB_RUN_ID;
+
+  const actionsUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+
+  await sendSlack(`🚀 Start game static data update pipeline for ${versions[versions.length-1]}\nℹ️ Action:${actionsUrl}`);
 
   const tmpAssetPrefix = tmpAssetFolder.replace("gs://","https://");
   const prodAssetPrefix = prodAssetFolder.replace("gs://","https://");
+
   try{
     let configDir = path.dirname(versions[0]);
     let gameConfig = "";
@@ -167,92 +175,100 @@ async function runPipeline(versions:Array<string>,
       configDir = path.join(configDir,"../");
     }
     if(gameConfig.length==0){
-      console.log(`Can't find game config for ${versions[0]}`)
+      console.log(`❌ Can't find game config for ${versions[0]}`)
     }else{
-      console.log(`## Game config  ${gameConfig}`);
+      console.log(`ℹ️ Game config  ${gameConfig}`);
       config = JSON.parse(readFileSync(gameConfig, 'utf8'));
     }
+    logger.endGroup();
 
     console.log('');
-    console.log('## Merge static data files ## ');  
+    logger.group(`✍ Merge static data files `);  
     let  staticData = {} as StaticData,oldData = {} as StaticData;
     for(let i=0;i<versions.length;++i){
-      console.log(`## Merge ${versions[i]}`);
+      console.log(`✍ Merge ${logColors.green} ${versions[i]} ${logColors.reset}`);
       const data = JSON.parse(readFileSync(versions[i], 'utf8'));    
       const {mergedData,mergeReport} = mergeStaticData(data,staticData);
       staticData = mergedData;
       if(i==versions.length-2)
         oldData = structuredClone(staticData);
     }
+    logger.endGroup();
 
     console.log('');
-    console.log('## Override static data by spreadsheets ## ');  
+    logger.group('📊 Override static data by spreadsheets');  
     const {overridedData,spreadsheetReport,spreadsheetData} = await mergeWithSpreadsheets(overrideSpreadsheetId,staticData);
+    logger.endGroup();
 
     console.log('');
-    console.log('## Validate final static data ## ');
+    logger.group('🔍 Validate final static data  ');
     const reports = new Array<ValidationReport>();
     const commonReport = await validate(overridedData,oldData,config,tmpAssetPrefix);
     reports.push(commonReport);
     reports.push(...await runValidationExtensions(testsDir,overridedData,oldData));
       
     showReports(reports);
+    logger.endGroup();
 
     console.log('');
-    console.log(`## Create spreadsheet report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId} ##`);   
-    await createReport(  
-      reports,
-      reportSpreadsheetId    
-    );
-    console.log('##Spreadsheet report done ##');   
+    logger.group(`📊 Create spreadsheet report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);   
+    const reportDone = await createReport(  reports,reportSpreadsheetId );
+    
+    if(reportDone){
+      console.log('✅ Spreadsheet report done');   
+      await sendSlack(`📊 spreadsheet report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`)
+    }else{
+      console.log('⚠️ Can`t create spreadsheetreport');   
+      await sendSlack(`⚠️ Can't create spreadsheet report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`)
+    }
+    logger.endGroup();
 
 
     console.log('');
     if(isValidReport(reports)){
-      console.log('## Static data is valid! ##');  
+      logger.group('✅ Static data is valid! Sync data 📦');  
 
 
-      console.log('## Update assets URLs! ##')
+      console.log(`✍ Update assets URLs! ${logColors.green}${tmpAssetPrefix}${logColors.reset} to ${logColors.green}${prodAssetPrefix}${logColors.reset}`);
       replaceAssets(overridedData,
         tmpAssetPrefix,
         prodAssetPrefix);      
 
 
-      console.log(`## Update static data file ${versions[versions.length-1]}`);              
+      console.log(`✍ Write static data file ${logColors.green}${versions[versions.length-1]}${logColors.reset}`);              
       writeFileSync(versions[versions.length-1],JSON.stringify(overridedData),'utf8')
 
       
       if(spreadsheetData){
-       console.log(`## Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);  
+       console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);  
        await updateSpreadsheets(overrideSpreadsheetId,overridedData,staticData,spreadsheetData,tmpAssetPrefix);
-       console.log(`## spreadsheet updated`);
+       console.log(`✅ spreadsheet updated`);
       }
       
       
-      console.log('## Sync static data file with bucket ##');        
+      console.log('🔄 Sync static data file with bucket');        
       const dst = `gs://${process.env.GCP_BUCKET_NAME}/${staticDataPath}/`;
       const src = `${path.dirname(versions[versions.length-1])}`
       const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
-      console.log(cmd);
+      console.log('static data sync cmd:\n',cmd);
       const { stdout, stderr } = await execAsync(cmd);
       console.log('stdout:', stdout);
       if (stderr) console.error('stderr:', stderr);
-      console.log('## Bucket synced ##');  
+      console.log('✅ Statid databucket synced');  
 
-      await updateAssets(tmpAssetFolder,prodAssetFolder,cfClientID);
- 
-      console.log('## Report in slack ##');  
+      await updateAssets(tmpAssetFolder,prodAssetFolder,cfClientID);      
 
-      sendSlack(`Static data ${versions[versions.length-1]} is valid and uploaded`,':arrow_up:');
-      console.log('## All done!!! ##');  
+      await sendSlack(`✅ Static data https://storage.cloud.google.com/${process.env.GCP_BUCKET_NAME}/${versions[versions.length-1]} uploaded`);
+      console.log('🔥 All done!!!');  
+      logger.endGroup();
     }else{
-      console.log('## Static data is not valid!##');   
-      sendSlack(`Static data ${versions[versions.length-1]} is not valid. Static data not updated`,':no_entry:');
+      console.log('❌ Static data is not valid!');   
+      await sendSlack(`❌ Static data ${versions[versions.length-1]} is not valid. Static data not updated`);
     }
 
   }catch(error){
-    console.log(`## Error during pipeline ${error}`);   
-    sendSlack(`Error during static data update pipeline for ${versions[versions.length-1]} error:${error} `,':bangbang:');
+    console.log(`⚠️ Error during pipeline ${error}`);   
+    await sendSlack(`⚠️ Error during static data update pipeline for ${versions[versions.length-1]} error:${error} `);
   }
 
 }
@@ -267,7 +283,7 @@ async function runValidationExtensions(extensionsDir:string,data:StaticData,oldD
       reports.push( await test(data,oldData));       
     }
   }catch(error){
-    console.log(`## unable execute game specific test:${error}`);
+    console.log(`⚠️ unable execute game specific test:${error}`);
   }
   return reports;
 }
@@ -284,16 +300,16 @@ async function run() {
 
   const tests = core.getInput('game_specific_tests');
 
-  console.log(`## Run static data upload pipeline for ${staticDataPath}`);
+  logger.group(`🚀🚀 Run static data upload pipeline for ${staticDataPath} `);
 
-  console.log('bucket for static data:',process.env.GCP_BUCKET_NAME);
-  console.log('spreadsheetId for override:',overrideSpreadsheetId);
-  console.log('spreadsheetId for report:',reportSpreadsheetId);
-  console.log('folder with game specific tests:',tests);
-  console.log('folder for tmp assets:',tmpAssetFolder);
-  console.log('folder for prod assets:',prodAssetFolder);
-  console.log('CF client ID:',cfClientID);
-
+  //log header
+  console.log('ℹ️ bucket for static data:',process.env.GCP_BUCKET_NAME);
+  console.log('ℹ️ spreadsheetId for override:',overrideSpreadsheetId);
+  console.log('ℹ️ spreadsheetId for report:',reportSpreadsheetId);
+  console.log('ℹ️ folder with game specific tests:',tests);
+  console.log('ℹ️ folder for tmp assets:',tmpAssetFolder);
+  console.log('ℹ️ folder for prod assets:',prodAssetFolder);
+  console.log('ℹ️ CF client ID:',cfClientID);
 
   const token = core.getInput('token');
   const octokit = github.getOctokit(token);
@@ -310,7 +326,9 @@ async function run() {
   const pattern = /static_data_v\d+.\d+.\d+.json/;
 
   const files = response.data.files?.map((file) => file.filename);
-  console.log(`## All commited files: ${files}`);  
+  console.log(`ℹ️ All commited files:\n ${logColors.green}${files}${logColors.reset}`);  
+  
+  logger.endGroup();
 
   if(files)
     for(const file of files){
@@ -320,7 +338,6 @@ async function run() {
       if(dirName !=staticDataPath)
         continue;
 
-      console.log(`## Get all versions for: ${file} in ${dirName}`);  
       const files = readdirSync( dirName);
       const versionedFiles = new Array<string>();
       files.forEach(filename => {    
@@ -331,12 +348,10 @@ async function run() {
       const sortedFiles = versionedFiles.map( a => a.replace(/\d+/g, n => ''+(Number(n)+10000) ) ).sort()
           .map( a => a.replace(/\d+/g, n => ''+(Number(n)-10000) ) ) ;
       
-      console.log(`## Versioned files:${sortedFiles}`);  
       if(sortedFiles.length>0 && file === sortedFiles[sortedFiles.length-1]){
         //newest version added
-        
+
         if(sortedFiles.length>0){          
-          console.log(`## Run pipeline for ${sortedFiles}`);  
           await runPipeline(sortedFiles,
             staticDataPath,
             overrideSpreadsheetId,
@@ -346,9 +361,11 @@ async function run() {
             cfClientID,
             tests);
         }
+      }else{
+        console.log(`❌ Nothing to do for ${file}`);
       }      
     }
- 
+
 }
 
 
