@@ -194,14 +194,12 @@ async function runPipeline(versions:Array<string>,
         oldData = structuredClone(staticData);
     }
     logger.endGroup();
-
     
-    console.log(staticData);
+    
     console.log('');
     logger.group('📊 Override static data by spreadsheets');  
     const {overridedData,spreadsheetReport,spreadsheetData} = await mergeWithSpreadsheets(overrideSpreadsheetId,staticData);
-    logger.endGroup();
-    console.log(overridedData);
+    logger.endGroup();    
 
     console.log('');
     logger.group('🔍 Validate final static data  ');
