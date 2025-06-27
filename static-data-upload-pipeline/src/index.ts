@@ -195,10 +195,13 @@ async function runPipeline(versions:Array<string>,
     }
     logger.endGroup();
 
+    
+    console.log(staticData);
     console.log('');
     logger.group('📊 Override static data by spreadsheets');  
     const {overridedData,spreadsheetReport,spreadsheetData} = await mergeWithSpreadsheets(overrideSpreadsheetId,staticData);
     logger.endGroup();
+    console.log(overridedData);
 
     console.log('');
     logger.group('🔍 Validate final static data  ');
@@ -348,7 +351,7 @@ async function run() {
       const sortedFiles = versionedFiles.map( a => a.replace(/\d+/g, n => ''+(Number(n)+10000) ) ).sort()
           .map( a => a.replace(/\d+/g, n => ''+(Number(n)-10000) ) ) ;
       
-      if(sortedFiles.length>0 && file === sortedFiles[sortedFiles.length-1]){
+      if(sortedFiles.length>0){
         //newest version added
 
         if(sortedFiles.length>0){          
