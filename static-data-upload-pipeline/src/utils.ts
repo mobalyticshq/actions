@@ -48,7 +48,7 @@ export function slugify(value:string){
     }        
     );
 }
-export function isImage(val:string,prefix:string="https://cdn.mobalytics.gg"){            
+export function isImage(val:string,prefix:string="https://"){            
     if(!val|| val==='') return false;
     return val.startsWith(prefix) && 
     (val.endsWith('.avif')||

@@ -310,7 +310,7 @@ async function setMetadata(spreadsheetId:string,auth:GoogleAuth,knownData:Static
              
 }
 
-async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: string]: Array<Array<string>> },tmpBucket:string){
+async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: string]: Array<Array<string>> }){
     const response = await sheets.spreadsheets.get({
         spreadsheetId,
         auth: auth,        
@@ -325,7 +325,7 @@ async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: 
                  for(let i=0;i<data[sheet.properties?.title].length;++i)
                      for(let j=0;j<data[sheet.properties?.title][i].length;++j){
                         const cell = data[sheet.properties?.title][i][j];
-                        if(isImage(cell.toLowerCase(),tmpBucket))
+                        if(isImage(cell.toLowerCase()))
                         {
                             requests.push({
                             updateCells: {
@@ -365,8 +365,7 @@ async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: 
 export async function updateSpreadsheets(spreadsheetId:string,    
     mergedData:StaticData,
     jsonData:StaticData,
-    oldSpreadsheetsData:{ [key: string]: Array<Array<string>> },
-    tmpBucket:string) {  
+    oldSpreadsheetsData:{ [key: string]: Array<Array<string>> }) {  
     
     if(process.env.GOOGLE_CLIENT_EMAIL){
         
@@ -410,7 +409,7 @@ export async function updateSpreadsheets(spreadsheetId:string,
             }); 
         }
         console.log(`## Update formulas`)
-        await updateFormulas(spreadsheetId,auth,newSpreadsheetData,tmpBucket);
+        await updateFormulas(spreadsheetId,auth,newSpreadsheetData);
 
         console.log(`## Update metadata`)
         await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,process.env.GOOGLE_CLIENT_EMAIL);

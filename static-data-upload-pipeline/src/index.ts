@@ -242,7 +242,7 @@ async function runPipeline(versions:Array<string>,
       
       if(spreadsheetData){
        console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);  
-       await updateSpreadsheets(overrideSpreadsheetId,overridedData,staticData,spreadsheetData,tmpAssetPrefix);
+       await updateSpreadsheets(overrideSpreadsheetId,overridedData,staticData,spreadsheetData);
        console.log(`✅ spreadsheet updated`);
        await sendSlack(`✅ Override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId} updated`);
       }
