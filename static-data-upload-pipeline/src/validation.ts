@@ -69,8 +69,7 @@ function validateAsset(val:string,tmpBucket:string,path:string,report:Validation
 
     //TODO: should we test everything
     if(val.startsWith("http://") || val.startsWith("https://")){        
-        //this is assert         
-        console.log(val,tmpBucket)
+        //this is assert                 
         if(!val.startsWith(tmpBucket)){ 
             return false;//tmp bucket asserts allowed only
         }
