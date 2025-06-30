@@ -54,7 +54,7 @@ function isValidReport(reports:ValidationReport[]){
         for(const info of Object.keys(ent.infos)){
           infos+=ent.infos[info].size; 
           if(ent.infos[info].size>0)
-            console.log(ent.infos[info]);
+            console.log(info,Array.from(ent.infos[info]));
         }
         
         if(errorsSet.size>0){
