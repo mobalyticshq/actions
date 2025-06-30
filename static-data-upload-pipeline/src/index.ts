@@ -227,7 +227,7 @@ async function runPipeline(versions:Array<string>,
 
       if(reportDone){
         console.log('✅ Mistakes Report done');   
-        await sendSlack(`${slackMsg} https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
+        await sendSlack(`${slackMsg}\n https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
       }else{
         console.log('⚠️ Can`t create spreadsheetreport');   
         await sendSlack(`⚠️ Can't create Mistakes Report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`)
