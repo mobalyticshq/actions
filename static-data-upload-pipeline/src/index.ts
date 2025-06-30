@@ -53,8 +53,6 @@ function isValidReport(reports:ValidationReport[]){
           warnings+=ent.warnings[warinig].size;                    
         for(const info of Object.keys(ent.infos)){
           infos+=ent.infos[info].size; 
-          if(ent.infos[info].size>0)
-            console.log(info,Array.from(ent.infos[info]));
         }
         
         if(errorsSet.size>0){

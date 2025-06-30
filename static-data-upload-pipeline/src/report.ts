@@ -90,7 +90,7 @@ function validateRecords(
     header:Array<string>,r:number,g:number,b:number){
     
     for(const key of Object.keys(records)){
-        //kind of errors                        
+        //kind of message                        
         let msg ='';
         let colNumber =0;
         for(const prop of header){
@@ -294,7 +294,7 @@ export async function createReport(reports:ValidationReport[],
         
         console.log("## prepare data");
         const {spreadsheetData,coloredCells} = prepareData(reports);
-        
+        console.log(spreadsheetData);
         console.log("## fill pages sheets");
         await fillPages(spreadsheetData,spreadsheetId,auth);
 
