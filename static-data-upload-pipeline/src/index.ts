@@ -16,54 +16,52 @@ const execAsync = promisify(exec);
 initSlugify();
 
 
-
-
 function isValidReport(reports:ValidationReport[]){  
+  let errors = 0,warnings = 0,infos=0;
   for(const report of reports){
     for(const error of Object.keys(report.errors)){
       if(report.errors[error].size>0)
-        return false;
+        console.log(`⚠️${logColors.yellow} ${error} ${logColors.blue} ${Array.from(report.errors[error])} ${logColors.reset}`)
+      errors+=report.errors[error].size;
+    }
+    for(const warning of Object.keys(report.warnings)){
+      if(report.warnings[warning].size>0)
+        console.log(`❗${logColors.yellow} ${warning} ${logColors.blue} ${Array.from(report.warnings[warning])} ${logColors.reset}`)      
+      warnings+=report.warnings[warning].size;
+    }
+    for(const info of Object.keys(report.infos)){      
+      if(report.infos[info].size>0)
+        console.log(`ℹ️ ${logColors.yellow} ${info} ${logColors.blue} ${Array.from(report.infos[info])} ${logColors.reset}`)        
+        infos+=report.infos[info].size;          
     }
 
     for(const group of Object.keys(report.byGroup)){
+
+      const errorsSet = new Set<string>();
+      const errorFields = new Set<string>();
+
       for( const ent of report.byGroup[group]){
         for(const error of Object.keys(ent.errors)){
-          if(ent.errors[error].size>0)
-            return false;
+          if(ent.errors[error].size>0){                        
+            errorsSet.add(error);
+            for(const field of ent.errors[error])
+              errorFields.add(field)
+          }          
+          errors+=ent.errors[error].size;          
         }
+        for(const warinig of Object.keys(ent.warnings))
+          warnings+=ent.warnings[warinig].size;                    
+        for(const info of Object.keys(ent.infos))
+          infos+=ent.infos[info].size; 
+        
+        if(errorsSet.size>0){
+          console.log(`⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}}]${logColors.reset}`);
+        }  
+
       }
     }
   }
-  return true;
-}
-
-function showReports(reports:Array<ValidationReport>){
-    for(const report of reports){    
-    //all report generators 
-    for(const error of Object.keys(report.errors)){
-      if(report.errors[error].size>0)
-        console.log(`⚠️${logColors.yellow} ${error} ${logColors.blue} ${Array.from(report.errors[error])} ${logColors.reset}`)
-    }
-
-    for(const group of Object.keys(report.byGroup)){      
-      //all groups
-      const errors = new Set<string>();
-      const fields = new Set<string>();
-      for(const entReport of report.byGroup[group]){                
-        //all entities
-        for(const error of Object.keys(entReport.errors)) 
-          //kind of errors
-          if(entReport.errors[error].size>0){                        
-            errors.add(error);
-            for(const field of entReport.errors[error])
-              fields.add(field)
-          }
-      }
-      if(errors.size>0){
-        console.log(`⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errors)}]\n in fields:\n${logColors.blue}[${Array.from(fields)}}]${logColors.reset}`);
-      }
-    }
-  }
+  return {errors,warnings,infos};
 }
 
 function syncBuckets(source:string, target:string): Promise<{copied:Array<string>}>  {
@@ -202,31 +200,44 @@ async function runPipeline(versions:Array<string>,
     logger.endGroup();    
 
     console.log('');
-    logger.group('🔍 Validate final static data  ');
+    logger.group('🔍 Validate final static data ');
     const reports = new Array<ValidationReport>();
     const commonReport = await validate(overridedData,oldData,config,tmpAssetPrefix);
     reports.push(commonReport);
     reports.push(...await runValidationExtensions(testsDir,overridedData,oldData));
-      
-    showReports(reports);
-    logger.endGroup();
-
-    console.log('');
-    logger.group(`📊 Create spreadsheet report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);   
-    const reportDone = await createReport(  reports,reportSpreadsheetId );
     
-    if(reportDone){
-      console.log('✅ Spreadsheet report done');   
-      await sendSlack(`📊 spreadsheet report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`)
-    }else{
-      console.log('⚠️ Can`t create spreadsheetreport');   
-      await sendSlack(`⚠️ Can't create spreadsheet report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`)
-    }
+    const {errors,warnings,infos} = isValidReport(reports);
+
+    console.log(`⚠️ Errors:${errors}`); 
+    console.log(`❗ Warnings:${warnings}`); 
+    console.log(`ℹ️ Infos:${infos}`); 
     logger.endGroup();
+        
+    if(errors>0||warnings>0||infos>0){
+      console.log('');
+      logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);   
+      const reportDone = await createReport(  reports,reportSpreadsheetId );
+      
+      let slackMsg = `Mistakes Report: \n`;
+      if(errors>0) slackMsg+=`⚠️ errors:${errors} \n`;
+      if(warnings>0) slackMsg+=`❗warnings:${errors} \n`;
+      if(infos>0) slackMsg+=`ℹ️ infos:${errors} \n`;
+
+      if(reportDone){
+        console.log('✅ Mistakes Report done');   
+        await sendSlack(`${slackMsg} https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
+      }else{
+        console.log('⚠️ Can`t create spreadsheetreport');   
+        await sendSlack(`⚠️ Can't create Mistakes Report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`)
+      }
+      logger.endGroup();
+    }else{
+      await sendSlack(`✅ No errors,warnings or infos in static data`);
+    }
 
 
     console.log('');
-    if(isValidReport(reports)){
+    if(errors==0){
       logger.group('✅ Static data is valid! Sync data 📦');  
 
 
@@ -373,13 +384,3 @@ async function run() {
 
 
 run();
-// runPipeline(
-//   [
-//     "example-game/prod/static_data/static_data_v0.0.3.json",
-//   "example-game/prod/static_data/static_data_v0.0.7.json"
-//   ],"example-game/prod/static_data",
-//   "1rblvygSifo5VG-okyjO5Qt0zvnVpcHjHOqBcT51BWzM",
-//   '1NgdIJP2Cc5LsZqy3fkg9vKIHFxlLy5Fv510dS7CY6Gs',
-//   "https://cdn.mobalytics.gg","https://cdn.mobalytics11111.gg",'58627447cce2af0e4ee564c895bfec1b',
-//   path.join(__dirname, 'tests')
-// );

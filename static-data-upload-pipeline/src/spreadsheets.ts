@@ -7,7 +7,6 @@ import { isImage, stringify, tryParse } from './utils';
 
 const sheets = google.sheets("v4");        
 
-
 export type SpreadsheetReport = {
     emptyPages:Set<string>,
     pagesWidthWrongOverrides: { [key: string]: Set<string> };

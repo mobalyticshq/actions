@@ -3,19 +3,19 @@ import * as slugify_ from "slugify";
 export const initSlugify =()=>
 
     slugify_.default.extend({
-    "+": "-plus",
+    "+": "-plus-",
     "-": "-",
     "*": "-",
     "/": "-",
     "%": "-",
-    "&": "-",
+    "&": "-and-",
     "|": "-",
     "^": "-",
     "~": "-",
     "!": "-",
     "@": "-",
     "#": "-",
-    $: "-",
+    "$": "-",
     "(": "-",
     ")": "-",
     "[": "-",
@@ -78,8 +78,8 @@ export function tryParse(value:string){
 }
 
 export async function sendSlack(slackMessage:string,iconEmoji = ':receipt:') {    
-    const channel = '#notifications-static-data-upload';
-    const username = 'Static data service';    
+    const channel = '#notifications-static-data-pipeline';
+    const username = 'Static Data Pipeline';    
 
     const payload = {
         text: slackMessage,
