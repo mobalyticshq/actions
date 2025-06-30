@@ -318,7 +318,7 @@ async function run() {
   const tmpAssetFolder = core.getInput('tmp_assets_folder');
   const prodAssetFolder = core.getInput('prod_assets_folder');
   const cfClientID = core.getInput('cf_client');
-  const dryRun = Boolean(core.getInput('dry_run'));
+  const dryRun = core.getInput('dry_run')?.toLowerCase() === "true";
 
   const tests = core.getInput('game_specific_tests');
 
