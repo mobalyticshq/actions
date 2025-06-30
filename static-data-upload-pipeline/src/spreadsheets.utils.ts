@@ -192,3 +192,17 @@ export async function deleteSheet(spreadsheetId:string,auth:GoogleAuth,sheetId:n
         },
     });  
 }
+
+export async function clearSheets(spreadsheetData:{ [key: string]: Array<Array<string>> },spreadsheetId:string,auth:GoogleAuth){
+    if(Object.keys(spreadsheetData).length>0){
+        const sheetsData = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
+        if(sheetsData.data.sheets && sheetsData.data.sheets.length>1){            
+            for(let i=0;i<sheetsData.data.sheets.length;++i){
+                const sheet = sheetsData.data.sheets[i];
+                if(sheet.properties && sheet.properties.sheetId!=null && sheet.properties?.title && !spreadsheetData[sheet.properties.title]){
+                    await deleteSheet(spreadsheetId,auth,sheet.properties.sheetId);
+                }               
+            }
+        }
+    }
+}

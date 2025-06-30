@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { Entity, StaticData } from './types';
 import { mergeStaticData } from './merge';
 import { GoogleAuth } from 'google-auth-library';
-import { addFilterToSheet, addSheet, protect, removeAllMetadata, setColor } from './spreadsheets.utils';
+import { addFilterToSheet, addSheet, clearSheets, protect, removeAllMetadata, setColor } from './spreadsheets.utils';
 import { isImage, stringify, tryParse } from './utils';
 
 const sheets = google.sheets("v4");        
@@ -407,7 +407,10 @@ export async function updateSpreadsheets(spreadsheetId:string,
                }
             }); 
         }
-        console.log(`## Update formulas`)
+        console.log(`## Remove unused sheets`);
+        clearSheets(newSpreadsheetData,spreadsheetId,auth);
+        
+        console.log(`## Update formulas`);
         await updateFormulas(spreadsheetId,auth,newSpreadsheetData);
 
         console.log(`## Update metadata`)

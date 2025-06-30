@@ -3,10 +3,10 @@ import { Entity, StaticData, ValidationEntityReport, ValidationRecords, Validati
 import { google } from 'googleapis';
 
 import { GoogleAuth } from 'google-auth-library';
-import { addSheet, deleteSheet, setColor } from "./spreadsheets.utils";
+import { addSheet, clearSheets, deleteSheet, setColor } from "./spreadsheets.utils";
 import { stringify } from "./utils";
 
-const mainReportName= "main report";
+// const mainReportName= "main report";
 const sheets = google.sheets("v4");     
 
 type ColoredCell = {row:number,col:number,r:number,g:number,b:number};
@@ -19,31 +19,31 @@ function skipBeginPath(path:string){
     return path.substring(path.indexOf('.')+1);
 }
 
-async function prepareSheets(spreadsheetId:string,auth:GoogleAuth){
-    const sheetsData = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
+// async function prepareSheets(spreadsheetId:string,auth:GoogleAuth){
+//     const sheetsData = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
 
-    //prepare sheets
-    if(sheetsData.data.sheets){            
-        const report = sheetsData.data.sheets.find(sheet=>sheet.properties?.title === mainReportName);
-        if(!report){
-            addSheet(spreadsheetId,auth,mainReportName);
-        }
+//     //prepare sheets
+//     if(sheetsData.data.sheets){            
+//         const report = sheetsData.data.sheets.find(sheet=>sheet.properties?.title === mainReportName);
+//         if(!report){
+//             addSheet(spreadsheetId,auth,mainReportName);
+//         }
 
-        for(let i=0;i<sheetsData.data.sheets.length;++i){
-            const sheet = sheetsData.data.sheets[i];
-            if(sheet.properties && sheet.properties.sheetId!=null && sheet.properties?.title!==mainReportName){
-                await deleteSheet(spreadsheetId,auth,sheet.properties.sheetId);
-            }    
-            if(sheet.properties?.sheetId && sheet.properties?.title==mainReportName){
-                await sheets.spreadsheets.values.clear({
-                    spreadsheetId,
-                    auth,
-                    range: mainReportName, 
-                });
-            }
-        }
-    }
-}
+//         for(let i=0;i<sheetsData.data.sheets.length;++i){
+//             const sheet = sheetsData.data.sheets[i];
+//             if(sheet.properties && sheet.properties.sheetId!=null && sheet.properties?.title!==mainReportName){
+//                 await deleteSheet(spreadsheetId,auth,sheet.properties.sheetId);
+//             }    
+//             if(sheet.properties?.sheetId && sheet.properties?.title==mainReportName){
+//                 await sheets.spreadsheets.values.clear({
+//                     spreadsheetId,
+//                     auth,
+//                     range: mainReportName, 
+//                 });
+//             }
+//         }
+//     }
+// }
 
 
 async function fillColors(
@@ -143,60 +143,60 @@ function appendRow(
 
 function prepareData(reports:ValidationReport[]){
     const spreadsheetData:{ [key: string]: Array<Array<string>> } = {};           
-    spreadsheetData[mainReportName] = new Array<Array<string>>();
+    // spreadsheetData[mainReportName] = new Array<Array<string>>();
     const coloredCells:{ [key: string]: Array<ColoredCell>} = {};   
 
     for(const report of reports){    
         //all report generators 
-        if(report.errors && Object.keys(report.errors).length>0){                        
-            let flag=false;
-            for(const error of Object.keys(report.errors)){                
-                if(report.errors[error].size>0){
-                    //add line with name of error                    
-                    for (const value of report.errors[error]) {
-                        if(!flag){
-                            spreadsheetData[mainReportName].push(['ERRORS']);
-                            flag = true;
-                        }
-                        spreadsheetData[mainReportName].push([error,value])
-                    }
-                    spreadsheetData[mainReportName].push([''])
-                }
-            }
-        }
-        if(report.warnings && Object.keys(report.warnings).length>0){
-            for(const warning of Object.keys(report.warnings)){                
-                let flag = false;
-                if(report.warnings[warning].size>0){
-                    //add line with name of warning                    
-                    for (const value of report.warnings[warning]) {
-                        if(!flag){
-                            spreadsheetData[mainReportName].push(['WARNINGS']);
-                            flag = true;
-                        }
-                        spreadsheetData[mainReportName].push([warning,value])
-                    }
-                    spreadsheetData[mainReportName].push([''])
-                }
-            }
-        }
+        // if(report.errors && Object.keys(report.errors).length>0){                        
+        //     let flag=false;
+        //     for(const error of Object.keys(report.errors)){                
+        //         if(report.errors[error].size>0){
+        //             //add line with name of error                    
+        //             for (const value of report.errors[error]) {
+        //                 if(!flag){
+        //                     spreadsheetData[mainReportName].push(['ERRORS']);
+        //                     flag = true;
+        //                 }
+        //                 spreadsheetData[mainReportName].push([error,value])
+        //             }
+        //             spreadsheetData[mainReportName].push([''])
+        //         }
+        //     }
+        // }
+        // if(report.warnings && Object.keys(report.warnings).length>0){
+        //     for(const warning of Object.keys(report.warnings)){                
+        //         let flag = false;
+        //         if(report.warnings[warning].size>0){
+        //             //add line with name of warning                    
+        //             for (const value of report.warnings[warning]) {
+        //                 if(!flag){
+        //                     spreadsheetData[mainReportName].push(['WARNINGS']);
+        //                     flag = true;
+        //                 }
+        //                 spreadsheetData[mainReportName].push([warning,value])
+        //             }
+        //             spreadsheetData[mainReportName].push([''])
+        //         }
+        //     }
+        // }
         
-        if(report.infos && Object.keys(report.infos).length>0){            
-            let flag  = false;
-            for(const info of Object.keys(report.infos)){                        
-                if(report.infos[info].size>0){
-                    //add line with name of info                                        
-                    for (const value of report.infos[info]) {
-                        if(!flag){
-                            spreadsheetData[mainReportName].push(['INFOS']);
-                            flag = true;
-                        }                        
-                        spreadsheetData[mainReportName].push([info,value])
-                    }
-                    spreadsheetData[mainReportName].push([''])
-                }
-            }        
-        }                
+        // if(report.infos && Object.keys(report.infos).length>0){            
+        //     let flag  = false;
+        //     for(const info of Object.keys(report.infos)){                        
+        //         if(report.infos[info].size>0){
+        //             //add line with name of info                                        
+        //             for (const value of report.infos[info]) {
+        //                 if(!flag){
+        //                     spreadsheetData[mainReportName].push(['INFOS']);
+        //                     flag = true;
+        //                 }                        
+        //                 spreadsheetData[mainReportName].push([info,value])
+        //             }
+        //             spreadsheetData[mainReportName].push([''])
+        //         }
+        //     }        
+        // }                
 
         for(const group of Object.keys(report.byGroup)){      
             //all groups
@@ -290,7 +290,7 @@ export async function createReport(reports:ValidationReport[],
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
         console.log("## prepare sheets");
-        await prepareSheets(spreadsheetId,auth);        
+        // await prepareSheets(spreadsheetId,auth);        
         
         console.log("## prepare data");
         const {spreadsheetData,coloredCells} = prepareData(reports);
@@ -300,6 +300,10 @@ export async function createReport(reports:ValidationReport[],
 
         console.log("## fill colors");
         await fillColors(coloredCells,spreadsheetId,auth);
+
+        console.log("## remove unsed sheets");
+        await clearSheets(spreadsheetData,spreadsheetId,auth);
+
         return true;
     }catch(error){
         console.error('Report spreadsheets access error :', error);
