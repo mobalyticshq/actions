@@ -341,10 +341,10 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
 
         //new entity
             if(ent.id && oldData[group] && !oldData[group].find(e=>e.id==ent.id)){
-                entityReport.infos[ReportMessages.newEntity].add(`${group}`);
+                entityReport.infos[ReportMessages.newEntity].add(`${group}.id`);
             }
             if(ent.id && !oldData[group]){
-                entityReport.infos[ReportMessages.newEntity].add(`${group}`);
+                entityReport.infos[ReportMessages.newEntity].add(`${group}.id`);
             }
         //deprecated entity
             if(ent.id && ent.deprecated && oldData[group] && oldData[group].find(e=>ent.id==e.id && !e.deprecated)){

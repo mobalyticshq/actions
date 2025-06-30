@@ -294,7 +294,7 @@ export async function createReport(reports:ValidationReport[],
         
         console.log("## prepare data");
         const {spreadsheetData,coloredCells} = prepareData(reports);
-        console.log(spreadsheetData);
+
         console.log("## fill pages sheets");
         await fillPages(spreadsheetData,spreadsheetId,auth);
 

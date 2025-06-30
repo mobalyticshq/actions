@@ -2,7 +2,6 @@ import { google } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';
 
 const sheets = google.sheets("v4");        
-const adminEmails = "game-static-data-editor@mobalyticshq.com";
 
 export function addFilterToSheet(sheetId:number,
     startRowIndex:number,endRowIndex:number,startColumnIndex:number,endColumnIndex:number
@@ -122,7 +121,7 @@ export function protect(sheetId:number,rows:number,columns:number,clientEmail:st
                 description: 'Read-only column for users',
                 warningOnly: false,
                 editors: {
-                users: [clientEmail,adminEmails]
+                users: [clientEmail]
                 }
                 },
             },
