@@ -21,18 +21,18 @@ function isValidReport(reports:ValidationReport[]){
   for(const report of reports){
     for(const error of Object.keys(report.errors)){
       if(report.errors[error].size>0)
-        console.log(`⚠️${logColors.yellow} ${error} ${logColors.blue} ${Array.from(report.errors[error])} ${logColors.reset}`)
+        console.log(`⚠️${logColors.yellow} ${error} ${logColors.blue} ${Array.from(report.errors[error])} ${logColors.reset}`);
       errors+=report.errors[error].size;
     }
     for(const warning of Object.keys(report.warnings)){
       if(report.warnings[warning].size>0)
-        console.log(`❗${logColors.yellow} ${warning} ${logColors.blue} ${Array.from(report.warnings[warning])} ${logColors.reset}`)      
+        console.log(`❗${logColors.yellow} ${warning} ${logColors.blue} ${Array.from(report.warnings[warning])} ${logColors.reset}`);     
       warnings+=report.warnings[warning].size;
     }
     for(const info of Object.keys(report.infos)){      
       if(report.infos[info].size>0)
-        console.log(`ℹ️ ${logColors.yellow} ${info} ${logColors.blue} ${Array.from(report.infos[info])} ${logColors.reset}`)        
-        infos+=report.infos[info].size;          
+        console.log(`ℹ️ ${logColors.yellow} ${info} ${logColors.blue} ${Array.from(report.infos[info])} ${logColors.reset}`);       
+      infos+=report.infos[info].size;          
     }
 
     for(const group of Object.keys(report.byGroup)){
@@ -51,8 +51,11 @@ function isValidReport(reports:ValidationReport[]){
         }
         for(const warinig of Object.keys(ent.warnings))
           warnings+=ent.warnings[warinig].size;                    
-        for(const info of Object.keys(ent.infos))
+        for(const info of Object.keys(ent.infos)){
           infos+=ent.infos[info].size; 
+          if(ent.infos[info].size>0)
+            console.log(ent.infos[info]);
+        }
         
         if(errorsSet.size>0){
           console.log(`⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}}]${logColors.reset}`);

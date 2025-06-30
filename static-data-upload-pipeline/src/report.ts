@@ -91,7 +91,6 @@ function validateRecords(
     
     for(const key of Object.keys(records)){
         //kind of errors                        
-        console.log(records);
         let msg ='';
         let colNumber =0;
         for(const prop of header){
