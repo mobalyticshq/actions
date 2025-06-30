@@ -142,7 +142,7 @@ async function runPipeline(versions:Array<string>,
   tmpAssetFolder:string,
   prodAssetFolder:string,
   cfClientID:string,
-  testsDir:string){
+  testsDir:string,dryRun:Boolean){
               
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);  
 
@@ -156,7 +156,10 @@ async function runPipeline(versions:Array<string>,
 
   const actionsUrl = `https://github.com/${repo}/actions/runs/${runId}`;
 
-  await sendSlack(`🚀 Start game static data update pipeline for ${versions[versions.length-1]}\nℹ️ Action:${actionsUrl}`);
+  if(!dryRun)
+    await sendSlack(`🚀 Start game static data update pipeline for ${versions[versions.length-1]}\nℹ️ Action:${actionsUrl}`);
+  else
+    await sendSlack(`🚀 Start game static data dry run pipeline for ${versions[versions.length-1]}\nℹ️ Action:${actionsUrl}`);
 
   const tmpAssetPrefix = tmpAssetFolder.replace("gs://","https://");
   const prodAssetPrefix = prodAssetFolder.replace("gs://","https://");
@@ -239,6 +242,10 @@ async function runPipeline(versions:Array<string>,
 
     console.log('');
     if(errors==0){
+      if(dryRun){
+        logger.group('✅ Static data is valid!');    
+        return;
+      }
       logger.group('✅ Static data is valid! Sync data 📦');  
 
 
@@ -311,6 +318,7 @@ async function run() {
   const tmpAssetFolder = core.getInput('tmp_assets_folder');
   const prodAssetFolder = core.getInput('prod_assets_folder');
   const cfClientID = core.getInput('cf_client');
+  const dryRun = Boolean(core.getInput('dry_run'));
 
   const tests = core.getInput('game_specific_tests');
 
@@ -324,6 +332,7 @@ async function run() {
   console.log('ℹ️ folder for tmp assets:',tmpAssetFolder);
   console.log('ℹ️ folder for prod assets:',prodAssetFolder);
   console.log('ℹ️ CF client ID:',cfClientID);
+  console.log('ℹ️ Dry run:',dryRun);
 
   const token = core.getInput('token');
   const octokit = github.getOctokit(token);
@@ -373,7 +382,7 @@ async function run() {
             tmpAssetFolder,
             prodAssetFolder,
             cfClientID,
-            tests);
+            tests,dryRun);
         }
       }else{
         console.log(`❌ Nothing to do for ${file}`);
