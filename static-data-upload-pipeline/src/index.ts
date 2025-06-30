@@ -53,13 +53,11 @@ function isValidReport(reports:ValidationReport[]){
           warnings+=ent.warnings[warinig].size;                    
         for(const info of Object.keys(ent.infos)){
           infos+=ent.infos[info].size; 
-        }
-        
-        if(errorsSet.size>0){
-          console.log(`⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}}]${logColors.reset}`);
-        }  
-
+        }      
       }
+      if(errorsSet.size>0){
+        console.log(`⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}}]${logColors.reset}`);
+      }  
     }
   }
   return {errors,warnings,infos};
@@ -223,9 +221,9 @@ async function runPipeline(versions:Array<string>,
       const reportDone = await createReport(  reports,reportSpreadsheetId );
       
       let slackMsg = `Mistakes Report: \n`;
-      if(errors>0) slackMsg+=`⚠️ errors:${errors} \n`;
-      if(warnings>0) slackMsg+=`❗warnings:${errors} \n`;
-      if(infos>0) slackMsg+=`ℹ️ infos:${errors} \n`;
+      slackMsg+=`⚠️ errors:${errors} \n`;
+      slackMsg+=`❗warnings:${warnings} \n`;
+      slackMsg+=`ℹ️ infos:${infos} \n`;
 
       if(reportDone){
         console.log('✅ Mistakes Report done');   
