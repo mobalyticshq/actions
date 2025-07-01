@@ -96,7 +96,7 @@ Need to add code block in workflow file
 | group is not array | ERROR | all fields (groups) in root MUST be arrays of entities (objects)|
 | id is abscent | ERROR | entity(object) MUST have field **id**|
 | id is not uniq | ERROR | two or more objects in group have same **id**|
-| id!=gameId\|\|id!=slugify(name) | ERROR | if object has **gameId** then id MUST equal **gameId** else if object has **name** id MUST equal slugify(**name**)|
+| id!=gameId\|\|id!=slugify(name) | ERROR | if object has **gameId** then id MUST equal **gameId** else if object has **name** then id MUST equal slugify(**name**)|
 | slug is not uniq | ERROR | two or more objects in group have same **slug**|
 | gameId is not uniq | ERROR | two or more objects in group have same **gameId**|
 | slug!=slugify(name) | ERROR | slug MUST be equal slugify(**name**)|
