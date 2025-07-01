@@ -19,32 +19,6 @@ function skipBeginPath(path:string){
     return path.substring(path.indexOf('.')+1);
 }
 
-// async function prepareSheets(spreadsheetId:string,auth:GoogleAuth){
-//     const sheetsData = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
-
-//     //prepare sheets
-//     if(sheetsData.data.sheets){            
-//         const report = sheetsData.data.sheets.find(sheet=>sheet.properties?.title === mainReportName);
-//         if(!report){
-//             addSheet(spreadsheetId,auth,mainReportName);
-//         }
-
-//         for(let i=0;i<sheetsData.data.sheets.length;++i){
-//             const sheet = sheetsData.data.sheets[i];
-//             if(sheet.properties && sheet.properties.sheetId!=null && sheet.properties?.title!==mainReportName){
-//                 await deleteSheet(spreadsheetId,auth,sheet.properties.sheetId);
-//             }    
-//             if(sheet.properties?.sheetId && sheet.properties?.title==mainReportName){
-//                 await sheets.spreadsheets.values.clear({
-//                     spreadsheetId,
-//                     auth,
-//                     range: mainReportName, 
-//                 });
-//             }
-//         }
-//     }
-// }
-
 
 async function fillColors(
     cells:{ [key: string]: Array<{row:number,col:number,r:number,g:number,b:number}>},
@@ -265,17 +239,21 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                 await addSheet(spreadsheetId,auth,group);
             }
             
+        for(let i=1;i<spreadsheetData[group].length;++i){
+            spreadsheetData[group][i][0] = `=HYPERLINK("https://example1.com","${spreadsheetData[group][i][0] }")`
+        }
+
            await sheets.spreadsheets.values.append({
            spreadsheetId: spreadsheetId,
            auth: auth,
            range: group,
-           valueInputOption: "RAW",
+           valueInputOption: "USER_ENTERED",
            requestBody: {
               values: spreadsheetData[group]
            }
            }); 
         }
-    }
+    }    
 }
 
 export async function createReport(reports:ValidationReport[],    
