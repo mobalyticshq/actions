@@ -70,6 +70,8 @@ jobs:
 
 ```
 
+secrets.ACTION_ACCESS_TOKEN - can be created in https://github.com/settings/tokens
+
 ## Add new game 
 
 Need to add code block in workflow file 
