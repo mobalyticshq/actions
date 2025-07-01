@@ -232,6 +232,7 @@ function prepareData(reports:ValidationReport[]){
 async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> },spreadsheetId:string,auth:GoogleAuth){
     const sheetsData = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
     
+    const REPORT_DOC_URL = process.env.REPORT_DOC_URL;
     if(sheetsData.data.sheets){     
         for (const group of Object.keys(spreadsheetData)) {           
             const report = sheetsData.data.sheets.find(sheet=>sheet.properties?.title === group);                
@@ -239,15 +240,16 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                 await addSheet(spreadsheetId,auth,group);
             }
             
-            for(let i=1;i<spreadsheetData[group].length;++i){
-                spreadsheetData[group][i][0] = `=HYPERLINK("https://example1.com","${spreadsheetData[group][i][0] }")`
-            }
+            if(REPORT_DOC_URL)
+                for(let i=1;i<spreadsheetData[group].length;++i){
+                    spreadsheetData[group][i][0] = `=HYPERLINK("${REPORT_DOC_URL}","${spreadsheetData[group][i][0] }")`;
+                }
             await sheets.spreadsheets.values.clear({
                 spreadsheetId,
                 auth,
                 range: group, 
             });
-            
+
             await sheets.spreadsheets.values.append({
             spreadsheetId: spreadsheetId,
             auth: auth,
