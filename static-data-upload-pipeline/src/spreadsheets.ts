@@ -397,21 +397,29 @@ export async function updateSpreadsheets(spreadsheetId:string,
                 auth,
                 range: group, 
             });
+
+            for(let i = 0;i<newSpreadsheetData[group].length;++i)
+                for(let j = 0;j<newSpreadsheetData[group][i].length;++j)
+                    if(isImage(newSpreadsheetData[group][i][j].toLowerCase())){
+                        newSpreadsheetData[group][i][j] = `=IMAGE("${newSpreadsheetData[group][i][j]}")`;
+                    }
+                    
             await sheets.spreadsheets.values.append({
-               spreadsheetId: spreadsheetId,
-               auth: auth,
-               range: group,
-               valueInputOption: "RAW",
-               requestBody: {
-                   values: newSpreadsheetData[group]
-               }
+                spreadsheetId: spreadsheetId,
+                auth: auth,
+                range: group,
+            //    valueInputOption: "RAW",
+                valueInputOption: "USER_ENTERED",
+                requestBody: {
+                    values: newSpreadsheetData[group]
+                }
             }); 
         }
         console.log(`## Remove unused sheets`);
         clearSheets(newSpreadsheetData,spreadsheetId,auth);
         
-        console.log(`## Update formulas`);
-        await updateFormulas(spreadsheetId,auth,newSpreadsheetData);
+        // console.log(`## Update formulas`);
+        // await updateFormulas(spreadsheetId,auth,newSpreadsheetData);
 
         console.log(`## Update metadata`)
         await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,process.env.GOOGLE_CLIENT_EMAIL);
