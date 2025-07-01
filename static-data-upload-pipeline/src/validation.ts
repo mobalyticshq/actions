@@ -16,14 +16,14 @@ export enum ReportMessages{
     abscentGroupForRef="can't find group for ref",
     invalidRef="wrong field type for ref",
     abscentIdInRef="can't find entity in referenced group",
-    invalidAsserts="invalid assert value",
+    invalidAssetURL="invalid asset URL",
     invalidSubstitutions="can't find data for substitution",
     numberNotAllowed="number is not allowed",
     newEntity="new entity",
     deprecated="entity deprecated",
     slugChanged="slug changed",
     nameChanged="name changed",
-    URLChanged="url changed",
+    // URLChanged="url changed",
     fieldDisappear="field disappear",
     assetChanged="asset changed",
 
@@ -191,7 +191,7 @@ function deepTests(o:any,path:string,
         }  
         //check on assert
         if(!validateAsset(o,tmpBucket,path,report,knownAssets))
-            report.errors[ReportMessages.invalidAsserts].add(path);                                                                                          
+            report.errors[ReportMessages.invalidAssetURL].add(path);                                                                                          
     }else if(Array.isArray(o)){
         let idx = 0;
         for(const i of o){
@@ -276,7 +276,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                     [ReportMessages.deprecated]:new Set<string>(),
                     [ReportMessages.slugChanged]:new Set<string>(),
                     [ReportMessages.nameChanged]:new Set<string>(),
-                    [ReportMessages.URLChanged]:new Set<string>(),
+                    //[ReportMessages.URLChanged]:new Set<string>(),
                 },
                 infos:{
                     [ReportMessages.newEntity]:new Set<string>(),
@@ -295,7 +295,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                     [ReportMessages.abscentGroupForRef]: new Set<string>(),
                     [ReportMessages.invalidRef]: new Set<string>(),    
                     [ReportMessages.abscentIdInRef]: new Set<string>(), 
-                    [ReportMessages.invalidAsserts]:new Set<string>(),
+                    [ReportMessages.invalidAssetURL]:new Set<string>(),
                     [ReportMessages.invalidSubstitutions]:new Set<string>(),
                     [ReportMessages.numberNotAllowed]:new Set<string>(),
                 }

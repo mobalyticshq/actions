@@ -69,6 +69,7 @@ jobs:
         dry_run: ${{ github.ref_name != env.DEPLOY_BRANCH && 'true' || 'false' }}
 
 ```
+
 ## Add new game 
 
 Need to add code block in workflow file 
@@ -89,28 +90,29 @@ Need to add code block in workflow file
 
 ## Static data report messages
 
-#### asset URL not available
-#### asset too big
-#### group is not array
-#### id is abscent
-#### id is not uniq
-#### id!=gameId||id!=slugify(name)
-#### slug is not uniq
-#### gameId is not uniq
-#### slug!=slugify(name)
-#### not in camel case
-#### can't find ref in config file
-#### can't find group for ref
-#### wrong field type for ref
-#### can't find entity in referenced group
-#### invalid assert value
-#### can't find data for substitution
-#### number is not allowed
-#### new entity
-#### entity deprecated
-#### slug changed
-#### name changed
-#### url changed
-#### field disappear
-#### asset changed
+| Message    | Level | Description |
+| -------- | ------- | ------- |
+| asset URL not available | ERROR | unable to download image by URL |
+| asset too big | ERROR | size of asset >100MB|
+| group is not array | ERROR | all fields (groups) in root MUST be arrays of entities (objects)|
+| id is abscent | ERROR | entity(object) MUST have field **id**|
+| id is not uniq | ERROR | two or more objects in group have same **id**|
+| id!=gameId||id!=slugify(name) | ERROR | if object has **gameId** id MUST equal **gameId** else if object has **name** id MUST equal slugify(**name**)|
+| slug is not uniq | ERROR | two or more objects in group have same **slug**|
+| gameId is not uniq | ERROR | two or more objects in group have same **gameId**|
+| slug!=slugify(name) | ERROR | slug MUST be equal slugify(**name**)|
+| not in camel case | ERROR | field must be in **camel case** |
+| can't find ref in config file | ERROR |  config file doesn't contains ref with **from** for this field|
+| can't find group for ref | ERROR | there are no group in JSON file for ref with **to** for this field|
+| wrong field type for ref | ERROR | reference field MUST be string or array of strings|
+| can't find entity in referenced group | ERROR | there are no entity in referenced group for this reference field  |
+| invalid asset value | ERROR | asset MUST be placed in **tmp_assets_folder** and has one of allowed extensions **(".jpeg" ,".jpg", ".png", ".gif", ".webp", ".svg", ".avif",".webm", ".mp4")**|
+| can't find data for substitution | ERROR | substitution in text field MUST be in format {{index:group.id:default_value:opt}}  entity in JSON for **group.id** not found|
+| number is not allowed | ERROR | all numbers MUST be as strings|
+| new entity | INFO | new **id**  for this group in latest version of static data found|
+| entity deprecated | WARNING | **id**  for this group in latest version of static data not found |
+| slug changed | WARNING | slug was changed in latest  version of static data|
+| name changed | WARNING | name was changed in latest  version of static data|
+| field disappear | WARNING | there are no field in latest  version of static data|
+| asset changed | WARNING | URL for asset was changed in latest  version of static data|
  

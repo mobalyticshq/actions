@@ -1,2 +1,2 @@
-# actions
-GitHub Actions for all purposes
+# Actions
+- [Static Data Upload Pipeline](./static-data-upload-pipeline/README.md)
