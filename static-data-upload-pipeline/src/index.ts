@@ -139,7 +139,6 @@ async function runPipeline(versions:Array<string>,
   reportSpreadsheetId:string,
   tmpAssetFolder:string,
   prodAssetFolder:string,
-  cfClientID:string,
   testsDir:string,dryRun:Boolean){
               
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);  
@@ -275,8 +274,14 @@ async function runPipeline(versions:Array<string>,
       if (stderr) console.error('stderr:', stderr);
       console.log('✅ Statid databucket synced');  
 
-      await updateAssets(tmpAssetFolder,prodAssetFolder,cfClientID);      
+      const cfClientID = process.env.CF_CLIENT_ID;
 
+      if(cfClientID)
+        await updateAssets(tmpAssetFolder,prodAssetFolder,cfClientID);      
+      else{
+        console.log('⚠️ CF_CLIENT_ID not defined - unable to reset CF cache');  
+        await sendSlack(`⚠️ CF_CLIENT_ID not defined - unable to reset CF cache`);
+      }
       await sendSlack(`✅ Static data https://storage.cloud.google.com/${process.env.GCP_BUCKET_NAME}/${versions[versions.length-1]} uploaded`);
       console.log('🔥 All done!!!');  
       logger.endGroup();
@@ -315,7 +320,6 @@ async function run() {
   const reportSpreadsheetId = core.getInput('report_spreadsheet_id');
   const tmpAssetFolder = core.getInput('tmp_assets_folder');
   const prodAssetFolder = core.getInput('prod_assets_folder');
-  const cfClientID = core.getInput('cf_client');
   const dryRun = core.getInput('dry_run')?.toLowerCase() === "true";
 
   const tests = core.getInput('game_specific_tests');
@@ -329,7 +333,6 @@ async function run() {
   console.log('ℹ️ folder with game specific tests:',tests);
   console.log('ℹ️ folder for tmp assets:',tmpAssetFolder);
   console.log('ℹ️ folder for prod assets:',prodAssetFolder);
-  console.log('ℹ️ CF client ID:',cfClientID);
   console.log('ℹ️ Dry run:',dryRun);
 
   const token = core.getInput('token');
@@ -379,7 +382,6 @@ async function run() {
             reportSpreadsheetId,
             tmpAssetFolder,
             prodAssetFolder,
-            cfClientID,
             tests,dryRun);
         }
       }else{
