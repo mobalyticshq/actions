@@ -239,19 +239,24 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                 await addSheet(spreadsheetId,auth,group);
             }
             
-        for(let i=1;i<spreadsheetData[group].length;++i){
-            spreadsheetData[group][i][0] = `=HYPERLINK("https://example1.com","${spreadsheetData[group][i][0] }")`
-        }
-
-           await sheets.spreadsheets.values.append({
-           spreadsheetId: spreadsheetId,
-           auth: auth,
-           range: group,
-           valueInputOption: "USER_ENTERED",
-           requestBody: {
-              values: spreadsheetData[group]
-           }
-           }); 
+            for(let i=1;i<spreadsheetData[group].length;++i){
+                spreadsheetData[group][i][0] = `=HYPERLINK("https://example1.com","${spreadsheetData[group][i][0] }")`
+            }
+            await sheets.spreadsheets.values.clear({
+                spreadsheetId,
+                auth,
+                range: group, 
+            });
+            
+            await sheets.spreadsheets.values.append({
+            spreadsheetId: spreadsheetId,
+            auth: auth,
+            range: group,
+            valueInputOption: "USER_ENTERED",
+            requestBody: {
+                values: spreadsheetData[group]
+            }
+            }); 
         }
     }    
 }
