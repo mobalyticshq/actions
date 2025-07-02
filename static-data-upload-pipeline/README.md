@@ -70,16 +70,25 @@ jobs:
 
 ```
 
-secrets.ACTION_ACCESS_TOKEN - can be created in https://github.com/settings/tokens
+## Global variables 
+- secrets.ACTION_ACCESS_TOKEN - can be created in https://github.com/settings/tokens
+- secrets.GOOGLE_CLIENT_EMAIL - email for **spreadsheets-sync**  service account
+- secrets.GOOGLE_PRIVATE_KEY - private key for **spreadsheets-sync**  service account
+- secrets.GOOGLE_SPREADSHEET_REPORT_EMAIL - email for **spreadsheets-sync-report**  service account
+- secrets.GOOGLE_SPREADSHEET_REPORT_KEY - private key for **spreadsheets-sync-report**  service account
+- secrets.GCP_BUCKET_NAME - bucket name ex: ngf
+- secrets.CF_AUTH_TOKEN - token for reset **Cloudflare**
+- secrets.CF_CLIENT_ID - client ID for reset **Cloudflare**
+- secrets.SLACK_BOT_TOKEN - web hook for **Slack** format xxx/yyy/zzz
+- DEPLOY_BRANCH - branch name for deploy static data in prod, other branches for dry run 
 
 ## Add new game 
 
 Need to add code block in workflow file 
-
 ```
 - name: name of the game 
-  static_data_path: path to the folder with static_data_vX.Y.Z.json 
-  game_specific_tests: path to the folder with js files for game specific tests 
+  static_data_path: path to the folder in repository with static_data_vX.Y.Z.json 
+  game_specific_tests: path to the folder in repository with js files for game specific tests 
   tmp_assets_folder: path to the folder in gs://cdn.mobalytics.gg backet for extracted game assets.
   prod_assets_folder: path to the folder in gs://cdn.mobalytics.gg backet where assets will be copy after validation
   override_spreadsheet_id: spreadsheet id which represent static data and used for overriding fields
@@ -116,4 +125,3 @@ Need to add code block in workflow file
 | name changed | WARNING | name was changed in latest  version of static data|
 | field disappear | WARNING | there are no field in latest  version of static data|
 | asset changed | WARNING | URL for asset was changed in latest  version of static data|
- 
