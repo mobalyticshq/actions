@@ -121,9 +121,9 @@ Need to add code block in workflow file
 | invalid asset value | ERROR | asset MUST be placed in **tmp_assets_folder** and has one of allowed extensions **(".jpeg" ,".jpg", ".png", ".gif", ".webp", ".svg", ".avif",".webm", ".mp4")**|
 | can't find data for substitution | ERROR | substitution in text field MUST be in format {{index:group.id:default_value:opt}}  entity in JSON for **group.id** not found|
 | number is not allowed | ERROR | all numbers MUST be as strings|
-| new entity | INFO | new **id**  for this group in latest version of static data found|
 | entity deprecated | WARNING | **id**  for this group in latest version of static data not found |
 | slug changed | WARNING | slug was changed in latest  version of static data|
 | name changed | WARNING | name was changed in latest  version of static data|
 | field disappear | WARNING | there are no field in latest  version of static data|
 | asset changed | WARNING | URL for asset was changed in latest  version of static data|
+| new entity | INFO | new **id**  for this group in latest version of static data found|
