@@ -392,29 +392,66 @@ export async function updateSpreadsheets(spreadsheetId:string,
             }             
             
             newSpreadsheetData[group] = entitiesToRawData(jsonData[group],mergedData[group])             
-            await sheets.spreadsheets.values.clear({
-                spreadsheetId,
-                auth,
-                range: group, 
-            });
 
             for(let i = 0;i<newSpreadsheetData[group].length;++i)
                 for(let j = 0;j<newSpreadsheetData[group][i].length;++j)
                     if(isImage(newSpreadsheetData[group][i][j].toLowerCase())){
                         newSpreadsheetData[group][i][j] = `=IMAGE("${newSpreadsheetData[group][i][j]}")`;
                     }
-                    
-            await sheets.spreadsheets.values.append({
-                spreadsheetId: spreadsheetId,
-                auth: auth,
-                range: group,
-            //    valueInputOption: "RAW",
-                valueInputOption: "USER_ENTERED",
-                requestBody: {
-                    values: newSpreadsheetData[group]
-                }
-            }); 
         }
+
+        const requests = [];
+        const sheetsDataNew = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
+        if(sheetsDataNew.data.sheets){ 
+            //clear
+            for (const sheet of sheetsDataNew.data.sheets) {
+                requests.push({
+                    updateCells: {
+                    range: { sheetId: sheet.properties?.sheetId },
+                    fields: '*'
+                    }
+                });
+            
+            if(sheet.properties?.title){
+                
+                requests.push({
+                    appendCells: {
+                sheetId: sheet.properties?.sheetId,
+                    rows: newSpreadsheetData[sheet.properties?.title].map(row => ({
+                        values: row.map(cell => (
+                            cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:
+                            {userEnteredValue: {stringValue: String(cell)}}
+                    ))
+                    })),
+                    fields: '*'
+                    }
+                });
+            }
+            }
+
+            await sheets.spreadsheets.batchUpdate({
+            spreadsheetId,
+            auth,
+            requestBody: { requests }
+            });
+        }
+
+            // await sheets.spreadsheets.values.clear({
+            //     spreadsheetId,
+            //     auth,
+            //     range: group, 
+            // });
+                    
+            // await sheets.spreadsheets.values.append({
+            //     spreadsheetId: spreadsheetId,
+            //     auth: auth,
+            //     range: group,
+            //     valueInputOption: "USER_ENTERED",
+            //     requestBody: {
+            //         values: newSpreadsheetData[group]
+            //     }
+            // }); 
+        
         console.log(`## Remove unused sheets`);
         clearSheets(newSpreadsheetData,spreadsheetId,auth);
         
