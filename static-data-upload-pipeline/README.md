@@ -94,8 +94,8 @@ Need to add code block in workflow file
   override_spreadsheet_id: spreadsheet id which represent static data and used for overriding fields
   report_spreadsheet_id:  spreadsheet id for validation reports. Contains errors,warnings and information about validated static data
 ```
-Add email of  "spreadsheets-sync-report" service to spreadsheet for report as editor
-Add email of  "spreadsheets-sync" service to spreadsheet for override as editor
+- Add email of  "spreadsheets-sync-report" service to spreadsheet for report as editor
+- Add email of  "spreadsheets-sync" service to spreadsheet for override as editor
 
 ## Static data requirements 
  Static data file name static_data_vX.Y.Z.json X,Y,Z- numbers [0,9999]
