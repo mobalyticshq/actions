@@ -233,32 +233,53 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
     const sheetsData = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
     
     const REPORT_DOC_URL = process.env.REPORT_DOC_URL;
+
+
     if(sheetsData.data.sheets){     
         for (const group of Object.keys(spreadsheetData)) {           
             const report = sheetsData.data.sheets.find(sheet=>sheet.properties?.title === group);                
             if(!report){
                 await addSheet(spreadsheetId,auth,group);
-            }
-            
+            }            
             if(REPORT_DOC_URL)
                 for(let i=1;i<spreadsheetData[group].length;++i){
                     spreadsheetData[group][i][0] = `=HYPERLINK("${REPORT_DOC_URL}","${spreadsheetData[group][i][0] }")`;
                 }
-            await sheets.spreadsheets.values.clear({
-                spreadsheetId,
-                auth,
-                range: group, 
-            });
-
-            await sheets.spreadsheets.values.append({
-            spreadsheetId: spreadsheetId,
-            auth: auth,
-            range: group,
-            valueInputOption: "USER_ENTERED",
-            requestBody: {
-                values: spreadsheetData[group]
+        }
+        const requests = [];
+        const sheetsDataNew = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
+        if(sheetsDataNew.data.sheets){ 
+            //clear
+            for (const sheet of sheetsDataNew.data.sheets) {
+                requests.push({
+                    updateCells: {
+                    range: { sheetId: sheet.properties?.sheetId },
+                    fields: '*'
+                    }
+                });
+            
+            if(sheet.properties?.title){
+                
+                requests.push({
+                    appendCells: {
+                sheetId: sheet.properties?.sheetId,
+                    rows: spreadsheetData[sheet.properties?.title].map(row => ({
+                        values: row.map(cell => (
+                            cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:
+                            {userEnteredValue: {stringValue: String(cell)}}
+                    ))
+                    })),
+                    fields: '*'
+                    }
+                });
             }
-            }); 
+            }
+
+            await sheets.spreadsheets.batchUpdate({
+            spreadsheetId,
+            auth,
+            requestBody: { requests }
+            });
         }
     }    
 }
