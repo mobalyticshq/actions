@@ -215,18 +215,6 @@ function entitiesToRawData(knownData:Array<Entity>|undefined,mergedData:Array<En
     })
     header.push(...Array.from(newFields));
 
-    // if(rows&&rows.length>0){
-    //     if(idColumnIdx>=0){
-    //         //add header from spreadsheets to known header
-    //         for(let j=0;j<rows[0].length;j++){
-    //             const field = rows[0][j] as string;
-    //             if(!header.includes(field)){
-    //                 header.push(field);
-    //             }
-    //         }
-    //     }
-    // }    
-
     const resultRows = new Array<Array<string>>()
     //add header
     resultRows.push(header);    
@@ -237,10 +225,7 @@ function entitiesToRawData(knownData:Array<Entity>|undefined,mergedData:Array<En
             const known = mergedData?.find(obj=>obj.id == ent.id);
             // const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
             if(known && known[header[i]]){
-                newRow.push(stringify(known[header[i]]))
-                // continue;
-            // }else if(idColumnIdx>=0 && oldRow && oldRow[i]){
-                // newRow.push(stringify(oldRow[i]))                
+                newRow.push(stringify(known[header[i]]))           
             }else if(known)
                 newRow.push('');
         }
@@ -252,12 +237,8 @@ function entitiesToRawData(knownData:Array<Entity>|undefined,mergedData:Array<En
         for(let i=0;i<header.length;i++){
             const known = knownData?.find(obj=>obj.id == ent.id);
             const newEntity = mergedData?.find(obj=>obj.id == ent.id);
-            // const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
             if(!known && newEntity && newEntity[header[i]]){
-                newRow.push(stringify(newEntity[header[i]]))
-                // continue;
-            // }else if(idColumnIdx>=0 && oldRow && oldRow[i]){
-                // newRow.push(stringify(oldRow[i]))                
+                newRow.push(stringify(newEntity[header[i]]))           
             }else if(!known && newEntity)
                 newRow.push('');
         }
@@ -292,10 +273,8 @@ async function setMetadata(spreadsheetId:string,auth:GoogleAuth,knownData:Static
                 requests.push(setColor(sheet.properties?.sheetId,
                     1,protectedDataRange.rows,0,protectedDataRange.columns,0.8,0.8,0.8));
 
-                //  requests.push(addFilterToSheet(sheet.properties?.sheetId,0,1000,0,26));
                                  
                 requests.push( protect(sheet.properties?.sheetId,protectedDataRange.rows,protectedDataRange.columns,clientEmail));   
-                // requests.push( allowFormating(sheet.properties?.sheetId));   
 
             }      
         }
@@ -384,22 +363,6 @@ export async function updateSpreadsheets(spreadsheetId:string,
             });
         }
 
-            // await sheets.spreadsheets.values.clear({
-            //     spreadsheetId,
-            //     auth,
-            //     range: group, 
-            // });
-                    
-            // await sheets.spreadsheets.values.append({
-            //     spreadsheetId: spreadsheetId,
-            //     auth: auth,
-            //     range: group,
-            //     valueInputOption: "USER_ENTERED",
-            //     requestBody: {
-            //         values: newSpreadsheetData[group]
-            //     }
-            // }); 
-        
         console.log(`## Remove unused sheets`);
         clearSheets(newSpreadsheetData,spreadsheetId,auth);
 

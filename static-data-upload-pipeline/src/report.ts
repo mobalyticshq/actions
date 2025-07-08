@@ -6,7 +6,6 @@ import { GoogleAuth } from 'google-auth-library';
 import { addSheet, clearSheets, deleteSheet, setColor } from "./spreadsheets.utils";
 import { stringify } from "./utils";
 
-// const mainReportName= "main report";
 const sheets = google.sheets("v4");     
 
 type ColoredCell = {row:number,col:number,r:number,g:number,b:number};

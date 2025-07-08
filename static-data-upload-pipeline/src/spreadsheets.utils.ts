@@ -129,26 +129,6 @@ export function protect(sheetId:number,rows:number,columns:number,clientEmail:st
     return request; 
 }
 
-// export  function allowFormating(sheetId:number){   
-//     const request = 
-//         {
-//         updateSheetProperties: {
-//             properties: {
-//             sheetId: 0,
-//             sheetProtection: {
-//                 protected: true,
-//                 warningOnly: false,
-//                 allowFormattingColumns: true,
-//                 allowFormattingCells: false,
-//                 allowDeletingColumns: false
-//             }
-//             },
-//             fields: 'sheetProtection(protected,warningOnly,allowFormattingColumns,allowFormattingCells,allowDeletingColumns)'
-//         }
-//         }
-//     return request; 
-// }
-
 
 export async function addSheet(spreadsheetId:string,auth:GoogleAuth,title:string){
     await sheets.spreadsheets.batchUpdate({
