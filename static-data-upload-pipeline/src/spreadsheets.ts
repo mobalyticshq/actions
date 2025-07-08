@@ -309,57 +309,6 @@ async function setMetadata(spreadsheetId:string,auth:GoogleAuth,knownData:Static
              
 }
 
-async function updateFormulas(spreadsheetId:string,auth:GoogleAuth,data:{ [key: string]: Array<Array<string>> }){
-    const response = await sheets.spreadsheets.get({
-        spreadsheetId,
-        auth: auth,        
-    });
-    const sheetsInfo = response.data.sheets;
-    
-    if(sheetsInfo){        
-        for (const sheet of sheetsInfo) {
-            if(sheet.properties?.title && sheet.properties?.sheetId && data[sheet.properties?.title]){                
-                const requests= [];                
-                //update images
-                 for(let i=0;i<data[sheet.properties?.title].length;++i)
-                     for(let j=0;j<data[sheet.properties?.title][i].length;++j){
-                        const cell = data[sheet.properties?.title][i][j];
-                        if(isImage(cell.toLowerCase()))
-                        {
-                            requests.push({
-                            updateCells: {
-                            start: {
-                                sheetId: sheet.properties?.sheetId,
-                                rowIndex: i,
-                                columnIndex: j,
-                            },
-                            rows: [
-                                {
-                                values: [
-                                    {
-                                    userEnteredValue: {
-                                        formulaValue: `=IMAGE("${cell}")`,
-                                    },
-                                    },
-                                ],
-                                },
-                            ],
-                            fields: 'userEnteredValue',
-                            },
-                            });
-                        }
-                     }            
-                if(requests.length>0)
-                    await sheets.spreadsheets.batchUpdate({
-                        spreadsheetId: spreadsheetId,
-                        auth,
-                        requestBody: { requests },
-                    });
-            }
-        }
-    }
-}
-
 //update spreadsheets
 export async function updateSpreadsheets(spreadsheetId:string,    
     mergedData:StaticData,
@@ -412,12 +361,11 @@ export async function updateSpreadsheets(spreadsheetId:string,
                     }
                 });
             
-            if(sheet.properties?.title){
-                
+            if(sheet.properties?.title){                
                 requests.push({
                     appendCells: {
                 sheetId: sheet.properties?.sheetId,
-                    rows: newSpreadsheetData[sheet.properties?.title].map(row => ({
+                    rows: newSpreadsheetData[sheet.properties?.title]?.map(row => ({
                         values: row.map(cell => (
                             cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:
                             {userEnteredValue: {stringValue: String(cell)}}
@@ -454,9 +402,6 @@ export async function updateSpreadsheets(spreadsheetId:string,
         
         console.log(`## Remove unused sheets`);
         clearSheets(newSpreadsheetData,spreadsheetId,auth);
-        
-        // console.log(`## Update formulas`);
-        // await updateFormulas(spreadsheetId,auth,newSpreadsheetData);
 
         console.log(`## Update metadata`)
         await setMetadata(spreadsheetId,auth,jsonData,newSpreadsheetData,process.env.GOOGLE_CLIENT_EMAIL);

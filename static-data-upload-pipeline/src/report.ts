@@ -263,7 +263,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                 requests.push({
                     appendCells: {
                 sheetId: sheet.properties?.sheetId,
-                    rows: spreadsheetData[sheet.properties?.title].map(row => ({
+                    rows: spreadsheetData[sheet.properties?.title]?.map(row => ({
                         values: row.map(cell => (
                             cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:
                             {userEnteredValue: {stringValue: String(cell)}}
