@@ -5,6 +5,8 @@ export const initSlugify =()=>
     slugify_.default.extend({
     "+": "-plus-",
     "-": "-",
+    '—':"-",
+    '‐':"-",
     "*": "-",
     "/": "-",
     "%": "-",

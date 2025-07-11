@@ -106,6 +106,7 @@ Need to add code block in workflow file
 | -------- | ------- | ------- |
 | asset URL not available | ERROR | unable to download image by URL |
 | asset too big | ERROR | size of asset >100MB|
+| invalid asset URL | ERROR | asset url MUST starts with tmp_assets_folder and has allowed extension|
 | group is not array | ERROR | all fields (groups) in root MUST be arrays of entities (objects)|
 | id is abscent | ERROR | entity(object) MUST have field **id**|
 | id is not uniq | ERROR | two or more objects in group have same **id**|

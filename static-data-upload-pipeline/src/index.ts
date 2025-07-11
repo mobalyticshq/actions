@@ -15,7 +15,6 @@ const execAsync = promisify(exec);
 
 initSlugify();
 
-
 function isValidReport(reports:ValidationReport[]){  
   let errors = 0,warnings = 0,infos=0;
   for(const report of reports){
