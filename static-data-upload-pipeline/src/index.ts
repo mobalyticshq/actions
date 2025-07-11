@@ -64,7 +64,7 @@ function isValidReport(reports:ValidationReport[]){
 
 function syncBuckets(source:string, target:string): Promise<{copied:Array<string>}>  {
 return new Promise((resolve, reject) => {
-    
+        
     const prefix = `Copying ${source}`;
     const proc = spawn('gsutil', ['-m', 'rsync', '-r', '-c', source, target]);
 
@@ -101,34 +101,47 @@ return new Promise((resolve, reject) => {
 }
 
 
-async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string,cfClientID:string){
+async function updateAssets(tmpAssetFolder:string,prodAssetFolder:string,cfClientID?:string){
+  
+  if(tmpAssetFolder == prodAssetFolder){
+    console.log('🔄 Tmp bucket equal prod bucket, skip asset sync ');    
+    return;
+  }
   console.log('🔄 Sync tmp assets bucket with prod bucket');  
   const assetCmd = `gsutil -m rsync -r  -c  ${tmpAssetFolder} ${prodAssetFolder} `;
   console.log(assetCmd)
+
   const { copied } = await syncBuckets(tmpAssetFolder,prodAssetFolder);
 
   if(copied.length>0){
-    console.log(`🔄 Reset cloudflare cache for ${copied.length} files`);  
+    if(cfClientID){
+      console.log(`🔄 Reset cloudflare cache for ${copied.length} files`);  
 
-    const chunks: string[][] = [];
-    const chunkSize = 100;
-    for (let i = 0; i < copied.length; i += chunkSize) {
-      chunks.push(copied.slice(i, i + chunkSize));
-    }
-    for(const chunk of chunks){        
-      const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfClientID}/purge_cache`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.CF_AUTH_TOKEN}`
-        },
-        body: JSON.stringify({files:chunk})
-      });
-      if(response.status!=200){
-        console.log('⚠️ Error during CF cache reset',{response});            
+      const chunks: string[][] = [];
+      const chunkSize = 100;
+      for (let i = 0; i < copied.length; i += chunkSize) {
+        chunks.push(copied.slice(i, i + chunkSize));
       }
+      for(const chunk of chunks){        
+        const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfClientID}/purge_cache`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.CF_AUTH_TOKEN}`
+          },
+          body: JSON.stringify({files:chunk})
+        });
+        if(response.status!=200){
+          console.log('⚠️ Error during CF cache reset',{response});            
+        }
+      }
+      console.log(`✅ Cloudflare reset`);  
+       
+    }else{
+      console.log('⚠️ CF_CLIENT_ID not defined - unable to reset CF cache');  
+      await sendSlack(`⚠️ CF_CLIENT_ID not defined - unable to reset CF cache`);
     }
-    console.log(`✅ Cloudflare reset`);  
+
   }
 }
 
@@ -275,12 +288,8 @@ async function runPipeline(versions:Array<string>,
 
       const cfClientID = process.env.CF_CLIENT_ID;
 
-      if(cfClientID)
-        await updateAssets(tmpAssetFolder,prodAssetFolder,cfClientID);      
-      else{
-        console.log('⚠️ CF_CLIENT_ID not defined - unable to reset CF cache');  
-        await sendSlack(`⚠️ CF_CLIENT_ID not defined - unable to reset CF cache`);
-      }
+      await updateAssets(tmpAssetFolder,prodAssetFolder,cfClientID);      
+
       await sendSlack(`✅ Static data https://storage.cloud.google.com/${process.env.GCP_BUCKET_NAME}/${versions[versions.length-1]} uploaded`);
       console.log('🔥 All done!!!');  
       logger.endGroup();
