@@ -322,7 +322,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                             fields: 'userEnteredValue,textFormatRuns',
                             range: {
                                 sheetId: sheet.properties?.sheetId,
-                                startRowIndex: 1,
+                                startRowIndex: 0,
                                 endRowIndex: spreadsheetData[sheet.properties?.title].length,
                                 startColumnIndex: 0,
                                 endColumnIndex: 1
