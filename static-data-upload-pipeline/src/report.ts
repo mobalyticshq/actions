@@ -289,32 +289,24 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                         fields: '*'
                         }
                     });
-
+                    if(REPORT_DOC_URL)
                     requests2.push({                    
                         updateCells: {
                             rows: spreadsheetData[sheet.properties?.title]?.map(row => {
                                 return   {
                                     values: [{
                                         userEnteredValue: {
-                                            stringValue: 'Google | OpenAI'
+                                            stringValue: row[0]
                                         },
                                         textFormatRuns: [
                                             {
                                             startIndex: 0,
                                             format: {
                                                 link: {
-                                                uri: 'https://google.com'
+                                                uri: REPORT_DOC_URL
                                                 }
                                             }
                                             },
-                                            {
-                                            startIndex: 9,
-                                            format: {
-                                                link: {
-                                                uri: 'https://openai.com'
-                                                }
-                                            }
-                                            }
                                         ]
                                     }] 
                                 }                      
