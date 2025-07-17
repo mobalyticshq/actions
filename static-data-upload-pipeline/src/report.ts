@@ -58,9 +58,9 @@ function getTextForReportKey(records:ValidationRecords,key:ReportMessages){
     if(records[key]===undefined)
         return '';
     const values = Array.from(records[key]);     
-    if(values.length>0)
-        return `${key} (${values[0]})\n`;
-    return '';
+    let msg = '';
+    values.forEach(text=>msg+=text+'\n')        
+    return msg;
 }
 
 function validateRecords(

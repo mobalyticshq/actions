@@ -26,7 +26,6 @@ export enum ReportMessages{
     fieldDisappear="field disappear",
     assetChanged="asset changed",
 
-    //expected values:
     justMsg="wrong id, expected:",
     justColor="wrong slug, expected:",
 } 
