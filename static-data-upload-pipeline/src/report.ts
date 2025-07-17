@@ -263,6 +263,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
             //     }
         }
         const requests = [];
+        // const requests2 = [];
         const sheetsDataNew = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
         if(sheetsDataNew.data.sheets){ 
             //clear
@@ -274,27 +275,61 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                     }
                 });
             
-            if(sheet.properties?.title){
-                     
-                requests.push({
-                    appendCells: {
-                    sheetId: sheet.properties?.sheetId,
-                    rows: spreadsheetData[sheet.properties?.title]?.map(row => {
-                        const result =  {
-                            values: row.map(cell => (                            
+                if(sheet.properties?.title){
+                
+                    requests.push({
+                        appendCells: {
+                        sheetId: sheet.properties?.sheetId,
+                        rows: spreadsheetData[sheet.properties?.title]?.map(row => ({
+                            values: row.map(cell => (
+                            // cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:
                                 {userEnteredValue: {stringValue: String(cell)}}
-                            ))
+                        ))
+                        })),
+                        fields: '*'
                         }
-                        return result;                        
-                    //     values: row.map(cell => (
-                    //         cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:
-                    //         {userEnteredValue: {stringValue: String(cell)}}
-                    // ))
-                    }),
-                    fields: '*'
-                    }
-                });
-            }
+                    });
+
+                    requests.push({                    
+                        updateCells: {
+                            rows: spreadsheetData[sheet.properties?.title]?.map(row => {
+                                return   {
+                                    values: [{
+                                        userEnteredValue: {
+                                            stringValue: 'Google | OpenAI'
+                                        },
+                                        textFormatRuns: [
+                                            {
+                                            startIndex: 0,
+                                            format: {
+                                                link: {
+                                                uri: 'https://google.com'
+                                                }
+                                            }
+                                            },
+                                            {
+                                            startIndex: 9,
+                                            format: {
+                                                link: {
+                                                uri: 'https://openai.com'
+                                                }
+                                            }
+                                            }
+                                        ]
+                                    }] 
+                                }                      
+                            }),
+                            fields: 'userEnteredValue,textFormatRuns',
+                            range: {
+                                sheetId: sheet.properties?.sheetId,
+                                startRowIndex: 1,
+                                endRowIndex: spreadsheetData[sheet.properties?.title].length,
+                                startColumnIndex: 0,
+                                endColumnIndex: 1
+                            }
+                        }
+                    });                
+                }
             }
 
             await sheets.spreadsheets.batchUpdate({
@@ -302,6 +337,11 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
             auth,
             requestBody: { requests }
             });
+            // await sheets.spreadsheets.batchUpdate({
+            // spreadsheetId,
+            // auth,
+            // requestBody: { requests:requests2 }
+            // });
         }
     }    
 }
