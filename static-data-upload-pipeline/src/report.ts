@@ -257,13 +257,9 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
             if(!report){
                 await addSheet(spreadsheetId,auth,group);
             }            
-            // if(REPORT_DOC_URL)
-            //     for(let i=1;i<spreadsheetData[group].length;++i){
-            //         spreadsheetData[group][i][0] = `=HYPERLINK("${REPORT_DOC_URL}","${spreadsheetData[group][i][0] }")`;
-            //     }
+
         }
         const requests = [];
-        // const requests2 = [];
         const sheetsDataNew = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
         if(sheetsDataNew.data.sheets){ 
             //clear
@@ -282,7 +278,6 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                         sheetId: sheet.properties?.sheetId,
                         rows: spreadsheetData[sheet.properties?.title]?.map(row => ({
                             values: row.map(cell => (
-                            // cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:
                                 {userEnteredValue: {stringValue: String(cell)}}
                         ))
                         })),
@@ -329,11 +324,6 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
             auth,
             requestBody: { requests }
             });
-            // await sheets.spreadsheets.batchUpdate({
-            // spreadsheetId,
-            // auth,
-            // requestBody: { requests:requests2 }
-            // });
         }
     }    
 }
