@@ -27,8 +27,8 @@ export enum ReportMessages{
     assetChanged="asset changed",
 
     //expected values:
-    expectedID="wrong id, expected:",
-    expectedSlug="wrong slug, expected:",
+    justMsg="wrong id, expected:",
+    justColor="wrong slug, expected:",
 } 
 const assetExtensions = [
     ".jpeg" ,".jpg", ".png", ".gif", ".webp", ".svg", ".avif",".webm", ".mp4"
@@ -301,8 +301,8 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                     [ReportMessages.invalidSubstitutions]:new Set<string>(),
                     [ReportMessages.numberNotAllowed]:new Set<string>(),
 
-                    [ReportMessages.expectedID]:new Set<string>(),
-                    [ReportMessages.expectedSlug]:new Set<string>(),
+                    [ReportMessages.justMsg]:new Set<string>(),
+                    [ReportMessages.justColor]:new Set<string>(),
                 }
             } as ValidationEntityReport; 
         //entities has id 
@@ -331,12 +331,14 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
             if(ent.gameId && ent.id){
                 if(ent.gameId!==ent.id){
                     // entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
-                    entityReport.errors[ReportMessages.expectedID].add(ent.gameId);
+                    entityReport.errors[ReportMessages.justMsg].add(`wrong id, expected:${ent.gameId}`);
+                    entityReport.errors[ReportMessages.justColor].add(`${group}.id`);
                 }
             }else if(ent.name && ent.id){
                 if(slugify(ent.name)!==ent.id){
                     // entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
-                    entityReport.errors[ReportMessages.expectedID].add(slugify(ent.name));
+                    entityReport.errors[ReportMessages.justMsg].add(`wrong id, expected:${slugify(ent.name)}`);
+                    entityReport.errors[ReportMessages.justColor].add(`${group}.id`);
                 }                
             }
         
@@ -344,7 +346,8 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
             if(ent.name && ent.slug)
                 if(slugify(ent.name)!==ent.slug){
                     // entityReport.errors[ReportMessages.mismatchedSlugs].add(`${group}.slug`);
-                    entityReport.errors[ReportMessages.expectedSlug].add(slugify(ent.name));
+                    entityReport.errors[ReportMessages.justMsg].add(`wrong slug, expected:${slugify(ent.name)}`);     
+                    entityReport.errors[ReportMessages.justColor].add(`${group}.slug`);
                 }
 
         //new entity

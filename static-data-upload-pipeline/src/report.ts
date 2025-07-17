@@ -74,9 +74,7 @@ function validateRecords(
     //all messages for entity
     //key text of message
     {
-        let msg ='';
-        msg += getTextForReportKey(records,ReportMessages.expectedID);
-        msg += getTextForReportKey(records,ReportMessages.expectedSlug);
+        let msg = getTextForReportKey(records,ReportMessages.justMsg);
         if(msg.length>0)
             row.length==0?row.push(msg):row[0]=row[0]+msg;                        
     }
@@ -86,8 +84,9 @@ function validateRecords(
         let colNumber =0;        
         for(const prop of header){            
             records[key].forEach(path =>{
-                if(subPath(path,1)==prop){                                        
-                    msg+=`${key} (${skipBeginPath(path)})\n`;                    
+                if(subPath(path,1)==prop){   
+                    if(key!=ReportMessages.justColor)
+                        msg+=`${key} (${skipBeginPath(path)})\n`;                    
                     coloredCells[group].push({
                         row:spreadsheetData[group]?spreadsheetData[group].length:1,
                         col:colNumber+1,
