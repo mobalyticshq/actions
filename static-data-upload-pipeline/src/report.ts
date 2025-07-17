@@ -263,7 +263,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
             //     }
         }
         const requests = [];
-        const requests2 = [];
+        // const requests2 = [];
         const sheetsDataNew = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
         if(sheetsDataNew.data.sheets){ 
             //clear
@@ -290,37 +290,37 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                         }
                     });
                     if(REPORT_DOC_URL)
-                    requests2.push({                    
-                        updateCells: {
-                            rows: spreadsheetData[sheet.properties?.title]?.map(row => {
-                                return   {
-                                    values: [{
-                                        userEnteredValue: {
-                                            stringValue: row[0]
-                                        },
-                                        textFormatRuns: [
-                                            {
-                                            startIndex: 0,
-                                            format: {
-                                                link: {
-                                                uri: REPORT_DOC_URL
-                                                }
-                                            }
+                        requests.push({                    
+                            updateCells: {
+                                rows: spreadsheetData[sheet.properties?.title]?.map(row => {
+                                    return   {
+                                        values: [{
+                                            userEnteredValue: {
+                                                stringValue: row[0]
                                             },
-                                        ]
-                                    }] 
-                                }                      
-                            }),
-                            fields: 'userEnteredValue,textFormatRuns',
-                            range: {
-                                sheetId: sheet.properties?.sheetId,
-                                startRowIndex: 0,
-                                endRowIndex: spreadsheetData[sheet.properties?.title].length,
-                                startColumnIndex: 0,
-                                endColumnIndex: 1
+                                            textFormatRuns: [
+                                                {
+                                                startIndex: 0,
+                                                format: {
+                                                    link: {
+                                                    uri: REPORT_DOC_URL
+                                                    }
+                                                }
+                                                },
+                                            ]
+                                        }] 
+                                    }                      
+                                }),
+                                fields: 'userEnteredValue,textFormatRuns',
+                                range: {
+                                    sheetId: sheet.properties?.sheetId,
+                                    startRowIndex: 0,
+                                    endRowIndex: spreadsheetData[sheet.properties?.title].length,
+                                    startColumnIndex: 0,
+                                    endColumnIndex: 1
+                                }
                             }
-                        }
-                    });                
+                        });                
                 }
             }
 
@@ -329,11 +329,11 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
             auth,
             requestBody: { requests }
             });
-            await sheets.spreadsheets.batchUpdate({
-            spreadsheetId,
-            auth,
-            requestBody: { requests:requests2 }
-            });
+            // await sheets.spreadsheets.batchUpdate({
+            // spreadsheetId,
+            // auth,
+            // requestBody: { requests:requests2 }
+            // });
         }
     }    
 }
