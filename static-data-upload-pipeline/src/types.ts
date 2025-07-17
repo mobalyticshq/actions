@@ -14,7 +14,7 @@ export type StaticDataConfig = {
 }
 
 export type ValidationRecords = {
-      [key: string]:Set<string>;
+    [key: string]:Set<string>;//[errorText]:column    
 };
 export type ValidationEntityReport={
     entity:Entity;

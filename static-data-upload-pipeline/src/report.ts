@@ -1,10 +1,11 @@
-import { Entity, StaticData, ValidationEntityReport, ValidationRecords, ValidationReport } from "./types";
+import { Entity, ValidationRecords, ValidationReport } from "./types";
 
 import { google } from 'googleapis';
 
 import { GoogleAuth } from 'google-auth-library';
-import { addSheet, clearSheets, deleteSheet, setColor } from "./spreadsheets.utils";
+import { addSheet, clearSheets, setColor } from "./spreadsheets.utils";
 import { stringify } from "./utils";
+import { ReportMessages } from "./validation";
 
 const sheets = google.sheets("v4");     
 
@@ -17,7 +18,6 @@ function subPath(path:string,idx:number){
 function skipBeginPath(path:string){
     return path.substring(path.indexOf('.')+1);
 }
-
 
 async function fillColors(
     cells:{ [key: string]: Array<{row:number,col:number,r:number,g:number,b:number}>},
@@ -54,6 +54,15 @@ async function fillColors(
         requests:requests}});  
 }
 
+function getTextForReportKey(records:ValidationRecords,key:ReportMessages){
+    if(records[key]===undefined)
+        return '';
+    const values = Array.from(records[key]);     
+    if(values.length>0)
+        return `${key} (${values[0]})\n`;
+    return '';
+}
+
 function validateRecords(
     spreadsheetData:{ [key: string]: Array<Array<string>> },
     records:ValidationRecords,
@@ -61,16 +70,24 @@ function validateRecords(
     group:string, 
     row:Array<string>,
     header:Array<string>,r:number,g:number,b:number){
-    
+         
+    //all messages for entity
+    //key text of message
+    {
+        let msg ='';
+        msg += getTextForReportKey(records,ReportMessages.expectedID);
+        msg += getTextForReportKey(records,ReportMessages.expectedSlug);
+        if(msg.length>0)
+            row.length==0?row.push(msg):row[0]=row[0]+msg;                        
+    }
     for(const key of Object.keys(records)){
         //kind of message                        
         let msg ='';
-        let colNumber =0;
-        for(const prop of header){
-            //warnings in this field
+        let colNumber =0;        
+        for(const prop of header){            
             records[key].forEach(path =>{
-                if(subPath(path,1)==prop){
-                    msg+=`${key} (${skipBeginPath(path)})\n`;
+                if(subPath(path,1)==prop){                                        
+                    msg+=`${key} (${skipBeginPath(path)})\n`;                    
                     coloredCells[group].push({
                         row:spreadsheetData[group]?spreadsheetData[group].length:1,
                         col:colNumber+1,
@@ -80,6 +97,7 @@ function validateRecords(
             });
             colNumber++;
         }
+    
         if(msg.length>0)
             row.length==0?row.push(msg):row[0]=row[0]+msg;                        
     }
@@ -261,7 +279,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                 
                 requests.push({
                     appendCells: {
-                sheetId: sheet.properties?.sheetId,
+                    sheetId: sheet.properties?.sheetId,
                     rows: spreadsheetData[sheet.properties?.title]?.map(row => ({
                         values: row.map(cell => (
                             cell.startsWith('=')?{userEnteredValue: {formulaValue: String(cell)}}:

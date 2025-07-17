@@ -23,10 +23,12 @@ export enum ReportMessages{
     deprecated="entity deprecated",
     slugChanged="slug changed",
     nameChanged="name changed",
-    // URLChanged="url changed",
     fieldDisappear="field disappear",
     assetChanged="asset changed",
 
+    //expected values:
+    expectedID="wrong id, expected:",
+    expectedSlug="wrong slug, expected:",
 } 
 const assetExtensions = [
     ".jpeg" ,".jpg", ".png", ".gif", ".webp", ".svg", ".avif",".webm", ".mp4"
@@ -298,6 +300,9 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                     [ReportMessages.invalidAssetURL]:new Set<string>(),
                     [ReportMessages.invalidSubstitutions]:new Set<string>(),
                     [ReportMessages.numberNotAllowed]:new Set<string>(),
+
+                    [ReportMessages.expectedID]:new Set<string>(),
+                    [ReportMessages.expectedSlug]:new Set<string>(),
                 }
             } as ValidationEntityReport; 
         //entities has id 
@@ -325,18 +330,21 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
         //gameId && id == gamId || name && id == slugify(name)
             if(ent.gameId && ent.id){
                 if(ent.gameId!==ent.id){
-                    entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
+                    // entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
+                    entityReport.errors[ReportMessages.expectedID].add(ent.gameId);
                 }
             }else if(ent.name && ent.id){
                 if(slugify(ent.name)!==ent.id){
-                    entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
+                    // entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
+                    entityReport.errors[ReportMessages.expectedID].add(slugify(ent.name));
                 }                
             }
         
         //name && slug == slugify(name)
             if(ent.name && ent.slug)
                 if(slugify(ent.name)!==ent.slug){
-                    entityReport.errors[ReportMessages.mismatchedSlugs].add(`${group}.slug`);
+                    // entityReport.errors[ReportMessages.mismatchedSlugs].add(`${group}.slug`);
+                    entityReport.errors[ReportMessages.expectedSlug].add(slugify(ent.name));
                 }
 
         //new entity
