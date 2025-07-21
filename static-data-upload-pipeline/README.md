@@ -121,7 +121,7 @@ Need to add code block in workflow file
 | can't find entity in referenced group | ERROR | there are no entity in referenced group for this reference field  |
 | invalid asset value | ERROR | asset MUST be placed in **tmp_assets_folder** and has one of allowed extensions **(".jpeg" ,".jpg", ".png", ".gif", ".webp", ".svg", ".avif",".webm", ".mp4")**|
 | can't find data for substitution | ERROR | substitution in text field MUST be in format {{index:group.id:default_value:opt}}  entity in JSON for **group.id** not found|
-| number is not allowed | ERROR | all numbers MUST be as strings|
+| number is not allowed | ERROR | In order to avoid errors during processing float32/float64/int32/int64 all numbers MUST be as strings e.g. `"value: "5` is wrong, `"value": "5"` is correct|
 | entity deprecated | WARNING | **id**  for this group in latest version of static data not found |
 | slug changed | WARNING | slug was changed in latest  version of static data|
 | name changed | WARNING | name was changed in latest  version of static data|
