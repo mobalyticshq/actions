@@ -231,10 +231,10 @@ async function runPipeline(versions:Array<string>,
       logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);   
       const reportDone = await createReport(  reports,reportSpreadsheetId );
       
-      let slackMsg = `Mistakes Report:  `;
-      slackMsg+=`❗ errors:${errors}  `;
-      slackMsg+=`⚠️ warnings:${warnings}    `;
-      slackMsg+=`ℹ️ infos:${infos}    `;
+      let slackMsg = `Mistakes Report: `;
+      slackMsg+=`❗-errors:${errors}  `;
+      slackMsg+=`⚠️-warnings:${warnings}  `;
+      slackMsg+=`ℹ️-infos:${infos}    `;
 
       if(reportDone){
         console.log('✅ Mistakes Report done');   
