@@ -263,7 +263,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
         const sheetsDataNew = await sheets.spreadsheets.get({spreadsheetId, auth,includeGridData: false});
         if(sheetsDataNew.data.sheets){ 
             //clear
-            for (const sheet of sheetsDataNew.data.sheets) {
+            for (const sheet of sheetsDataNew.data.sheets) {              
                 requests.push({
                     updateCells: {
                     range: { sheetId: sheet.properties?.sheetId },
@@ -272,7 +272,8 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                 });
             
                 if(sheet.properties?.title){
-                
+                    if(spreadsheetData[sheet.properties?.title]===undefined)
+                        continue;
                     requests.push({
                         appendCells: {
                         sheetId: sheet.properties?.sheetId,
