@@ -363,8 +363,8 @@ async function run() {
   logger.endGroup();
 
   if(files)
-    for(const file of files){
-      if(!pattern.test(file))
+    for(const file of files){  
+      if(!pattern.test(file)&&!file.endsWith("config.json"))
         continue;
       const dirName = path.dirname(file);
       if(dirName !=staticDataPath)
