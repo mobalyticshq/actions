@@ -312,20 +312,22 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
             if(ent.id && knownIds.has(ent.id)){
                 entityReport.errors[ReportMessages.duplicatedIds].add(`${group}.id`);
             }
-            ent.id&&knownIds.add(ent.id)
-
+            if(ent.id)
+                knownSlugs.add(ent.id)
         //slug  is unique in group
             if(ent.slug && knownSlugs.has(ent.slug)){
                 entityReport.errors[ReportMessages.duplicatedSlugs].add(`${group}.slug`);
             }
-            ent.slug&&knownSlugs.add(ent.slug)
+            if(ent.slug)
+                knownSlugs.add(ent.slug)
 
         //gameId is unique
             if(ent.gameId && knownGameIds.has(ent.gameId)){
                 entityReport.errors[ReportMessages.duplicatedGameIds].add(`${group}.gameId`);
             }
-            ent.gameId&&knownGameIds.add(ent.gameId)
-
+            if(ent.gameId)
+                knownSlugs.add(ent.gameId)
+            
         //gameId && id == gamId || name && id == slugify(name)
             if(ent.gameId && ent.id){
                 if(ent.gameId!==ent.id){
