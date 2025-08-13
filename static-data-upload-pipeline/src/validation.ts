@@ -315,6 +315,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
             if(ent.id)
                 knownIds.add(ent.id)
         //slug  is unique in group
+            console.log(ent.slug,knownSlugs.has(ent.slug));
             if(ent.slug =='the-thrill')
                 console.log('found the-thrill',knownSlugs.has(ent.slug))
             if(ent.slug && knownSlugs.has(ent.slug)){
