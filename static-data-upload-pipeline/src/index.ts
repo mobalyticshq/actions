@@ -197,11 +197,10 @@ async function runPipeline(versions:Array<string>,
     logger.group(`✍ Merge static data files `);  
     let  staticData = {} as StaticData,oldData = {} as StaticData;
     for(let i=0;i<versions.length;++i){
-      console.log(`✍ Merge ${logColors.green} ${versions[i]} ${logColors.reset}`);
       const data = JSON.parse(readFileSync(versions[i], 'utf8'));    
       //not for latest data skip invalid data files
       if(i<versions.length-1 && !isValidDataForMerge(data)){              
-        console.log(`❗ ${logColors.yellow} ${versions[i]}  not valid for merge ${logColors.reset}`);
+        console.log(`❗Skip: ${logColors.yellow} ${versions[i]} is not valid for merge ${logColors.reset}`);
         continue;
       }
       console.log(`✍ Merge ${logColors.green} ${versions[i]} ${logColors.reset}`);

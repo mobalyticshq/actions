@@ -1,5 +1,6 @@
 import { Entity, StaticData } from './types';
 
+//TODO: checking changes in pipeline, remove comments and unused code later
 function mergeGroup(mergedData:StaticData,newGroup:Array<Entity>,oldGroup:Array<Entity>,group:string,deprecateLostData:boolean){
   mergedData[group]=[];
 
