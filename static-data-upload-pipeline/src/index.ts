@@ -203,7 +203,7 @@ async function runPipeline(versions:Array<string>,
         console.log(`❗Skip: ${logColors.yellow} ${versions[i]} is not valid for merge ${logColors.reset}`);
         continue;
       }
-      console.log(`✍ Merge ${logColors.green} ${versions[i]} ${logColors.reset}`);
+      console.log(`✍ Merge: ${logColors.green} ${versions[i]} ${logColors.reset}`);
       oldData = structuredClone(staticData);
       staticData = mergeStaticData(data,staticData);      
     }
