@@ -313,7 +313,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                 entityReport.errors[ReportMessages.duplicatedIds].add(`${group}.id`);
             }
             if(ent.id)
-                knownSlugs.add(ent.id)
+                knownIds.add(ent.id)
         //slug  is unique in group
             if(ent.slug && knownSlugs.has(ent.slug)){
                 entityReport.errors[ReportMessages.duplicatedSlugs].add(`${group}.slug`);
@@ -326,7 +326,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                 entityReport.errors[ReportMessages.duplicatedGameIds].add(`${group}.gameId`);
             }
             if(ent.gameId)
-                knownSlugs.add(ent.gameId)
+                knownGameIds.add(ent.gameId)
             
         //gameId && id == gamId || name && id == slugify(name)
             if(ent.gameId && ent.id){
