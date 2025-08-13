@@ -8,7 +8,7 @@ export type MergeReport={
     newGroupNotArray:Set<string>;
     oldGroupNotArray:Set<string>;
     deprecatedEntities:{ [key: string]: Set<string> };
-    duplicatesInNewData:{ [key: string]: Set<string> };
+    // duplicatesInNewData:{ [key: string]: Set<string> };
   }
 
 function mergeGroup(mergedData:StaticData,newGroup:Array<Entity>,oldGroup:Array<Entity>,group:string,mergeReport:MergeReport,deprecateLostData:boolean){
@@ -28,13 +28,13 @@ function mergeGroup(mergedData:StaticData,newGroup:Array<Entity>,oldGroup:Array<
         mergedData[group].push(oldIt);    
     }else{
       //merged already - duplicate of ID
-      if(mergedData[group].find(it=>it.id == match.id)){      
-        mergeReport.duplicatesInNewData[group]||=new Set();
-        mergeReport.duplicatesInNewData[group].add(match.id);        
-      }else{
+      // if(mergedData[group].find(it=>it.id == match.id)){      
+      //   mergeReport.duplicatesInNewData[group]||=new Set();
+      //   mergeReport.duplicatesInNewData[group].add(match.id);        
+      // }else{
         //correct
         mergedData[group].push(match);
-      }     
+      // }     
     }  
   });
 
@@ -43,14 +43,14 @@ function mergeGroup(mergedData:StaticData,newGroup:Array<Entity>,oldGroup:Array<
     const match = oldGroup.find(oldIt=>newIt.id == oldIt.id);
     if(!match){
       //new entity      
-      if(mergedData[group].find(it=>it.id == newIt.id)){      
+      // if(mergedData[group].find(it=>it.id == newIt.id)){      
         //merged already - duplicate of ID
-        mergeReport.duplicatesInNewData[group]||=new Set();
-        mergeReport.duplicatesInNewData[group].add(newIt.id);
-      }else{
+        // mergeReport.duplicatesInNewData[group]||=new Set();
+        // mergeReport.duplicatesInNewData[group].add(newIt.id);
+      // }else{
         //correct
         mergedData[group].push(newIt);
-      } 
+      // } 
     }       
   });
 }
