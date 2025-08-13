@@ -200,13 +200,13 @@ async function runPipeline(versions:Array<string>,
       console.log(`✍ Merge ${logColors.green} ${versions[i]} ${logColors.reset}`);
       const data = JSON.parse(readFileSync(versions[i], 'utf8'));    
       //not for latest data skip invalid data files
-      if(i<versions.length-1 && !isValidDataForMerge(data))              
+      if(i<versions.length-1 && !isValidDataForMerge(data)){              
+        console.log(`❗ ${logColors.yellow} ${versions[i]}  not valid for merge ${logColors.reset}`);
         continue;
-      
-      staticData = mergeStaticData(data,staticData);
-      //we want to fix  changes fo latest file
-      if(i==versions.length-2)
-        oldData = structuredClone(staticData);
+      }
+      console.log(`✍ Merge ${logColors.green} ${versions[i]} ${logColors.reset}`);
+      oldData = structuredClone(staticData);
+      staticData = mergeStaticData(data,staticData);      
     }
     logger.endGroup();
     
