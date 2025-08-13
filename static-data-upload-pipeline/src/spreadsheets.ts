@@ -405,7 +405,7 @@ export async function mergeWithSpreadsheets(spreadsheetId:string,jsonData:Static
         const processedData = applySpreadsheetsData(spreadsheetData,jsonData,spreadsheetReport);
         console.log(`##Merge JSON with spreadsheets`)
         //merge spreadsheet and jsonData, spreadsheet data is additional data
-        const {mergedData,mergeReport} = mergeStaticData(processedData,jsonData,false);        
+        const mergedData = mergeStaticData(processedData,jsonData,false);        
                 
         return {overridedData:mergedData,spreadsheetReport,spreadsheetData}
 

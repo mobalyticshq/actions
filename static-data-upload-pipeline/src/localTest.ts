@@ -44,8 +44,7 @@ async function run(){
     for(let i=0;i<sortedFiles.length;++i){
       console.log(`✍ Merge ${logColors.green} ${sortedFiles[i]} ${logColors.reset}`);
       const data = JSON.parse(readFileSync(sortedFiles[i], 'utf8'));    
-      const {mergedData,mergeReport} = mergeStaticData(data,staticData);
-      staticData = mergedData;
+      staticData = mergeStaticData(data,staticData);
       if(i==sortedFiles.length-2)
         oldData = structuredClone(staticData);
     }
@@ -53,4 +52,4 @@ async function run(){
 
 }
 
-run();
+// run();

@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { readdirSync,readFileSync,existsSync, writeFileSync } from 'fs';
 import * as path from 'path'
-import { mergeStaticData, replaceAssets } from './merge';
+import { isValidDataForMerge, mergeStaticData, replaceAssets } from './merge';
 import { mergeWithSpreadsheets, updateSpreadsheets } from './spreadsheets';
 import { validate } from './validation';
 import { createReport } from './report';
@@ -199,8 +199,12 @@ async function runPipeline(versions:Array<string>,
     for(let i=0;i<versions.length;++i){
       console.log(`✍ Merge ${logColors.green} ${versions[i]} ${logColors.reset}`);
       const data = JSON.parse(readFileSync(versions[i], 'utf8'));    
-      const {mergedData,mergeReport} = mergeStaticData(data,staticData);
-      staticData = mergedData;
+      //not for latest data skip invalid data files
+      if(i<versions.length-1 && !isValidDataForMerge(data))              
+        continue;
+      
+      staticData = mergeStaticData(data,staticData);
+      //we want to fix  changes fo latest file
       if(i==versions.length-2)
         oldData = structuredClone(staticData);
     }
