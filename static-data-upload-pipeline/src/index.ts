@@ -364,7 +364,7 @@ async function run() {
   console.log(`ℹ️ All commited files:\n ${logColors.green}${files}${logColors.reset}`);  
   
   logger.endGroup();
-
+  const processed = new Set();
   if(files)
     for(const file of files){  
       if(!pattern.test(file)&&!file.endsWith("config.json"))
@@ -372,6 +372,9 @@ async function run() {
       const dirName = path.dirname(file);
       if(dirName !=staticDataPath)
         continue;
+      if(processed.has(dirName))
+        continue;
+      processed.add(dirName);
 
       const files = readdirSync( dirName);
       const versionedFiles = new Array<string>();
