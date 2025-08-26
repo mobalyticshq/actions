@@ -7,7 +7,7 @@ import { mergeWithSpreadsheets, updateSpreadsheets } from './spreadsheets';
 import { validate } from './validation';
 import { createReport } from './report';
 import { StaticData, StaticDataConfig, ValidationReport } from './types';
-import { initSlugify, sendSlack } from './utils';
+import { initSlugify, sendSlack, slugify } from './utils';
 import { spawn, exec} from 'child_process';
 import { promisify } from 'util';
 import { logColors, logger } from './logger';
