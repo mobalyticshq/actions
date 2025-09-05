@@ -41,12 +41,33 @@ function isCamelCase(str:string) {
   return pattern.test(str);
 }
 
+const wait = (delay: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, delay));
+
+function fetchRetry(
+  url: string,
+  delay: number,
+  tries: number,
+  fetchOptions: RequestInit = {}
+): Promise<Response> {
+  const onError = (err: unknown): Promise<Response> => {
+    const triesLeft = tries - 1;
+    if (triesLeft <= 0) {
+      return Promise.reject(err instanceof Error ? err : new Error(String(err)));
+    }
+    return wait(delay).then(() => fetchRetry(url, delay, triesLeft, fetchOptions));
+  };
+
+  return fetch(url, fetchOptions).catch(onError);
+}
+
 async function isCDNLinkValid(url:string,reports:{
     report: ValidationEntityReport;
     path: string;
     }[]) {
     try {    
-        const res = await fetch(url,{ method: 'HEAD' });             
+        //const res = await fetch();             
+        const res = await fetchRetry(url,100,3,{ method: 'HEAD' });
         if(res.ok){
             const length =  Number(res.headers.get('content-length'));
             if(!isNaN(length)&& length>assetSizeLimit){
