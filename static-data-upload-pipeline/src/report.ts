@@ -279,7 +279,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                         sheetId: sheet.properties?.sheetId,
                         rows: spreadsheetData[sheet.properties?.title]?.map(row => ({
                             values: row.map(cell => (
-                                {userEnteredValue: {stringValue: String(cell)}}
+                                {userEnteredValue: {stringValue: String(cell.substring(0,Math.min(cell.length,255)))}}
                         ))
                         })),
                         fields: '*'
@@ -292,7 +292,7 @@ async function fillPages(spreadsheetData:{ [key: string]: Array<Array<string>> }
                                     return   {
                                         values: [{
                                             userEnteredValue: {
-                                                stringValue: row[0]
+                                                stringValue: row[0].substring(0,Math.min(row[0].length,255))
                                             },
                                             textFormatRuns: [
                                                 {
