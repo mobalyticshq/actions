@@ -108,3 +108,22 @@ export async function sendSlack(slackMessage:string,iconEmoji = ':receipt:') {
     } 
 
 }
+
+export async function promisePool<T>(
+    items: T[],
+    concurrency: number,
+    worker: (item: T, index: number) => Promise<void>
+): Promise<void> {
+    let i = 0;
+
+    // Запускаем столько воркеров, сколько разрешено concurrency (или меньше, если задач мало)
+    const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+        while (true) {
+            const idx = i++;
+            if (idx >= items.length) break;   // задачи кончились
+            await worker(items[idx], idx);
+        }
+    });
+
+    await Promise.all(workers);
+}
