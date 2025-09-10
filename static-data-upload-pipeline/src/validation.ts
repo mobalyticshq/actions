@@ -1,5 +1,5 @@
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from "./types";
-import { slugify } from "./utils";
+import { slugify, promisePool } from "./utils";
 
 export enum ReportMessages{
     assetURLNotAvailable = "Asset URL not available",
@@ -420,15 +420,23 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
                 validationReport.byGroup[group].push(entityReport);
         }        
         
-    }  
-    
-    await Promise.all(Array.from(knownAssets).map(async assetReport => {
-        const reports = assetReport[1];
-        if(reports.length>0){
-            await isCDNLinkValid(assetReport[0],reports);                     
+    }
+
+    const entries = Array.from(knownAssets); // [ [url, reports[]], ... ]
+
+    await promisePool(entries, 20, async ([url, reports]) => {
+        if (reports.length > 0) {
+            await isCDNLinkValid(url, reports);
         }
-        Promise.resolve(true);
-    }));
+    });
+    
+    // await Promise.all(Array.from(knownAssets).map(async assetReport => {
+    //     const reports = assetReport[1];
+    //     if(reports.length>0){
+    //         await isCDNLinkValid(assetReport[0],reports);
+    //     }
+    //     Promise.resolve(true);
+    // }));
 
     return validationReport;
 }
