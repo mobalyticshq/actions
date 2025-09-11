@@ -424,7 +424,7 @@ export async function validate(data:StaticData,oldData:StaticData,config:StaticD
 
     const entries = Array.from(knownAssets); // [ [url, reports[]], ... ]
 
-    await promisePool(entries, 20, async ([url, reports]) => {
+    await promisePool(entries, 50, async ([url, reports]) => {
         if (reports.length > 0) {
             await isCDNLinkValid(url, reports);
         }
