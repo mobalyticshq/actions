@@ -285,19 +285,17 @@ async function runPipeline(versions:Array<string>,
       console.log('🔄 Sync static data file with bucket');   
       {     
         const dst = `gs://${process.env.GCP_BUCKET_NAME}/${versions[versions.length-1]}`;        
-        const src = `${versions[versions.length-1]}`
         // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `      
-        const cmd = `gsutil cp ${src} ${dst}`;      
+        const cmd = `gsutil cp ${versions[versions.length-1]} ${dst}`;      
         console.log('static data sync cmd:\n',cmd);
         const { stdout, stderr } = await execAsync(cmd);
         console.log('stdout:', stdout);
         if (stderr) console.error('stderr:', stderr);
       }
       {     
-        const dst = `gs://${process.env.GCP_BUCKET_NAME}/${gameConfig}`;
-        const src = `${path.dirname(versions[versions.length-1])}`
+        const dst = `gs://${process.env.GCP_BUCKET_NAME}/${gameConfig}`;        
         // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `      
-        const cmd = `gsutil cp ${src} ${dst}`;      
+        const cmd = `gsutil cp ${gameConfig} ${dst}`;      
         console.log('static data sync cmd:\n',cmd);
         const { stdout, stderr } = await execAsync(cmd);
         console.log('stdout:', stdout);
