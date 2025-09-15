@@ -14,30 +14,13 @@ function mergeGroup(mergedData:StaticData,newGroup:Array<Entity>,oldGroup:Array<
       }else
         mergedData[group].push(oldIt);    
     }else{
-      //merged already - duplicate of ID
-      // if(mergedData[group].find(it=>it.id == match.id)){      
-      //   mergeReport.duplicatesInNewData[group]||=new Set();
-      //   mergeReport.duplicatesInNewData[group].add(match.id);        
-      // }else{
-      //  mergedData[group].push(match);
-      // }     
+      
     }  
   });
 
   //add new entities
   newGroup.forEach(newIt => {
-    // const match = oldGroup.filter(oldIt=>newIt.id == oldIt.id);
-    // if(match.length==0){
-      //new entity      
-      // if(mergedData[group].find(it=>it.id == newIt.id)){      
-        //merged already - duplicate of ID
-        // mergeReport.duplicatesInNewData[group]||=new Set();
-        // mergeReport.duplicatesInNewData[group].add(newIt.id);
-      // }else{
-        //correct
-        mergedData[group].push(newIt);
-      // } 
-    // }       
+    mergedData[group].push(newIt);   
   });
 }
 
@@ -88,13 +71,6 @@ export function mergeStaticData(newData:StaticData,oldData:StaticData,deprecateL
       if(oldData[group] === undefined){
         // mergeReport.newGroups.add(group);
         mergedData[group] = newData[group];
-        // if(!Array.isArray(newData[group])){
-        //   // mergeReport.newGroupNotArray.add(group);
-        //   mergedData[group] = newData[group];
-        //   continue;
-        // }
-        // mergedData[group]=[];
-        // newData[group].forEach(it=>mergedData[group].push(it));
       }    
     }
 
