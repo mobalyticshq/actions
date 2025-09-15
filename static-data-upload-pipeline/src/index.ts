@@ -284,27 +284,27 @@ async function runPipeline(versions:Array<string>,
       
       console.log('🔄 Sync static data file with bucket');   
       {     
-        const dst = `gs://${process.env.GCP_BUCKET_NAME}/${staticDataPath}/`;
-        console.log(dst,gameConfig,versions[versions.length-1])
-
-        // const src = `${path.dirname(versions[versions.length-1])}`
+        const dst = `gs://${process.env.GCP_BUCKET_NAME}/${versions[versions.length-1]}`;        
+        const src = `${versions[versions.length-1]}`
         // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `      
-        // const cmd = `gsutil cp ${src} ${dst}`;      
-        // console.log('static data sync cmd:\n',cmd);
-        // const { stdout, stderr } = await execAsync(cmd);
+        const cmd = `gsutil cp ${src} ${dst}`;      
+        console.log('static data sync cmd:\n',cmd);
+        const { stdout, stderr } = await execAsync(cmd);
+        console.log('stdout:', stdout);
+        if (stderr) console.error('stderr:', stderr);
       }
       {     
-        const dst = `gs://${process.env.GCP_BUCKET_NAME}/${staticDataPath}/`;
+        const dst = `gs://${process.env.GCP_BUCKET_NAME}/${gameConfig}`;
         const src = `${path.dirname(versions[versions.length-1])}`
         // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `      
-        // const cmd = `gsutil cp ${src} ${dst}`;      
-        // console.log('static data sync cmd:\n',cmd);
-        // const { stdout, stderr } = await execAsync(cmd);
-        // console.log('stdout:', stdout);
-        // if (stderr) console.error('stderr:', stderr);
-        // console.log('✅ Statid databucket synced');          
+        const cmd = `gsutil cp ${src} ${dst}`;      
+        console.log('static data sync cmd:\n',cmd);
+        const { stdout, stderr } = await execAsync(cmd);
+        console.log('stdout:', stdout);
+        if (stderr) console.error('stderr:', stderr);
+        
       }
-
+      console.log('✅ Statid databucket synced');          
 
       const cfClientID = process.env.CF_CLIENT_ID;
 
