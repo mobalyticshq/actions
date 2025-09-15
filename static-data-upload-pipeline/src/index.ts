@@ -270,14 +270,17 @@ async function runPipeline(versions:Array<string>,
       console.log(`✍ Write static data file ${logColors.green}${versions[versions.length-1]}${logColors.reset}`);              
       writeFileSync(versions[versions.length-1],JSON.stringify(overridedData),'utf8')
 
-      
-      if(spreadsheetData){
-       console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);  
-       await updateSpreadsheets(overrideSpreadsheetId,overridedData,staticData,spreadsheetData);
-       console.log(`✅ spreadsheet updated`);
-       await sendSlack(`✅ Override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId} updated`);
+      try{
+        if(spreadsheetData){
+        console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);  
+        await updateSpreadsheets(overrideSpreadsheetId,overridedData,staticData,spreadsheetData);
+        console.log(`✅ spreadsheet updated`);
+        await sendSlack(`✅ Override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId} updated`);
+        }
+      } catch(error){
+        await sendSlack(`⚠️ Unable to write override spreadsheet`);
+        console.log(`⚠️ Unable to write override spreadsheet: ${error}`);   
       }
-      
       
       console.log('🔄 Sync static data file with bucket');        
       const dst = `gs://${process.env.GCP_BUCKET_NAME}/${staticDataPath}/`;
