@@ -177,9 +177,15 @@ async function runPipeline(versions: Array<string>,
     try {
         let configDir = path.dirname(versions[0]);
         let gameConfig = "";
+        let scheme = "";
         let config = {} as StaticDataConfig;
 
+        if (await existsSync(path.join(configDir, "schema.json"))) {
+            scheme = path.join(configDir, "schema.json");
+        }       
+
         for (let i = 0; i < 3; ++i) {
+     
             if (await existsSync(path.join(configDir, "config.json"))) {
                 gameConfig = path.join(configDir, "config.json");
                 break;
@@ -288,6 +294,7 @@ async function runPipeline(versions: Array<string>,
             }
 
             console.log('🔄 Sync static data file with bucket');
+            //upload static data
             {
                 const dst = `gs://${process.env.GCP_BUCKET_NAME}/${versions[versions.length - 1]}`;
                 // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
@@ -297,15 +304,26 @@ async function runPipeline(versions: Array<string>,
                 console.log('stdout:', stdout);
                 if (stderr) console.error('stderr:', stderr);
             }
+            //upload game config
+            if(gameConfig.length>0)
             {
                 const dst = `gs://${process.env.GCP_BUCKET_NAME}/${gameConfig}`;
                 // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
                 const cmd = `gsutil cp ${gameConfig} ${dst}`;
-                console.log('static data sync cmd:\n', cmd);
+                console.log('static game config sync cmd:\n', cmd);
                 const {stdout, stderr} = await execAsync(cmd);
                 console.log('stdout:', stdout);
                 if (stderr) console.error('stderr:', stderr);
-
+            }
+            //upload scheme
+            if(scheme.length>0){
+                const dst = `gs://${process.env.GCP_BUCKET_NAME}/${scheme}`;
+                // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
+                const cmd = `gsutil cp ${scheme} ${dst}`;
+                console.log('static scheme sync cmd:\n', cmd);
+                const {stdout, stderr} = await execAsync(cmd);
+                console.log('stdout:', stdout);
+                if (stderr) console.error('stderr:', stderr);
             }
             console.log('✅ Statid databucket synced');
 
@@ -387,7 +405,7 @@ async function run() {
     const processed = new Set();
     if (files)
         for (const file of files) {
-            if (!pattern.test(file) && !file.endsWith("config.json"))
+            if (!pattern.test(file) && !file.endsWith("config.json")&& !file.endsWith("schema.json"))
                 continue;
             const dirName = path.dirname(file);
             if (dirName != staticDataPath)
