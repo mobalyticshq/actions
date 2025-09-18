@@ -1,18 +1,14 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { readdirSync, readFileSync, existsSync, writeFileSync } from 'fs';
+import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
-import { isValidDataForMerge, mergeStaticData, replaceAssets } from '../merge';
-import { mergeWithSpreadsheets, updateSpreadsheets } from '../spreadsheets';
+import { isValidDataForMerge, mergeStaticData } from '../merge';
+import { mergeWithSpreadsheets } from '../spreadsheets';
 import { validate } from '../validation';
 import { createReport } from '../report';
 import { StaticData, StaticDataConfig, ValidationReport } from '../types';
 import { initSlugify, sendSlack, slugify } from '../utils';
-import { spawn, exec } from 'child_process';
-import { promisify } from 'util';
 import { logColors, logger } from '../logger';
-
-const execAsync = promisify(exec);
 
 initSlugify();
 
@@ -68,84 +64,6 @@ function isValidReport(reports: ValidationReport[]) {
     }
   }
   return { errors, warnings, infos };
-}
-
-function syncBuckets(source: string, target: string): Promise<{ copied: Array<string> }> {
-  return new Promise((resolve, reject) => {
-    const prefix = `Copying ${source}`;
-    const proc = spawn('gsutil', ['-m', 'rsync', '-r', '-c', source, target]);
-
-    const copied = new Array<string>();
-
-    proc.stdout.on('data', (data: string) => {
-      const lines = data.toString().split('\n');
-      for (const line of lines) {
-        if (line.startsWith(prefix)) {
-          const match = line.replace(prefix, target).replace('gs://', 'https://');
-          if (match) copied.push(match.substring(0, match.indexOf('[Content-Type')).trim());
-        }
-      }
-    });
-
-    proc.stderr.on('data', data => {
-      const lines = data.toString().split('\n');
-      for (const line of lines) {
-        if (line.startsWith(prefix)) {
-          const match = line.replace(prefix, target).replace('gs://', 'https://');
-          match.substring(0, match.indexOf('[Content-Type')).trim();
-          if (match) copied.push(match.substring(0, match.indexOf('[Content-Type')).trim());
-        }
-      }
-    });
-
-    proc.on('close', code => {
-      if (code !== 0) {
-        return reject(new Error(`gsutil exit with ${code}`));
-      }
-      resolve({ copied });
-    });
-  });
-}
-
-async function updateAssets(tmpAssetFolder: string, prodAssetFolder: string, cfClientID?: string) {
-  if (tmpAssetFolder == prodAssetFolder) {
-    console.log('🔄 Tmp bucket equal prod bucket, skip asset sync ');
-    return;
-  }
-  console.log('🔄 Sync tmp assets bucket with prod bucket');
-  const assetCmd = `gsutil -m rsync -r  -c  ${tmpAssetFolder} ${prodAssetFolder} `;
-  console.log(assetCmd);
-
-  const { copied } = await syncBuckets(tmpAssetFolder, prodAssetFolder);
-
-  if (copied.length > 0) {
-    if (cfClientID) {
-      console.log(`🔄 Reset cloudflare cache for ${copied.length} files`);
-
-      const chunks: string[][] = [];
-      const chunkSize = 100;
-      for (let i = 0; i < copied.length; i += chunkSize) {
-        chunks.push(copied.slice(i, i + chunkSize));
-      }
-      for (const chunk of chunks) {
-        const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfClientID}/purge_cache`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.CF_AUTH_TOKEN}`,
-          },
-          body: JSON.stringify({ files: chunk }),
-        });
-        if (response.status != 200) {
-          console.log('⚠️ Error during CF cache reset', { response });
-        }
-      }
-      console.log(`✅ Cloudflare reset`);
-    } else {
-      console.log('⚠️ CF_CLIENT_ID not defined - unable to reset CF cache');
-      await sendSlack(`⚠️ CF_CLIENT_ID not defined - unable to reset CF cache`);
-    }
-  }
 }
 
 async function runPipeline(
@@ -342,50 +260,38 @@ async function run() {
 
   const pattern = /static_data_v\d+.\d+.\d+.json/;
 
-  const files = response.data.files?.map(file => file.filename);
-  console.log(`ℹ️ All commited files:\n ${logColors.green}${files}${logColors.reset}`);
-
   logger.endGroup();
-  const processed = new Set();
-  if (files)
-    for (const file of files) {
-      if (!pattern.test(file) && !file.endsWith('config.json') && !file.endsWith('schema.json')) continue;
-      const dirName = path.dirname(file);
-      if (dirName != staticDataPath) continue;
-      if (processed.has(dirName)) continue;
-      processed.add(dirName);
 
-      const files = readdirSync(dirName);
-      const versionedFiles = new Array<string>();
-      files.forEach(filename => {
-        if (!pattern.test(filename)) return null;
-        versionedFiles.push(path.join(dirName, filename));
-      });
+  const files = readdirSync(staticDataPath);
+  const versionedFiles = new Array<string>();
+  files.forEach(filename => {
+    if (!pattern.test(filename)) return null;
+    versionedFiles.push(path.join(staticDataPath, filename));
+  });
 
-      const sortedFiles = versionedFiles
-        .map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000)))
-        .sort()
-        .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
+  const sortedFiles = versionedFiles
+    .map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000)))
+    .sort()
+    .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
 
-      if (sortedFiles.length > 0) {
-        //newest version added
+  if (sortedFiles.length > 0) {
+    //newest version added
 
-        if (sortedFiles.length > 0) {
-          await runPipeline(
-            sortedFiles,
-            staticDataPath,
-            overrideSpreadsheetId,
-            reportSpreadsheetId,
-            tmpAssetFolder,
-            prodAssetFolder,
-            tests,
-            true,
-          );
-        }
-      } else {
-        console.log(`❌ Nothing to do for ${file}`);
-      }
+    if (sortedFiles.length > 0) {
+      await runPipeline(
+        sortedFiles,
+        staticDataPath,
+        overrideSpreadsheetId,
+        reportSpreadsheetId,
+        tmpAssetFolder,
+        prodAssetFolder,
+        tests,
+        true,
+      );
     }
+  } else {
+    console.log(`❌ There is no static data files in ${staticDataPath}`);
+  }
 }
 
 run();
