@@ -73,12 +73,17 @@ function applySpreadsheetsData(
       for (let j = 0; j < rawData[group][0].length; j++) {
         const field = rawData[group][0][j] as string;
         //add unknown field to entity only
-        if (field !== '' && !field.endsWith('_override') && field !== 'deprecated' && knownFields.has(field)) {
-          if (j >= rawData[group][i].length) {
-            obj[field] = '';
-          } else if (rawData[group][i][j]) {
-            obj[field] = tryParse(rawData[group][i][j]);
+        if (field !== '' && !field.endsWith('_override') && field !== 'deprecated') {
+          if (!knownFields.has(field)) {
+            if (rawData[group][i][j]) {
+              obj[field] = tryParse(rawData[group][i][j]);
+            } else {
+              obj[field] = '';
+            }
+            continue;
           }
+
+          obj[field] = rawData[group][i][j];
         }
       }
       //check id is exist
@@ -145,8 +150,13 @@ async function getCurrentRawData(spreadsheetId: string, auth: GoogleAuth, spread
         if (header && header.values) {
           const resultHeader = new Array<string>();
           for (const cell of header.values) {
-            if (!cell || !cell.userEnteredValue || !cell.userEnteredValue.stringValue) break;
-            resultHeader.push(cell.userEnteredValue.stringValue);
+            if (!cell || !cell.userEnteredValue) {
+              resultHeader.push(''); // Add empty string for empty cells
+            } else if (cell.userEnteredValue.stringValue) {
+              resultHeader.push(cell.userEnteredValue.stringValue);
+            } else {
+              resultHeader.push(''); // Add empty string for non-string cells
+            }
           }
 
           rawData[sheet.properties?.title].push(resultHeader);
@@ -156,7 +166,9 @@ async function getCurrentRawData(spreadsheetId: string, auth: GoogleAuth, spread
             if (!row.values) continue;
             const result = new Array<string>();
             let emptyCells = 0;
-            for (let k = 0; k < row.values.length && k < resultHeader.length; k++) {
+            // Process all cells in the row, but ensure we don't exceed header length
+            const maxColumns = Math.max(resultHeader.length, row.values.length);
+            for (let k = 0; k < maxColumns; k++) {
               const cell = row.values[k];
               if (cell && cell.userEnteredValue) {
                 if (cell.userEnteredValue.stringValue) {
@@ -188,6 +200,12 @@ async function getCurrentRawData(spreadsheetId: string, auth: GoogleAuth, spread
                 result.push('');
                 emptyCells++;
               }
+            }
+
+            // Ensure result array has same length as header
+            while (result.length < resultHeader.length) {
+              result.push('');
+              emptyCells++;
             }
             if (emptyCells == resultHeader.length) break;
             rawData[sheet.properties?.title].push(result);
@@ -258,6 +276,119 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
   });
 
   return resultRows;
+}
+
+// New function to preserve _override columns from old spreadsheet data
+function entitiesToRawDataWithOverrides(
+  knownData: Array<Entity> | undefined,
+  mergedData: Array<Entity>,
+  oldSpreadsheetData: Array<Array<string>> | undefined,
+) {
+  const knownFields = new Set<string>();
+  knownData?.forEach(ent => {
+    for (const prop of Object.keys(ent)) {
+      knownFields.add(prop);
+    }
+  });
+
+  const header = Array.from(knownFields);
+
+  // Add new fields from merged data
+  const newFields = new Set<string>();
+  mergedData.forEach(ent => {
+    for (const prop of Object.keys(ent)) {
+      if (!knownFields.has(prop)) newFields.add(prop);
+    }
+  });
+  header.push(...Array.from(newFields));
+
+  // Add _override columns from old spreadsheet data
+  const overrideColumns = new Set<string>();
+  if (oldSpreadsheetData && oldSpreadsheetData.length > 0) {
+    const oldHeader = oldSpreadsheetData[0];
+    oldHeader.forEach(field => {
+      if (field.endsWith('_override') && !header.includes(field)) {
+        overrideColumns.add(field);
+      }
+    });
+  }
+  header.push(...Array.from(overrideColumns));
+
+  const resultRows = new Array<Array<string>>();
+  // Add header
+  resultRows.push(header);
+
+  // Process known data
+  knownData?.forEach(ent => {
+    const newRow = [];
+    for (let i = 0; i < header.length; i++) {
+      const field = header[i];
+      const known = mergedData?.find(obj => obj.id == ent.id);
+
+      if (field.endsWith('_override')) {
+        // For override columns, try to get value from old spreadsheet data
+        const oldValue = getOldOverrideValue(oldSpreadsheetData, ent.id, field);
+        newRow.push(oldValue || '');
+      } else if (known && known[field]) {
+        newRow.push(stringify(known[field]));
+      } else if (known) {
+        newRow.push('');
+      } else {
+        newRow.push('');
+      }
+    }
+    resultRows.push(newRow);
+  });
+
+  // Process new entities
+  mergedData?.forEach(ent => {
+    const known = knownData?.find(obj => obj.id == ent.id);
+    if (!known) {
+      const newRow = [];
+      for (let i = 0; i < header.length; i++) {
+        const field = header[i];
+
+        if (field.endsWith('_override')) {
+          // For override columns, try to get value from old spreadsheet data
+          const oldValue = getOldOverrideValue(oldSpreadsheetData, ent.id, field);
+          newRow.push(oldValue || '');
+        } else if (ent[field]) {
+          newRow.push(stringify(ent[field]));
+        } else {
+          newRow.push('');
+        }
+      }
+      resultRows.push(newRow);
+    }
+  });
+
+  return resultRows;
+}
+
+// Helper function to get override value from old spreadsheet data
+function getOldOverrideValue(
+  oldSpreadsheetData: Array<Array<string>> | undefined,
+  entityId: string,
+  overrideField: string,
+): string | null {
+  if (!oldSpreadsheetData || oldSpreadsheetData.length < 2) return null;
+
+  const header = oldSpreadsheetData[0];
+  const fieldIndex = header.indexOf(overrideField);
+  if (fieldIndex === -1) return null;
+
+  const idIndex = header.indexOf('id');
+  if (idIndex === -1) return null;
+
+  // Find row with matching ID
+  for (let i = 1; i < oldSpreadsheetData.length; i++) {
+    const row = oldSpreadsheetData[i];
+    if (row[idIndex] === entityId && row[fieldIndex]) {
+      return row[fieldIndex];
+    }
+  }
+
+  return null;
 }
 
 //set colors and protections for data
@@ -339,7 +470,12 @@ export async function updateSpreadsheets(
         await addSheet(spreadsheetId, auth, group);
       }
 
-      newSpreadsheetData[group] = entitiesToRawData(jsonData[group], mergedData[group]);
+      // Use new function that preserves _override columns
+      newSpreadsheetData[group] = entitiesToRawDataWithOverrides(
+        jsonData[group],
+        mergedData[group],
+        oldSpreadsheetsData[group],
+      );
 
       for (let i = 0; i < newSpreadsheetData[group].length; ++i)
         for (let j = 0; j < newSpreadsheetData[group][i].length; ++j)
