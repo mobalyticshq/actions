@@ -3,9 +3,10 @@ import * as path from 'path'
 import {StaticData, StaticDataConfig} from './types';
 import {logColors} from './logger';
 import {mergeStaticData} from './merge';
+import {mergeWithSpreadsheets} from "./spreadsheets";
 
 async function run() {
-    const dirName = "C:\\mobalytics\\ngf-configuration\\borderlands-4\\dev\\static_data"
+    const dirName = "/Users/alexmittsel/WORK/ngf-configuration/borderlands-4/dev/static_data"
 
     const pattern = /static_data_v\d+.\d+.\d+.json/;
 
@@ -48,8 +49,13 @@ async function run() {
         if (i == sortedFiles.length - 2)
             oldData = structuredClone(staticData);
     }
-    writeFileSync("staticData.json", JSON.stringify(staticData), 'utf8')
+
+    const {
+        overridedData
+    } = await mergeWithSpreadsheets("184EURmpMq-m3Oy-4fuE1oNFZFDVlLU6U89A3ktvsv7k", staticData);
+
+    writeFileSync("staticData.json", JSON.stringify(overridedData), 'utf8')
 
 }
 
-// run();
+run();

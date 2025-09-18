@@ -213,6 +213,7 @@ async function runPipeline(versions: Array<string>,
 
         console.log('');
         logger.group('📊 Override static data by spreadsheets');
+        // Overrided data is the data that is overridden by spreadsheets and should be uploaded to the bucket
         const {
             overridedData,
             spreadsheetReport,

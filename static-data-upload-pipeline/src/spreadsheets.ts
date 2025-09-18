@@ -70,12 +70,13 @@ function applySpreadsheetsData(rawData: {
             for (let j = 0; j < rawData[group][0].length; j++) {
                 const field = rawData[group][0][j] as string;
                 //add unknown field to entity only
-                if (field !== '' && !field.endsWith('_override') && field !== 'deprecated' && !knownFields.has(field))
+                if (field !== '' && !field.endsWith('_override') && field !== 'deprecated' && knownFields.has(field)) {
                     if (j >= rawData[group][i].length) {
                         obj[field] = '';
-                    } else if (rawData[group][i][j])
+                    } else if (rawData[group][i][j]) {
                         obj[field] = tryParse(rawData[group][i][j]);
-
+                    }
+                }
             }
             //check id is exist    
             if (obj.id === '' || !obj.id) {
