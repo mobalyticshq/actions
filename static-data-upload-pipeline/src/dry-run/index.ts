@@ -151,8 +151,6 @@ async function runPipeline(
     );
     logger.endGroup();
 
-    logger.group(`🔍 Overrided charecters value \n ${JSON.stringify(overridedData['characters'][0])}`);
-
     console.log('');
     logger.group('🔍 Validate final static data ');
     const reports = new Array<ValidationReport>();
