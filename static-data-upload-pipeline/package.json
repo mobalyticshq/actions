@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "build": "ncc build src/index.ts -o dist",
+    "build:dry": "ncc build src/index.ts -o dist/dry-run",
     "ext": "ncc build src/extension.ts -o dist/tests"
   },
   "author": "",
