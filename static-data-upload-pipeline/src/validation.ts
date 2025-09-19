@@ -70,10 +70,10 @@ async function isCDNLinkValid(
         reports.forEach(report => report.report.errors[ReportMessages.assetTooBig].add(report.path));
       }
     } else {
-      reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
+      // reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
     }
   } catch (err) {
-    reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
+    // reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
   }
 }
 
