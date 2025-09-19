@@ -62,8 +62,9 @@ async function isCDNLinkValid(
   }[],
 ) {
   try {
-    //const res = await fetch();
-    const res = await fetchRetry(url, 100, 3, { method: 'HEAD' });
+    // const res = await fetchRetry(url, 100, 3, { method: 'HEAD' });
+    const res = await fetch(url, { method: 'HEAD' });
+    console.log(res.status, res.ok);
     if (res.ok) {
       const length = Number(res.headers.get('content-length'));
       if (!isNaN(length) && length > assetSizeLimit) {
@@ -404,7 +405,7 @@ export async function validate(data: StaticData, oldData: StaticData, config: St
   const entries = Array.from(knownAssets); // [ [url, reports[]], ... ]
 
   console.log('PROMISE POOL', entries.length);
-  await promisePool(entries, 50, async ([url, reports]) => {
+  await promisePool(entries, 100, async ([url, reports]) => {
     if (reports.length > 0) {
       await isCDNLinkValid(url, reports);
     }
