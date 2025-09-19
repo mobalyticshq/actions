@@ -1,5 +1,6 @@
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from './types';
 import { slugify, promisePool } from './utils';
+import { validateCDNLinks } from './images/validate-cdn-links';
 
 export enum ReportMessages {
   assetURLNotAvailable = 'Asset URL not available',
@@ -64,18 +65,15 @@ async function isCDNLinkValid(
   try {
     // const res = await fetchRetry(url, 100, 3, { method: 'HEAD' });
     const res = await fetch(url, { method: 'HEAD' });
-    console.log(res.status, res.ok);
     if (res.ok) {
       const length = Number(res.headers.get('content-length'));
       if (!isNaN(length) && length > assetSizeLimit) {
         reports.forEach(report => report.report.errors[ReportMessages.assetTooBig].add(report.path));
       }
     } else {
-      console.log(res.status, 'RES IS NOT OK');
       reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
     }
   } catch (err) {
-    console.log(err, 'CATCH');
     reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
   }
 }
@@ -404,20 +402,20 @@ export async function validate(data: StaticData, oldData: StaticData, config: St
 
   const entries = Array.from(knownAssets); // [ [url, reports[]], ... ]
 
-  console.log('PROMISE POOL', entries.length);
-  await promisePool(entries, 100, async ([url, reports]) => {
-    if (reports.length > 0) {
-      await isCDNLinkValid(url, reports);
-    }
-  });
+  // await promisePool(entries, 100, async ([url, reports]) => {
+  //   if (reports.length > 0) {
+  //     await isCDNLinkValid(url, reports);
+  //   }
+  // });
 
-  // await Promise.all(Array.from(knownAssets).map(async assetReport => {
-  //     const reports = assetReport[1];
-  //     if(reports.length>0){
-  //         await isCDNLinkValid(assetReport[0],reports);
-  //     }
-  //     Promise.resolve(true);
-  // }));
+  await validateCDNLinks(
+    entries.map(([url, reports], i) => ({
+      url: url,
+      report: reports[i].report,
+      path: reports[i].path,
+    })),
+    { concurrency: 32 }, // при частых 429 попробуй 16
+  );
 
   return validationReport;
 }
