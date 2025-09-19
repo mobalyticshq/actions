@@ -75,7 +75,7 @@ async function isCDNLinkValid(
       reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
     }
   } catch (err) {
-    console.log(JSON.stringify(err), 'CATCH');
+    console.log(err, 'CATCH');
     reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
   }
 }
