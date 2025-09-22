@@ -81,34 +81,99 @@ export function tryParse(value: string) {
   return value;
 }
 
-export async function sendSlack(slackMessage: string, iconEmoji = ':receipt:') {
-  const channel = '#notifications-static-data-pipeline';
-  const username = 'Static Data Pipeline';
+// Slack message manager for updating messages
+class SlackMessageManager {
+  private messageTs: string | null = null;
+  private channel: string = '#notifications-static-data-pipeline';
 
-  const payload = {
-    text: slackMessage,
-    channel: channel,
-    username: username,
-    as_user: 'true',
-    link_names: 'true',
-    icon_emoji: iconEmoji,
-  };
+  async sendOrUpdate(message: string, iconEmoji = ':receipt:', isUpdate = false) {
+    if (!process.env.SLACK_BOT_TOKEN) {
+      console.log('📢 Slack notification:', message);
+      return;
+    }
 
-  const body = new URLSearchParams({ payload: JSON.stringify(payload) });
+    try {
+      if (isUpdate && this.messageTs) {
+        // Update existing message
+        await this.updateMessage(message, iconEmoji);
+      } else {
+        // Send new message
+        await this.sendNewMessage(message, iconEmoji);
+      }
+    } catch (error) {
+      console.error('❌ Slack API error:', error);
+    }
+  }
 
-  const response = await fetch(`https://hooks.slack.com/services/${process.env.SLACK_BOT_TOKEN}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  });
+  private async sendNewMessage(message: string, iconEmoji: string) {
+    const response = await fetch('https://slack.com/api/chat.postMessage', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        channel: this.channel,
+        text: message,
+        username: 'Static Data Pipeline',
+        icon_emoji: iconEmoji,
+        link_names: true,
+      }),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Slack API error:', errorText);
+    const result = await response.json() as any;
+    if (result.ok && result.ts) {
+      this.messageTs = result.ts;
+    } else {
+      console.error('❌ Failed to send Slack message:', result.error);
+    }
+  }
+
+  private async updateMessage(message: string, iconEmoji: string) {
+    const response = await fetch('https://slack.com/api/chat.update', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        channel: this.channel,
+        ts: this.messageTs,
+        text: message,
+        username: 'Static Data Pipeline',
+        icon_emoji: iconEmoji,
+        link_names: true,
+      }),
+    });
+
+    const result = await response.json() as any;
+    if (!result.ok) {
+      console.error('❌ Failed to update Slack message:', result.error);
+    }
+  }
+
+  reset() {
+    this.messageTs = null;
   }
 }
+
+// Global instance for backward compatibility
+const slackManager = new SlackMessageManager();
+
+export async function sendSlack(slackMessage: string, iconEmoji = ':receipt:') {
+  await slackManager.sendOrUpdate(slackMessage, iconEmoji, false);
+}
+
+export async function updateSlack(slackMessage: string, iconEmoji = ':receipt:') {
+  await slackManager.sendOrUpdate(slackMessage, iconEmoji, true);
+}
+
+export function resetSlackMessage() {
+  slackManager.reset();
+}
+
+// Export the class for direct usage
+export { SlackMessageManager };
 
 export async function promisePool<T>(
   items: T[],

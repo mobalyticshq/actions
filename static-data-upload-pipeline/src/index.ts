@@ -272,12 +272,12 @@ async function runPipeline(
     }
 
     console.log('');
-    if (errors == 0) {
-      if (dryRun) {
-        logger.group('✅ Static data is valid!');
-        return;
-      }
-      logger.group('✅ Static data is valid! Sync data 📦');
+        if (errors == 0) {
+            if (dryRun) {
+                logger.group('✅ Static data is valid!');
+                return;
+            }
+            logger.group('✅ Static data is valid! Sync data 📦');
 
       console.log(
         `✍ Update assets URLs! ${logColors.green}${tmpAssetPrefix}${logColors.reset} to ${logColors.green}${prodAssetPrefix}${logColors.reset}`,

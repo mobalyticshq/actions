@@ -7,7 +7,7 @@ import { mergeWithSpreadsheets } from '../spreadsheets';
 import { validate } from '../validation';
 import { createReport } from '../report';
 import { StaticData, StaticDataConfig, ValidationReport } from '../types';
-import { initSlugify, sendSlack, slugify } from '../utils';
+import { initSlugify, sendSlack, SlackMessageManager, slugify } from '../utils';
 import { logColors, logger } from '../logger';
 
 initSlugify();
@@ -75,6 +75,7 @@ async function runPipeline(
   prodAssetFolder: string,
   testsDir: string,
   dryRun: Boolean,
+  slackManager: SlackMessageManager,
 ) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
@@ -88,12 +89,15 @@ async function runPipeline(
 
   const actionsUrl = `https://github.com/${repo}/actions/runs/${runId}`;
 
+  // Reset Slack message manager for new pipeline run
+  slackManager.reset();
+  
   if (!dryRun)
-    await sendSlack(
+    await slackManager.sendOrUpdate(
       `🚀 Start game static data update pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
     );
   else
-    await sendSlack(
+    await slackManager.sendOrUpdate(
       `🚀 Start game static data dry run pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
     );
 
@@ -127,6 +131,7 @@ async function runPipeline(
 
     console.log('');
     logger.group(`✍ Merge static data files `);
+    await slackManager.sendOrUpdate(`🔄 Merging static data files...`, ':receipt:', true);
     let staticData = {} as StaticData,
       oldData = {} as StaticData;
     for (let i = 0; i < versions.length; ++i) {
@@ -153,6 +158,7 @@ async function runPipeline(
 
     console.log('');
     logger.group('🔍 Validate final static data ');
+    await slackManager.sendOrUpdate(`🔍 Validating static data...`, ':receipt:', true);
     const reports = new Array<ValidationReport>();
     const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
     reports.push(commonReport);
@@ -186,23 +192,26 @@ async function runPipeline(
       }
       logger.endGroup();
     } else {
-      await sendSlack(`✅ No errors,warnings or infos in static data`);
+      await slackManager.sendOrUpdate(`✅ No errors,warnings or infos in static data`, ':white_check_mark:', true);
     }
 
     console.log('');
     if (errors == 0) {
       if (dryRun) {
         logger.group('✅ Static data is valid!');
+        await slackManager.sendOrUpdate(`✅ Static data is valid! Dry run completed.`, ':white_check_mark:', true);
         return;
       }
     } else {
       console.log('❌ Static data is not valid!');
-      await sendSlack(`❌ Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed`);
+      await slackManager.sendOrUpdate(`❌ Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed`, ':x:', true);
     }
   } catch (error) {
     console.log(`⚠️ Error during pipeline ${error}`);
-    await sendSlack(
+    await slackManager.sendOrUpdate(
       `⚠️ Error during static data pipeline dry run for ${versions[versions.length - 1]} error:${error} `,
+      ':warning:',
+      true,
     );
   }
 }
@@ -223,6 +232,9 @@ async function runValidationExtensions(extensionsDir: string, data: StaticData, 
 }
 
 async function run() {
+  // Create Slack message manager for this run
+  const slackManager = new SlackMessageManager();
+
   const context = github.context;
   const staticDataPath = core.getInput('static_data_path');
   const overrideSpreadsheetId = core.getInput('override_spreadsheet_id');
@@ -285,6 +297,7 @@ async function run() {
         prodAssetFolder,
         tests,
         true,
+        slackManager,
       );
     }
   } else {
