@@ -55,7 +55,7 @@ async function run() {
 
   const { overridedData } = await mergeWithSpreadsheets('184EURmpMq-m3Oy-4fuE1oNFZFDVlLU6U89A3ktvsv7k', staticData);
 
-  const commonReport = await validate(overridedData, oldData, config, 'https://cdn.mobalytics.gg/assets/poe-1');
+  const commonReport = await validate(overridedData, oldData, config, 'gs://cdn.mobalytics.gg/assets/the-bazaar');
 
   writeFileSync('staticData.json', JSON.stringify(overridedData), 'utf8');
 }

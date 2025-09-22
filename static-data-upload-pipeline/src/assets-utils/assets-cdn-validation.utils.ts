@@ -40,11 +40,9 @@ export async function processUrlsInChunks(
   const bucket = storage.bucket(gcsOptions.bucketName);
 
   // Get all existing files from GCS bucket (single API call with prefix filter)
-  console.log(
-    `🔍 Fetching file list from GCS bucket: ${gcsOptions.bucketName}${prefix ? ` with prefix: ${prefix}` : ''}`,
-  );
-  const existingFiles = await getAllFilesInBucket(bucket, prefix);
-  console.log(`📁 Found ${existingFiles.size} files in GCS bucket${prefix ? ` with prefix "${prefix}"` : ''}`);
+  console.log(`🔍 Fetching file list from GCS bucket: ${gcsOptions.bucketName} with prefix: ${gcsOptions.prefix}`);
+  const existingFiles = await getAllFilesInBucket(bucket, gcsOptions.prefix);
+  console.log(`📁 Found ${existingFiles.size} files in GCS bucket with prefix ${gcsOptions.prefix}`);
 
   // Process all URLs synchronously
   console.log(`⚡ Validating ${entries.length} URLs synchronously...`);
