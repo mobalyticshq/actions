@@ -1,5 +1,7 @@
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from './types';
-import { slugify, promisePool } from './utils';
+import { slugify } from './utils';
+import { processUrlsInChunks as processUrlsWithGCS } from './assets-utils/assets-cdn-validation.utils';
+import { logger } from './logger';
 
 export enum ReportMessages {
   assetURLNotAvailable = 'Asset URL not available',
@@ -52,29 +54,6 @@ function fetchRetry(url: string, delay: number, tries: number, fetchOptions: Req
   };
 
   return fetch(url, fetchOptions).catch(onError);
-}
-
-async function isCDNLinkValid(
-  url: string,
-  reports: {
-    report: ValidationEntityReport;
-    path: string;
-  }[],
-) {
-  try {
-    // const res = await fetchRetry(url, 100, 3, { method: 'HEAD' });
-    const res = await fetch(url, { method: 'HEAD' });
-    if (res.ok) {
-      const length = Number(res.headers.get('content-length'));
-      if (!isNaN(length) && length > assetSizeLimit) {
-        reports.forEach(report => report.report.errors[ReportMessages.assetTooBig].add(report.path));
-      }
-    } else {
-      reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
-    }
-  } catch (err) {
-    reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
-  }
 }
 
 function validateAsset(
@@ -399,13 +378,15 @@ export async function validate(data: StaticData, oldData: StaticData, config: St
     }
   }
 
-  const entries = Array.from(knownAssets); // [ [url, reports[]], ... ]
+  // Validate all collected asset URLs
+  logger.group(`🔍 Validating assets URLs`);
 
-  await promisePool(entries, 100, async ([url, reports]) => {
-    if (reports.length > 0) {
-      await isCDNLinkValid(url, reports);
-    }
-  });
+  const entries = Array.from(knownAssets); // [ [url, reports[]], ... ]
+  console.log(`📊 Found ${entries.length} URL references to validate`);
+
+  await processUrlsWithGCS(entries, assetSizeLimit, tmpBucket);
+
+  logger.endGroup();
 
   return validationReport;
 }
