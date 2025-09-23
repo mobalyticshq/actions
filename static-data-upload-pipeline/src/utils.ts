@@ -85,7 +85,7 @@ export function tryParse(value: string) {
 class SlackMessageManager {
   private messageTs: string | null = null;
   // private channel: string = '#notifications-static-data-pipeline';
-  private channel: string = '#sd-pipeline-notification-test'
+  private channel: string = process.env.SLACK_CHANNEL_ID || 'C09GRKW59EY'
 
   async sendOrUpdate(message: string, iconEmoji = ':receipt:', isUpdate = false) {
     if (!process.env.SLACK_BOT_TOKEN_V2) {
@@ -125,8 +125,11 @@ class SlackMessageManager {
     });
 
     const result = (await response.json()) as any;
+    console.log('📤 Send message response:', JSON.stringify(result, null, 2));
+    
     if (result.ok && result.ts) {
       this.messageTs = result.ts;
+      console.log('✅ Message sent successfully, timestamp:', this.messageTs);
     } else {
       console.error('❌ Failed to send Slack message:', result.error);
     }
@@ -142,6 +145,8 @@ class SlackMessageManager {
       link_names: true,
     };
 
+    console.log('🔄 Updating message with payload:', JSON.stringify(payload, null, 2));
+
     const response = await fetch('https://slack.com/api/chat.update', {
       method: 'POST',
       headers: {
@@ -152,6 +157,8 @@ class SlackMessageManager {
     });
 
     const result = (await response.json()) as any;
+    console.log('📝 Update response:', JSON.stringify(result, null, 2));
+    
     if (!result.ok) {
       console.error('❌ Failed to update Slack message:', result.error);
     }
