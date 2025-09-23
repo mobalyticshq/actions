@@ -16,6 +16,22 @@ export const gameIconsMap: Record<string, string> = {
   zzz: ':zzzz:',
 };
 
+export const gameNamesMap: Record<string, string> = {
+  'the-bazaar': 'The Bazaar',
+  'borderlands-4': 'Borderlands 4',
+  deadlock: 'Deadlock',
+  'destiny-2': 'Destiny 2',
+  'diablo-4': 'Diablo 4',
+  'elden-ring-nightreign': 'Elden Ring Nightreign',
+  'hades-2': 'Hades 2',
+  lol: 'League of Legends',
+  'marvel-rivals': 'Marvel Rivals',
+  mhw: 'Monster Hunter Wilds',
+  'poe-2': 'Path of Exile 2',
+  poe: 'Path of Exile',
+  zzz: 'ZZZ',
+};
+
 export const initSlugify = () =>
   slugify_.default.extend({
     '+': '-plus-',

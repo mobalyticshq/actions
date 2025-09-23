@@ -3,7 +3,7 @@ import * as github from '@actions/github';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 import { StaticDataConfig } from '../types';
-import { gameIconsMap, initSlugify } from '../utils';
+import { gameIconsMap, gameNamesMap, initSlugify } from '../utils';
 import { logColors, logger } from '../logger';
 import { SlackMessageManager } from '../utils/slack-manager.utils';
 import { mergeStaticDataStep } from '../steps/merge-static-data';
@@ -48,7 +48,7 @@ async function runPipeline(
     );
   } else {
     await slackManager.sendOrUpdate(
-      `DRY RUN pipeline for ${version} ${gameIconsMap[gameSlug]} ${environment}`,
+      `DRY RUN pipeline for ${version} ${gameNamesMap[gameSlug]} ${gameIconsMap[gameSlug]} ${environment}`,
       ':test_tube:',
     );
     await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);

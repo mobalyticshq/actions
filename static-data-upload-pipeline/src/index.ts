@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 import { StaticDataConfig } from './types';
-import { gameIconsMap, initSlugify } from './utils';
+import { gameIconsMap, gameNamesMap, initSlugify } from './utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logColors, logger } from './logger';
@@ -47,7 +47,10 @@ async function runPipeline(
   slackManager.reset();
 
   if (!dryRun) {
-    await slackManager.sendOrUpdate(`RUN pipeline for ${version} ${gameIconsMap[gameSlug]} ${environment}`, ':rocket:');
+    await slackManager.sendOrUpdate(
+      `RUN pipeline for ${version} ${gameNamesMap[gameSlug]} ${gameIconsMap[gameSlug]} ${environment}`,
+      ':rocket:',
+    );
     await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
   } else {
     await slackManager.sendOrUpdate(
