@@ -3,7 +3,7 @@ export class SlackMessageManager {
   private messageTs: string | null = null;
   private messageHistory: string[] = [];
   // private channel: string = '#notifications-static-data-pipeline';
-  private channel: string = process.env.SLACK_CHANNEL_ID || 'C09GRKW59EY';
+  private channel: string = process.env.SLACK_CHANNEL_ID || 'C0932450HEF';
 
   async sendOrUpdate(message: string, iconEmoji = ':receipt:', isUpdate = false, shouldUpdatePrevious = false) {
     if (!process.env.SLACK_BOT_TOKEN_V2) {
