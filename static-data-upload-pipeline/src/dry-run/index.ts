@@ -49,7 +49,7 @@ async function runPipeline(
   } else {
     await slackManager.sendOrUpdate(
       `DRY RUN pipeline for ${version} ${gameIconsMap[gameSlug]} ${environment}`,
-      ':rocket:',
+      ':test_tube:',
     );
     await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
   }
