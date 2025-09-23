@@ -1,5 +1,21 @@
 import * as slugify_ from 'slugify';
 
+export const gameIconsMap: Record<string, string> = {
+  'the-bazaar': ':bazaarr:',
+  'borderlands-4': ':bl4:',
+  deadlock: ':deadlock:',
+  'destiny-2': ':d2:',
+  'diablo-4': ':d4:',
+  'elden-ring-nightreign': ':er-nightreign:',
+  'hades-2': ':hades2:',
+  lol: ':league:',
+  'marvel-rivals': ':rivals:',
+  mhw: ':mhw:',
+  'poe-2': ':poe2:',
+  poe: ':poe-2:',
+  zzz: ':zzzz:',
+};
+
 export const initSlugify = () =>
   slugify_.default.extend({
     '+': '-plus-',
@@ -86,7 +102,7 @@ class SlackMessageManager {
   private messageTs: string | null = null;
   private messageHistory: string[] = [];
   // private channel: string = '#notifications-static-data-pipeline';
-  private channel: string = process.env.SLACK_CHANNEL_ID || 'C09GRKW59EY'
+  private channel: string = process.env.SLACK_CHANNEL_ID || 'C09GRKW59EY';
 
   async sendOrUpdate(message: string, iconEmoji = ':receipt:', isUpdate = false, shouldUpdatePrevious = false) {
     if (!process.env.SLACK_BOT_TOKEN_V2) {
@@ -103,9 +119,9 @@ class SlackMessageManager {
           const completedMessage = lastMessage.split(' ').slice(1).join(' ');
           this.messageHistory[this.messageHistory.length - 1] = `:white_check_mark: ${completedMessage}`;
         }
-        
+
         this.messageHistory.push(`${iconEmoji} ${message}`);
-        
+
         // Update the message with merged content
         const mergedMessage = this.messageHistory.join('\n');
         await this.updateMessage(mergedMessage, ':receipt:');
@@ -138,8 +154,7 @@ class SlackMessageManager {
     });
 
     const result = (await response.json()) as any;
-  
-    
+
     if (result.ok && result.ts) {
       this.messageTs = result.ts;
       console.log('✅ Message sent successfully, timestamp:', this.messageTs);
@@ -158,8 +173,6 @@ class SlackMessageManager {
       link_names: true,
     };
 
-    
-
     const response = await fetch('https://slack.com/api/chat.update', {
       method: 'POST',
       headers: {
@@ -170,8 +183,7 @@ class SlackMessageManager {
     });
 
     const result = (await response.json()) as any;
-    
-    
+
     if (!result.ok) {
       console.error('❌ Failed to update Slack message:', result.error);
     }

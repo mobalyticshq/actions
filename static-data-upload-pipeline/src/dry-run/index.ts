@@ -7,7 +7,7 @@ import { mergeWithSpreadsheets } from '../spreadsheets';
 import { validate } from '../validation';
 import { createReport } from '../report';
 import { StaticData, StaticDataConfig, ValidationReport } from '../types';
-import { initSlugify, sendSlack, SlackMessageManager } from '../utils';
+import { gameIconsMap, initSlugify, sendSlack, SlackMessageManager } from '../utils';
 import { logColors, logger } from '../logger';
 
 initSlugify();
@@ -88,6 +88,9 @@ async function runPipeline(
   const runId = process.env.GITHUB_RUN_ID;
 
   const actionsUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+  const gameSlug = versions[versions.length - 1].split('/')[0];
+  const environment = versions[versions.length - 1].split('/')[1].toUpperCase();
+  const version = versions[versions.length - 1].split('/').at(-1);
 
   // Reset Slack message manager for new pipeline run
   slackManager.reset();
@@ -98,7 +101,7 @@ async function runPipeline(
     );
   } else {
     await slackManager.sendOrUpdate(
-      `Start game static data update pipeline for ${versions[versions.length - 1]}`,
+      `DRY RUN pipeline for ${version} ${gameIconsMap[gameSlug]} ${environment}`,
       ':rocket:',
     );
     await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
