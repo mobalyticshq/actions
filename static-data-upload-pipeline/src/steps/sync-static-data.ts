@@ -49,7 +49,7 @@ export async function syncStaticData(
       );
     }
   } catch (error) {
-    await slackManager.sendOrUpdate(`Unable to write override spreadsheet`, ':warning:', true, true);
+    await slackManager.sendOrUpdate(`Unable to write override spreadsheet\n ${error}`, ':warning:', true);
     console.log(`⚠️ Unable to write override spreadsheet: ${error}`);
   }
 
