@@ -25,11 +25,15 @@ export async function createReportStep(
       `${slackMsg}\n <https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}|Report>`,
       ':receipt:',
       true,
+      true,
     );
   } else {
     console.log('⚠️ Can`t create spreadsheetreport');
     await slackManager.sendOrUpdate(
-      `⚠️ Can't create Mistakes <https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}|Report>`,
+      `Can't create Mistakes <https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}|Report>`,
+      ':warning:',
+      true,
+      true,
     );
   }
   logger.endGroup();

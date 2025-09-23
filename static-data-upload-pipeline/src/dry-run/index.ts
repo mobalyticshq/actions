@@ -142,7 +142,8 @@ async function runPipeline(
     );
 
     // If errors or warnings or infos - create report
-    if (errors > 0 || warnings > 0 || infos > 0) {
+    // if (errors > 0 || warnings > 0 || infos > 0) {
+    if (true) {
       // logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
       // const reportDone = await createReport(reports, reportSpreadsheetId);
       //
