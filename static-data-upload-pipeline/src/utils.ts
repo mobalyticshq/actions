@@ -88,7 +88,7 @@ class SlackMessageManager {
   // private channel: string = '#notifications-static-data-pipeline';
   private channel: string = process.env.SLACK_CHANNEL_ID || 'C09GRKW59EY'
 
-  async sendOrUpdate(message: string, iconEmoji = ':receipt:', isUpdate = false) {
+  async sendOrUpdate(message: string, iconEmoji = ':receipt:', isUpdate = false, shouldUpdatePrevious = false) {
     if (!process.env.SLACK_BOT_TOKEN_V2) {
       console.log('📢 Slack notification:', message);
       return;
@@ -97,19 +97,14 @@ class SlackMessageManager {
     try {
       if (isUpdate && this.messageTs) {
         // Update previous message to mark as completed
-        if (this.messageHistory.length > 0) {
+        if (this.messageHistory.length > 0 && shouldUpdatePrevious) {
           const lastMessage = this.messageHistory[this.messageHistory.length - 1];
           // Replace the first emoji with white_check_mark, but avoid duplication
           const completedMessage = lastMessage.split(' ').slice(1).join(' ');
           this.messageHistory[this.messageHistory.length - 1] = `:white_check_mark: ${completedMessage}`;
         }
         
-        // Add new message to history (only if it's not already completed)
-        if (!message.includes(':white_check_mark:')) {
-          this.messageHistory.push(`${iconEmoji} ${message}`);
-        } else {
-          this.messageHistory.push(message);
-        }
+        this.messageHistory.push(`${iconEmoji} ${message}`);
         
         // Update the message with merged content
         const mergedMessage = this.messageHistory.join('\n');

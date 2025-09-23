@@ -92,14 +92,19 @@ async function runPipeline(
   // Reset Slack message manager for new pipeline run
   slackManager.reset();
   
-  if (!dryRun)
+  if (!dryRun) {
     await slackManager.sendOrUpdate(
-      `Start game static data update pipeline for ${versions[versions.length - 1]}\n Action:${actionsUrl} \n`, ':rocket'
+      `Start game static data update pipeline for ${versions[versions.length - 1]}`, ':rocket:'
     );
-  else
+    await slackManager.sendOrUpdate(
+      `Action: <${actionsUrl}|GitHub Actions>`, ':information_source:', true
+    );
+  } else {
     await slackManager.sendOrUpdate(
       `🚀 Start game static data dry run pipeline for ${versions[versions.length - 1]}\n Action:${actionsUrl}`,
     );
+  }
+    
 
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
@@ -131,7 +136,7 @@ async function runPipeline(
 
     console.log('');
     logger.group(`✍ Merge static data files `);
-    await slackManager.sendOrUpdate(`🔄 Merging static data files...`, ':receipt:', true);
+    await slackManager.sendOrUpdate(`Merging static data files...`, ':arrows_counterclockwise:', true, true);
     let staticData = {} as StaticData,
       oldData = {} as StaticData;
     for (let i = 0; i < versions.length; ++i) {
@@ -158,7 +163,7 @@ async function runPipeline(
 
     console.log('');
     logger.group('🔍 Validate final static data ');
-    await slackManager.sendOrUpdate(`🔍 Validating static data...`, ':receipt:', true);
+    await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true);
     const reports = new Array<ValidationReport>();
     const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
     reports.push(commonReport);
@@ -199,17 +204,17 @@ async function runPipeline(
     if (errors == 0) {
       if (dryRun) {
         logger.group('✅ Static data is valid!');
-        await slackManager.sendOrUpdate(`Static data is valid! Dry run completed.`, ':white_check_mark:', true);
+        await slackManager.sendOrUpdate(`Static data is valid! Dry run completed. <${actionsUrl}|View Details>`, ':white_check_mark:', true);
         return;
       }
     } else {
       console.log('❌ Static data is not valid!');
-      await slackManager.sendOrUpdate(`Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed`, ':x:', true);
+      await slackManager.sendOrUpdate(`Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed. <${actionsUrl}|View Details>`, ':x:', true);
     }
   } catch (error) {
     console.log(`⚠️ Error during pipeline ${error}`);
     await slackManager.sendOrUpdate(
-      `Error during static data pipeline dry run for ${versions[versions.length - 1]} error:${error} `,
+      `Error during static data pipeline dry run for ${versions[versions.length - 1]} error:${error} <${actionsUrl}|View Details>`,
       ':warning:',
       true,
     );
