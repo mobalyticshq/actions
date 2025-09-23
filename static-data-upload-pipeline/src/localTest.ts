@@ -2,8 +2,8 @@ import { readdirSync, readFileSync, existsSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { StaticData, StaticDataConfig } from './types';
 import { logColors } from './logger';
-import { mergeStaticData } from './merge';
-import { mergeWithSpreadsheets } from './spreadsheets';
+import { mergeStaticData } from './utils/merge.utils';
+import { mergeWithSpreadsheets } from './utils/spreadsheets.utils';
 import { validate } from './validation';
 
 async function run() {

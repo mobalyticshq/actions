@@ -1,5 +1,21 @@
 import * as slugify_ from 'slugify';
 
+export const gameIconsMap: Record<string, string> = {
+  'the-bazaar': ':bazaarr:',
+  'borderlands-4': ':bl4:',
+  deadlock: ':deadlock:',
+  'destiny-2': ':d2:',
+  'diablo-4': ':d4:',
+  'elden-ring-nightreign': ':er-nightreign:',
+  'hades-2': ':hades2:',
+  lol: ':league:',
+  'marvel-rivals': ':rivals:',
+  mhw: ':mhw:',
+  'poe-2': ':poe2:',
+  poe: ':poe-2:',
+  zzz: ':zzzz:',
+};
+
 export const initSlugify = () =>
   slugify_.default.extend({
     '+': '-plus-',
@@ -79,52 +95,4 @@ export function tryParse(value: string) {
     return JSON.parse(value);
   } catch {}
   return value;
-}
-
-export async function sendSlack(slackMessage: string, iconEmoji = ':receipt:') {
-  const channel = '#notifications-static-data-pipeline';
-  const username = 'Static Data Pipeline';
-
-  const payload = {
-    text: slackMessage,
-    channel: channel,
-    username: username,
-    as_user: 'true',
-    link_names: 'true',
-    icon_emoji: iconEmoji,
-  };
-
-  const body = new URLSearchParams({ payload: JSON.stringify(payload) });
-
-  const response = await fetch(`https://hooks.slack.com/services/${process.env.SLACK_BOT_TOKEN}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Slack API error:', errorText);
-  }
-}
-
-export async function promisePool<T>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T, index: number) => Promise<void>,
-): Promise<void> {
-  let i = 0;
-
-  // Запускаем столько воркеров, сколько разрешено concurrency (или меньше, если задач мало)
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (true) {
-      const idx = i++;
-      if (idx >= items.length) break; // задачи кончились
-      await worker(items[idx], idx);
-    }
-  });
-
-  await Promise.all(workers);
 }

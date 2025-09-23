@@ -2,69 +2,16 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
-import { isValidDataForMerge, mergeStaticData } from '../merge';
-import { mergeWithSpreadsheets } from '../spreadsheets';
-import { validate } from '../validation';
-import { createReport } from '../report';
-import { StaticData, StaticDataConfig, ValidationReport } from '../types';
-import { initSlugify, sendSlack, slugify } from '../utils';
+import { StaticDataConfig } from '../types';
+import { gameIconsMap, initSlugify } from '../utils';
 import { logColors, logger } from '../logger';
+import { SlackMessageManager } from '../utils/slack-manager.utils';
+import { mergeStaticDataStep } from '../steps/merge-static-data';
+import { overrideStaticData } from '../steps/override-static-data';
+import { validateStaticData } from '../steps/validate-static-data';
+import { createReportStep } from '../steps/create-report';
 
 initSlugify();
-
-function isValidReport(reports: ValidationReport[]) {
-  let errors = 0,
-    warnings = 0,
-    infos = 0;
-  for (const report of reports) {
-    for (const error of Object.keys(report.errors)) {
-      if (report.errors[error].size > 0)
-        console.log(
-          `⚠️${logColors.yellow} ${error} ${logColors.blue} ${Array.from(report.errors[error])} ${logColors.reset}`,
-        );
-      errors += report.errors[error].size;
-    }
-    for (const warning of Object.keys(report.warnings)) {
-      if (report.warnings[warning].size > 0)
-        console.log(
-          `❗${logColors.yellow} ${warning} ${logColors.blue} ${Array.from(report.warnings[warning])} ${logColors.reset}`,
-        );
-      warnings += report.warnings[warning].size;
-    }
-    for (const info of Object.keys(report.infos)) {
-      if (report.infos[info].size > 0)
-        console.log(
-          `ℹ️ ${logColors.yellow} ${info} ${logColors.blue} ${Array.from(report.infos[info])} ${logColors.reset}`,
-        );
-      infos += report.infos[info].size;
-    }
-
-    for (const group of Object.keys(report.byGroup)) {
-      const errorsSet = new Set<string>();
-      const errorFields = new Set<string>();
-
-      for (const ent of report.byGroup[group]) {
-        for (const error of Object.keys(ent.errors)) {
-          if (ent.errors[error].size > 0) {
-            errorsSet.add(error);
-            for (const field of ent.errors[error]) errorFields.add(field);
-          }
-          errors += ent.errors[error].size;
-        }
-        for (const warinig of Object.keys(ent.warnings)) warnings += ent.warnings[warinig].size;
-        for (const info of Object.keys(ent.infos)) {
-          infos += ent.infos[info].size;
-        }
-      }
-      if (errorsSet.size > 0) {
-        console.log(
-          `⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}}]${logColors.reset}`,
-        );
-      }
-    }
-  }
-  return { errors, warnings, infos };
-}
 
 async function runPipeline(
   versions: Array<string>,
@@ -75,6 +22,7 @@ async function runPipeline(
   prodAssetFolder: string,
   testsDir: string,
   dryRun: Boolean,
+  slackManager: SlackMessageManager,
 ) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
@@ -87,15 +35,24 @@ async function runPipeline(
   const runId = process.env.GITHUB_RUN_ID;
 
   const actionsUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+  const gameSlug = versions[versions.length - 1].split('/')[0];
+  const environment = versions[versions.length - 1].split('/')[1].toUpperCase();
+  const version = versions[versions.length - 1].split('/').at(-1);
 
-  if (!dryRun)
-    await sendSlack(
-      `🚀 Start game static data update pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
+  // Reset Slack message manager for new pipeline run
+  slackManager.reset();
+
+  if (!dryRun) {
+    await slackManager.sendOrUpdate(
+      `Start game static data update pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
     );
-  else
-    await sendSlack(
-      `🚀 Start game static data dry run pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
+  } else {
+    await slackManager.sendOrUpdate(
+      `DRY RUN pipeline for ${version} ${gameIconsMap[gameSlug]} ${environment}`,
+      ':rocket:',
     );
+    await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
+  }
 
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
@@ -126,103 +83,64 @@ async function runPipeline(
     logger.endGroup();
 
     console.log('');
-    logger.group(`✍ Merge static data files `);
-    let staticData = {} as StaticData,
-      oldData = {} as StaticData;
-    for (let i = 0; i < versions.length; ++i) {
-      const data = JSON.parse(readFileSync(versions[i], 'utf8'));
-      //not for latest data skip invalid data files
-      if (i < versions.length - 1 && !isValidDataForMerge(data)) {
-        console.log(`❗Skip: ${logColors.yellow} ${versions[i]} is not valid for merge ${logColors.reset}`);
-        continue;
-      }
-      console.log(`✍ Merge: ${logColors.green} ${versions[i]} ${logColors.reset}`);
-      oldData = structuredClone(staticData);
-      staticData = mergeStaticData(data, staticData);
-    }
-    logger.endGroup();
 
+    // Merge static data files step
+    let { staticData, oldData } = await mergeStaticDataStep(slackManager, versions);
     console.log('');
-    logger.group('📊 Override static data by spreadsheets');
-    // Overrided data is the data that is overridden by spreadsheets and should be uploaded to the bucket
-    const { overridedData, spreadsheetReport, spreadsheetData } = await mergeWithSpreadsheets(
-      overrideSpreadsheetId,
-      staticData,
+
+    // Override static data by spreadsheets step
+    let { overridedData } = await overrideStaticData(slackManager, overrideSpreadsheetId, staticData);
+    console.log('');
+
+    // Validate static data step
+    const { errors, warnings, infos, reports } = await validateStaticData(
+      slackManager,
+      overridedData,
+      oldData,
+      config,
+      testsDir,
+      tmpAssetPrefix,
     );
-    logger.endGroup();
 
-    console.log('');
-    logger.group('🔍 Validate final static data ');
-    const reports = new Array<ValidationReport>();
-    const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
-    reports.push(commonReport);
-    reports.push(...(await runValidationExtensions(testsDir, overridedData, oldData)));
-
-    const { errors, warnings, infos } = isValidReport(reports);
-
-    console.log(`⚠️ Errors:${errors}`);
-    console.log(`❗ Warnings:${warnings}`);
-    console.log(`ℹ️ Infos:${infos}`);
-    logger.endGroup();
-
+    // If errors or warnings or infos - create report
     if (errors > 0 || warnings > 0 || infos > 0) {
-      console.log('');
-      logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
-      const reportDone = await createReport(reports, reportSpreadsheetId);
-
-      let slackMsg = `Mistakes Report: `;
-      slackMsg += `❗ - errors:${errors}  `;
-      slackMsg += `⚠️ - warnings:${warnings}  `;
-      slackMsg += `ℹ️ - infos:${infos}`;
-
-      if (reportDone) {
-        console.log('✅ Mistakes Report done');
-        await sendSlack(`${slackMsg}\n https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
-      } else {
-        console.log('⚠️ Can`t create spreadsheetreport');
-        await sendSlack(
-          `⚠️ Can't create Mistakes Report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`,
-        );
-      }
-      logger.endGroup();
+      await createReportStep(slackManager, reports, reportSpreadsheetId, errors, warnings, infos);
     } else {
-      await sendSlack(`✅ No errors,warnings or infos in static data`);
+      await slackManager.sendOrUpdate(`WOW!!! No errors, warnings or infos in static data`, ':gandalf:', true, true);
     }
 
-    console.log('');
     if (errors == 0) {
       if (dryRun) {
         logger.group('✅ Static data is valid!');
+        await slackManager.sendOrUpdate(
+          `Static data is valid! Dry run completed. <${actionsUrl}|View Details>`,
+          ':white_check_mark:',
+          true,
+        );
         return;
       }
     } else {
       console.log('❌ Static data is not valid!');
-      await sendSlack(`❌ Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed`);
+      await slackManager.sendOrUpdate(
+        `Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed. <${actionsUrl}|View Details>`,
+        ':x:',
+        true,
+      );
     }
   } catch (error) {
     console.log(`⚠️ Error during pipeline ${error}`);
-    await sendSlack(
-      `⚠️ Error during static data pipeline dry run for ${versions[versions.length - 1]} error:${error} `,
+    await slackManager.sendOrUpdate(
+      `Error during static data pipeline dry run for ${versions[versions.length - 1]} error:${error} <${actionsUrl}|View Details>`,
+      ':warning:',
+      true,
     );
   }
 }
 
-async function runValidationExtensions(extensionsDir: string, data: StaticData, oldData: StaticData) {
-  const reports = new Array<ValidationReport>();
-  try {
-    const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
-
-    for (const file of files) {
-      const test = require(path.join(extensionsDir, file));
-      reports.push(await test(data, oldData));
-    }
-  } catch (error) {
-    console.log(`⚠️ unable execute game specific test:${error}`);
-  }
-  return reports;
-}
-
 async function run() {
+  // Create Slack message manager for this run
+  const slackManager = new SlackMessageManager();
+
   const context = github.context;
   const staticDataPath = core.getInput('static_data_path');
   const overrideSpreadsheetId = core.getInput('override_spreadsheet_id');
@@ -285,6 +203,7 @@ async function run() {
         prodAssetFolder,
         tests,
         true,
+        slackManager,
       );
     }
   } else {
