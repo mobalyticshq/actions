@@ -7,7 +7,7 @@ import { mergeWithSpreadsheets } from '../spreadsheets';
 import { validate } from '../validation';
 import { createReport } from '../report';
 import { StaticData, StaticDataConfig, ValidationReport } from '../types';
-import { initSlugify, sendSlack, SlackMessageManager, slugify } from '../utils';
+import { initSlugify, SlackMessageManager } from '../utils';
 import { logColors, logger } from '../logger';
 
 initSlugify();
@@ -97,7 +97,7 @@ async function runPipeline(
       `Start game static data update pipeline for ${versions[versions.length - 1]}`, ':rocket:'
     );
     await slackManager.sendOrUpdate(
-      `Action: <${actionsUrl}|GitHub Actions>`, ':information_source:', true
+      `Action: <${actionsUrl}|View Details>\n`, ':information_source:', true
     );
   } else {
     await slackManager.sendOrUpdate(
@@ -136,7 +136,8 @@ async function runPipeline(
 
     console.log('');
     logger.group(`✍ Merge static data files `);
-    await slackManager.sendOrUpdate(`Merging static data files...`, ':arrows_counterclockwise:', true, true);
+    await slackManager.sendOrUpdate(`Merging static data files...`, ':arrows_counterclockwise:', true, false);
+
     let staticData = {} as StaticData,
       oldData = {} as StaticData;
     for (let i = 0; i < versions.length; ++i) {
@@ -163,7 +164,7 @@ async function runPipeline(
 
     console.log('');
     logger.group('🔍 Validate final static data ');
-    await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true);
+    await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true, true);
     const reports = new Array<ValidationReport>();
     const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
     reports.push(commonReport);
@@ -188,16 +189,16 @@ async function runPipeline(
 
       if (reportDone) {
         console.log('✅ Mistakes Report done');
-        await sendSlack(`${slackMsg}\n https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
+        await slackManager.sendOrUpdate(`${slackMsg}\n https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
       } else {
         console.log('⚠️ Can`t create spreadsheetreport');
-        await sendSlack(
+        await slackManager.sendOrUpdate(
           `⚠️ Can't create Mistakes Report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`,
         );
       }
       logger.endGroup();
     } else {
-      await slackManager.sendOrUpdate(`No errors,warnings or infos in static data`, ':white_check_mark:', true);
+      await slackManager.sendOrUpdate(`No errors, warnings or infos in static data`, ':gandalf:', true, true);
     }
 
     console.log('');
