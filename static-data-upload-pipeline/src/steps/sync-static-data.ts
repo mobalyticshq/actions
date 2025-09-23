@@ -46,7 +46,6 @@ export async function syncStaticData(
         `<https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}|Override spreadsheet  updated>`,
         ':white_check_mark:',
         true,
-        true,
       );
     }
   } catch (error) {
@@ -92,8 +91,8 @@ export async function syncStaticData(
   await updateAssets(slackManager, tmpAssetFolder, prodAssetFolder, cfClientID);
 
   await slackManager.sendOrUpdate(
-    `Static data https://storage.cloud.google.com/${process.env.GCP_BUCKET_NAME}/${versions[versions.length - 1]} uploaded`,
-    ':white_check_mark:',
+    `<https://storage.cloud.google.com/${process.env.GCP_BUCKET_NAME}/${versions[versions.length - 1]}|Static data uploaded>`,
+    ':tada:',
     true,
   );
   console.log('🔥 All done!!!');
