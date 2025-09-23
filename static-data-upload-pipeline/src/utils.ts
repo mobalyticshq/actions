@@ -99,12 +99,17 @@ class SlackMessageManager {
         // Update previous message to mark as completed
         if (this.messageHistory.length > 0) {
           const lastMessage = this.messageHistory[this.messageHistory.length - 1];
-          const completedMessage = lastMessage.replace(/^[^\s]+/, ':white_check_mark:');
-          this.messageHistory[this.messageHistory.length - 1] = completedMessage;
+          // Replace the first emoji with white_check_mark, but avoid duplication
+          const completedMessage = lastMessage.split(' ').slice(1).join(' ');
+          this.messageHistory[this.messageHistory.length - 1] = `:white_check_mark: ${completedMessage}`;
         }
         
-        // Add new message to history
-        this.messageHistory.push(`${iconEmoji} ${message}`);
+        // Add new message to history (only if it's not already completed)
+        if (!message.includes(':white_check_mark:')) {
+          this.messageHistory.push(`${iconEmoji} ${message}`);
+        } else {
+          this.messageHistory.push(message);
+        }
         
         // Update the message with merged content
         const mergedMessage = this.messageHistory.join('\n');
@@ -138,7 +143,7 @@ class SlackMessageManager {
     });
 
     const result = (await response.json()) as any;
-    console.log('📤 Send message response:', JSON.stringify(result, null, 2));
+  
     
     if (result.ok && result.ts) {
       this.messageTs = result.ts;
@@ -158,7 +163,7 @@ class SlackMessageManager {
       link_names: true,
     };
 
-    console.log('🔄 Updating message with payload:', JSON.stringify(payload, null, 2));
+    
 
     const response = await fetch('https://slack.com/api/chat.update', {
       method: 'POST',
@@ -170,7 +175,7 @@ class SlackMessageManager {
     });
 
     const result = (await response.json()) as any;
-    console.log('📝 Update response:', JSON.stringify(result, null, 2));
+    
     
     if (!result.ok) {
       console.error('❌ Failed to update Slack message:', result.error);

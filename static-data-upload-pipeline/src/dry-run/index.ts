@@ -94,11 +94,11 @@ async function runPipeline(
   
   if (!dryRun)
     await slackManager.sendOrUpdate(
-      `🚀 Start game static data update pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
+      `Start game static data update pipeline for ${versions[versions.length - 1]}\n Action:${actionsUrl} \n`, ':rocket'
     );
   else
     await slackManager.sendOrUpdate(
-      `🚀 Start game static data dry run pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
+      `🚀 Start game static data dry run pipeline for ${versions[versions.length - 1]}\n Action:${actionsUrl}`,
     );
 
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
@@ -192,24 +192,24 @@ async function runPipeline(
       }
       logger.endGroup();
     } else {
-      await slackManager.sendOrUpdate(`✅ No errors,warnings or infos in static data`, ':white_check_mark:', true);
+      await slackManager.sendOrUpdate(`No errors,warnings or infos in static data`, ':white_check_mark:', true);
     }
 
     console.log('');
     if (errors == 0) {
       if (dryRun) {
         logger.group('✅ Static data is valid!');
-        await slackManager.sendOrUpdate(`✅ Static data is valid! Dry run completed.`, ':white_check_mark:', true);
+        await slackManager.sendOrUpdate(`Static data is valid! Dry run completed.`, ':white_check_mark:', true);
         return;
       }
     } else {
       console.log('❌ Static data is not valid!');
-      await slackManager.sendOrUpdate(`❌ Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed`, ':x:', true);
+      await slackManager.sendOrUpdate(`Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed`, ':x:', true);
     }
   } catch (error) {
     console.log(`⚠️ Error during pipeline ${error}`);
     await slackManager.sendOrUpdate(
-      `⚠️ Error during static data pipeline dry run for ${versions[versions.length - 1]} error:${error} `,
+      `Error during static data pipeline dry run for ${versions[versions.length - 1]} error:${error} `,
       ':warning:',
       true,
     );
