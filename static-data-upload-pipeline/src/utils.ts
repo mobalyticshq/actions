@@ -84,6 +84,7 @@ export function tryParse(value: string) {
 // Slack message manager for updating messages
 class SlackMessageManager {
   private messageTs: string | null = null;
+  private messageHistory: string[] = [];
   // private channel: string = '#notifications-static-data-pipeline';
   private channel: string = process.env.SLACK_CHANNEL_ID || 'C09GRKW59EY'
 
@@ -95,10 +96,22 @@ class SlackMessageManager {
 
     try {
       if (isUpdate && this.messageTs) {
-        // Update existing message
-        await this.updateMessage(message, iconEmoji);
+        // Update previous message to mark as completed
+        if (this.messageHistory.length > 0) {
+          const lastMessage = this.messageHistory[this.messageHistory.length - 1];
+          const completedMessage = lastMessage.replace(/^[^\s]+/, ':white_check_mark:');
+          this.messageHistory[this.messageHistory.length - 1] = completedMessage;
+        }
+        
+        // Add new message to history
+        this.messageHistory.push(`${iconEmoji} ${message}`);
+        
+        // Update the message with merged content
+        const mergedMessage = this.messageHistory.join('\n');
+        await this.updateMessage(mergedMessage, ':receipt:');
       } else {
-        // Send new message
+        // Send new message and add to history
+        this.messageHistory = [`${iconEmoji} ${message}`];
         await this.sendNewMessage(message, iconEmoji);
       }
     } catch (error) {
@@ -166,6 +179,7 @@ class SlackMessageManager {
 
   reset() {
     this.messageTs = null;
+    this.messageHistory = [];
   }
 }
 
