@@ -84,10 +84,11 @@ export function tryParse(value: string) {
 // Slack message manager for updating messages
 class SlackMessageManager {
   private messageTs: string | null = null;
-  private channel: string = '#notifications-static-data-pipeline';
+  // private channel: string = '#notifications-static-data-pipeline';
+  private channel: string = '#sd-pipeline-notification-test'
 
   async sendOrUpdate(message: string, iconEmoji = ':receipt:', isUpdate = false) {
-    if (!process.env.SLACK_BOT_TOKEN) {
+    if (!process.env.SLACK_BOT_TOKEN_V2) {
       console.log('📢 Slack notification:', message);
       return;
     }
@@ -106,22 +107,24 @@ class SlackMessageManager {
   }
 
   private async sendNewMessage(message: string, iconEmoji: string) {
+    const payload = {
+      channel: this.channel,
+      text: message,
+      username: 'Static Data Pipeline',
+      icon_emoji: iconEmoji,
+      link_names: true,
+    };
+
     const response = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+        Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN_V2}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        channel: this.channel,
-        text: message,
-        username: 'Static Data Pipeline',
-        icon_emoji: iconEmoji,
-        link_names: true,
-      }),
+      body: JSON.stringify(payload),
     });
 
-    const result = await response.json() as any;
+    const result = (await response.json()) as any;
     if (result.ok && result.ts) {
       this.messageTs = result.ts;
     } else {
@@ -130,23 +133,25 @@ class SlackMessageManager {
   }
 
   private async updateMessage(message: string, iconEmoji: string) {
+    const payload = {
+      channel: this.channel,
+      ts: this.messageTs,
+      text: message,
+      username: 'Static Data Pipeline',
+      icon_emoji: iconEmoji,
+      link_names: true,
+    };
+
     const response = await fetch('https://slack.com/api/chat.update', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+        Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN_V2}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        channel: this.channel,
-        ts: this.messageTs,
-        text: message,
-        username: 'Static Data Pipeline',
-        icon_emoji: iconEmoji,
-        link_names: true,
-      }),
+      body: JSON.stringify(payload),
     });
 
-    const result = await response.json() as any;
+    const result = (await response.json()) as any;
     if (!result.ok) {
       console.error('❌ Failed to update Slack message:', result.error);
     }
