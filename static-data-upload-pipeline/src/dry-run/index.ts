@@ -7,7 +7,7 @@ import { mergeWithSpreadsheets } from '../spreadsheets';
 import { validate } from '../validation';
 import { createReport } from '../report';
 import { StaticData, StaticDataConfig, ValidationReport } from '../types';
-import { initSlugify, SlackMessageManager } from '../utils';
+import { initSlugify, sendSlack, SlackMessageManager } from '../utils';
 import { logColors, logger } from '../logger';
 
 initSlugify();
@@ -91,20 +91,18 @@ async function runPipeline(
 
   // Reset Slack message manager for new pipeline run
   slackManager.reset();
-  
+
   if (!dryRun) {
-    await slackManager.sendOrUpdate(
-      `Start game static data update pipeline for ${versions[versions.length - 1]}`, ':rocket:'
-    );
-    await slackManager.sendOrUpdate(
-      `Action: <${actionsUrl}|View Details>\n`, ':information_source:', true
+    await sendSlack(
+      `🚀 Start game static data update pipeline for ${versions[versions.length - 1]}\nℹ️ Action:${actionsUrl}`,
     );
   } else {
     await slackManager.sendOrUpdate(
-      `🚀 Start game static data dry run pipeline for ${versions[versions.length - 1]}\n Action:${actionsUrl}`,
+      `Start game static data update pipeline for ${versions[versions.length - 1]}`,
+      ':rocket:',
     );
+    await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
   }
-    
 
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
@@ -164,7 +162,7 @@ async function runPipeline(
 
     console.log('');
     logger.group('🔍 Validate final static data ');
-    await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true, true);
+    await slackManager.sendOrUpdate(`Validating static data...\n`, ':mag:', true, true);
     const reports = new Array<ValidationReport>();
     const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
     reports.push(commonReport);
@@ -205,12 +203,20 @@ async function runPipeline(
     if (errors == 0) {
       if (dryRun) {
         logger.group('✅ Static data is valid!');
-        await slackManager.sendOrUpdate(`Static data is valid! Dry run completed. <${actionsUrl}|View Details>`, ':white_check_mark:', true);
+        await slackManager.sendOrUpdate(
+          `Static data is valid! Dry run completed. <${actionsUrl}|View Details>`,
+          ':white_check_mark:',
+          true,
+        );
         return;
       }
     } else {
       console.log('❌ Static data is not valid!');
-      await slackManager.sendOrUpdate(`Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed. <${actionsUrl}|View Details>`, ':x:', true);
+      await slackManager.sendOrUpdate(
+        `Static data ${versions[versions.length - 1]} is not valid. Static data dry run failed. <${actionsUrl}|View Details>`,
+        ':x:',
+        true,
+      );
     }
   } catch (error) {
     console.log(`⚠️ Error during pipeline ${error}`);
