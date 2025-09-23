@@ -5,7 +5,7 @@ import * as path from 'path';
 import { isValidDataForMerge, mergeStaticData, replaceAssets } from './merge';
 import { mergeWithSpreadsheets, updateSpreadsheets } from './spreadsheets';
 import { validate } from './validation';
-import { createReport } from './report';
+import { createReport } from './utils/report';
 import { StaticData, StaticDataConfig, ValidationReport } from './types';
 import { initSlugify, sendSlack, slugify } from './utils';
 import { spawn, exec } from 'child_process';
@@ -272,12 +272,12 @@ async function runPipeline(
     }
 
     console.log('');
-        if (errors == 0) {
-            if (dryRun) {
-                logger.group('✅ Static data is valid!');
-                return;
-            }
-            logger.group('✅ Static data is valid! Sync data 📦');
+    if (errors == 0) {
+      if (dryRun) {
+        logger.group('✅ Static data is valid!');
+        return;
+      }
+      logger.group('✅ Static data is valid! Sync data 📦');
 
       console.log(
         `✍ Update assets URLs! ${logColors.green}${tmpAssetPrefix}${logColors.reset} to ${logColors.green}${prodAssetPrefix}${logColors.reset}`,

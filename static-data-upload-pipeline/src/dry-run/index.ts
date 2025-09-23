@@ -2,69 +2,16 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
-import { isValidDataForMerge, mergeStaticData } from '../merge';
-import { mergeWithSpreadsheets } from '../spreadsheets';
-import { validate } from '../validation';
-import { createReport } from '../report';
-import { StaticData, StaticDataConfig, ValidationReport } from '../types';
-import { gameIconsMap, initSlugify, sendSlack, SlackMessageManager } from '../utils';
+import { StaticDataConfig, ValidationReport } from '../types';
+import { gameIconsMap, initSlugify, sendSlack } from '../utils';
 import { logColors, logger } from '../logger';
+import { SlackMessageManager } from '../utils/slack-manager.utils';
+import { mergeStaticDataStep } from '../steps/merge-static-data';
+import { overrideStaticData } from '../steps/override-static-data';
+import { validateStaticData } from '../steps/validate-static-data';
+import { createReportStep } from '../steps/create-report';
 
 initSlugify();
-
-function isValidReport(reports: ValidationReport[]) {
-  let errors = 0,
-    warnings = 0,
-    infos = 0;
-  for (const report of reports) {
-    for (const error of Object.keys(report.errors)) {
-      if (report.errors[error].size > 0)
-        console.log(
-          `⚠️${logColors.yellow} ${error} ${logColors.blue} ${Array.from(report.errors[error])} ${logColors.reset}`,
-        );
-      errors += report.errors[error].size;
-    }
-    for (const warning of Object.keys(report.warnings)) {
-      if (report.warnings[warning].size > 0)
-        console.log(
-          `❗${logColors.yellow} ${warning} ${logColors.blue} ${Array.from(report.warnings[warning])} ${logColors.reset}`,
-        );
-      warnings += report.warnings[warning].size;
-    }
-    for (const info of Object.keys(report.infos)) {
-      if (report.infos[info].size > 0)
-        console.log(
-          `ℹ️ ${logColors.yellow} ${info} ${logColors.blue} ${Array.from(report.infos[info])} ${logColors.reset}`,
-        );
-      infos += report.infos[info].size;
-    }
-
-    for (const group of Object.keys(report.byGroup)) {
-      const errorsSet = new Set<string>();
-      const errorFields = new Set<string>();
-
-      for (const ent of report.byGroup[group]) {
-        for (const error of Object.keys(ent.errors)) {
-          if (ent.errors[error].size > 0) {
-            errorsSet.add(error);
-            for (const field of ent.errors[error]) errorFields.add(field);
-          }
-          errors += ent.errors[error].size;
-        }
-        for (const warinig of Object.keys(ent.warnings)) warnings += ent.warnings[warinig].size;
-        for (const info of Object.keys(ent.infos)) {
-          infos += ent.infos[info].size;
-        }
-      }
-      if (errorsSet.size > 0) {
-        console.log(
-          `⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}}]${logColors.reset}`,
-        );
-      }
-    }
-  }
-  return { errors, warnings, infos };
-}
 
 async function runPipeline(
   versions: Array<string>,
@@ -136,73 +83,89 @@ async function runPipeline(
     logger.endGroup();
 
     console.log('');
-    logger.group(`✍ Merge static data files `);
-    await slackManager.sendOrUpdate(`Merging static data files...`, ':arrows_counterclockwise:', true, false);
+    // logger.group(`✍ Merge static data files `);
+    // await slackManager.sendOrUpdate(`Merging static data files...`, ':arrows_counterclockwise:', true, false);
+    //
+    // let staticData = {} as StaticData,
+    //   oldData = {} as StaticData;
+    // for (let i = 0; i < versions.length; ++i) {
+    //   const data = JSON.parse(readFileSync(versions[i], 'utf8'));
+    //   //not for latest data skip invalid data files
+    //   if (i < versions.length - 1 && !isValidDataForMerge(data)) {
+    //     console.log(`❗Skip: ${logColors.yellow} ${versions[i]} is not valid for merge ${logColors.reset}`);
+    //     continue;
+    //   }
+    //   console.log(`✍ Merge: ${logColors.green} ${versions[i]} ${logColors.reset}`);
+    //   oldData = structuredClone(staticData);
+    //   staticData = mergeStaticData(data, staticData);
+    // }
+    // logger.endGroup();
 
-    let staticData = {} as StaticData,
-      oldData = {} as StaticData;
-    for (let i = 0; i < versions.length; ++i) {
-      const data = JSON.parse(readFileSync(versions[i], 'utf8'));
-      //not for latest data skip invalid data files
-      if (i < versions.length - 1 && !isValidDataForMerge(data)) {
-        console.log(`❗Skip: ${logColors.yellow} ${versions[i]} is not valid for merge ${logColors.reset}`);
-        continue;
-      }
-      console.log(`✍ Merge: ${logColors.green} ${versions[i]} ${logColors.reset}`);
-      oldData = structuredClone(staticData);
-      staticData = mergeStaticData(data, staticData);
-    }
-    logger.endGroup();
-
+    // Merge static data files step
+    let { staticData, oldData } = await mergeStaticDataStep(slackManager, versions);
     console.log('');
-    logger.group('📊 Override static data by spreadsheets');
-    // Overrided data is the data that is overridden by spreadsheets and should be uploaded to the bucket
-    const { overridedData, spreadsheetReport, spreadsheetData } = await mergeWithSpreadsheets(
-      overrideSpreadsheetId,
-      staticData,
+
+    // logger.group('📊 Override static data by spreadsheets');
+    // // Overrided data is the data that is overridden by spreadsheets and should be uploaded to the bucket
+    // const { overridedData, spreadsheetReport, spreadsheetData } = await mergeWithSpreadsheets(
+    //   overrideSpreadsheetId,
+    //   staticData,
+    // );
+    // logger.endGroup();
+
+    // Override static data by spreadsheets step
+    let { overridedData } = await overrideStaticData(slackManager, overrideSpreadsheetId, staticData);
+    console.log('');
+
+    // logger.group('🔍 Validate final static data ');
+    // await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true, true);
+    // const reports = new Array<ValidationReport>();
+    // const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
+    // reports.push(commonReport);
+    // reports.push(...(await runValidationExtensions(testsDir, overridedData, oldData)));
+    //
+    // const { errors, warnings, infos } = isValidReport(reports);
+    //
+    // console.log(`⚠️ Errors:${errors}`);
+    // console.log(`❗ Warnings:${warnings}`);
+    // console.log(`ℹ️ Infos:${infos}`);
+    // logger.endGroup();
+
+    // Validate static data step
+    const { errors, warnings, infos, reports } = await validateStaticData(
+      slackManager,
+      overridedData,
+      oldData,
+      config,
+      testsDir,
+      tmpAssetPrefix,
     );
-    logger.endGroup();
 
-    console.log('');
-    logger.group('🔍 Validate final static data ');
-    await slackManager.sendOrUpdate(`Validating static data...\n`, ':mag:', true, true);
-    const reports = new Array<ValidationReport>();
-    const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
-    reports.push(commonReport);
-    reports.push(...(await runValidationExtensions(testsDir, overridedData, oldData)));
-
-    const { errors, warnings, infos } = isValidReport(reports);
-
-    console.log(`⚠️ Errors:${errors}`);
-    console.log(`❗ Warnings:${warnings}`);
-    console.log(`ℹ️ Infos:${infos}`);
-    logger.endGroup();
-
+    // If errors or warnings or infos - create report
     if (errors > 0 || warnings > 0 || infos > 0) {
-      console.log('');
-      logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
-      const reportDone = await createReport(reports, reportSpreadsheetId);
-
-      let slackMsg = `Mistakes Report: `;
-      slackMsg += `❗ - errors:${errors}  `;
-      slackMsg += `⚠️ - warnings:${warnings}  `;
-      slackMsg += `ℹ️ - infos:${infos}`;
-
-      if (reportDone) {
-        console.log('✅ Mistakes Report done');
-        await slackManager.sendOrUpdate(`${slackMsg}\n https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
-      } else {
-        console.log('⚠️ Can`t create spreadsheetreport');
-        await slackManager.sendOrUpdate(
-          `⚠️ Can't create Mistakes Report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`,
-        );
-      }
-      logger.endGroup();
+      // logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
+      // const reportDone = await createReport(reports, reportSpreadsheetId);
+      //
+      // let slackMsg = `Mistakes Report: `;
+      // slackMsg += `❗ - errors:${errors}  `;
+      // slackMsg += `⚠️ - warnings:${warnings}  `;
+      // slackMsg += `ℹ️ - infos:${infos}`;
+      //
+      // if (reportDone) {
+      //   console.log('✅ Mistakes Report done');
+      //   await slackManager.sendOrUpdate(`${slackMsg}\n https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
+      // } else {
+      //   console.log('⚠️ Can`t create spreadsheetreport');
+      //   await slackManager.sendOrUpdate(
+      //     `⚠️ Can't create Mistakes Report https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`,
+      //   );
+      // }
+      // logger.endGroup();
+      await createReportStep(slackManager, reports, reportSpreadsheetId, errors, warnings, infos);
     } else {
-      await slackManager.sendOrUpdate(`No errors, warnings or infos in static data`, ':gandalf:', true, true);
+      await slackManager.sendOrUpdate(`WOW!!! No errors, warnings or infos in static data`, ':gandalf:', true, true);
     }
 
-    console.log('');
     if (errors == 0) {
       if (dryRun) {
         logger.group('✅ Static data is valid!');
@@ -229,21 +192,6 @@ async function runPipeline(
       true,
     );
   }
-}
-
-async function runValidationExtensions(extensionsDir: string, data: StaticData, oldData: StaticData) {
-  const reports = new Array<ValidationReport>();
-  try {
-    const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
-
-    for (const file of files) {
-      const test = require(path.join(extensionsDir, file));
-      reports.push(await test(data, oldData));
-    }
-  } catch (error) {
-    console.log(`⚠️ unable execute game specific test:${error}`);
-  }
-  return reports;
 }
 
 async function run() {
