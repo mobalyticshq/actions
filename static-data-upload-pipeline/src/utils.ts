@@ -1,5 +1,4 @@
 import * as slugify_ from 'slugify';
-import { SlackMessageManager } from './utils/slack-manager.utils';
 
 export const gameIconsMap: Record<string, string> = {
   'the-bazaar': ':bazaarr:',
@@ -96,11 +95,4 @@ export function tryParse(value: string) {
     return JSON.parse(value);
   } catch {}
   return value;
-}
-
-// Global instance for backward compatibility
-const slackManager = new SlackMessageManager();
-
-export async function sendSlack(slackMessage: string, iconEmoji = ':receipt:') {
-  await slackManager.sendOrUpdate(slackMessage, iconEmoji, false);
 }

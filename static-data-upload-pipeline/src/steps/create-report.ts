@@ -1,6 +1,6 @@
 import { logger } from '../logger';
 import { ValidationReport } from '../types';
-import { createReport } from '../utils/report';
+import { createReport } from '../utils/report.utils';
 import { SlackMessageManager } from '../utils/slack-manager.utils';
 
 export async function createReportStep(

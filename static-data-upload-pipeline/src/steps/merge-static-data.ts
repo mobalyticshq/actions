@@ -1,7 +1,7 @@
 import { logColors, logger } from '../logger';
 import { StaticData } from '../types';
 import { readFileSync } from 'fs';
-import { isValidDataForMerge, mergeStaticData } from '../merge';
+import { isValidDataForMerge, mergeStaticData } from '../utils/merge.utils';
 import { SlackMessageManager } from '../utils/slack-manager.utils';
 
 export async function mergeStaticDataStep(slackManager: SlackMessageManager, versions: Array<string>) {
