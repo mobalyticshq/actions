@@ -19,16 +19,17 @@ This folder contains the schema validation logic and unit tests for the static d
 ## Validation Rules
 
 ### Schema Structure Validation
-1. **Namespace and TypePrefix** must be defined and contain only letters and digits
-2. **Groups** cannot be empty; group names must be unique valid strings
-3. **Groups** must include at least one field (id); field names must be unique valid strings
-4. **Group object names** must be unique valid strings (letters only)
-5. **Object definitions** must include at least one field; field names must be unique valid strings
-6. **Field definitions** must be valid (letters and digits only) and type must be one of: String, Boolean, Ref, Object
-7. **objName values** must exist in objects field within group
-8. **refTo values** must exist in groups keys in the schema
-9. **Filters** must be valid (filter modifier only acceptable for fields with type String)
-10. **Ref field names** should not conflict with other fields after trimming "Ref" suffix
+1. **Namespace** must be defined and start with letter or underscore, contain only letters, digits and underscores
+2. **TypePrefix** must be defined and contain only letters and digits
+3. **Groups** cannot be empty; group names must be unique valid strings
+4. **Groups** must include at least one field (id); field names must be unique valid strings
+5. **Group object names** must be unique valid strings (letters only)
+6. **Object definitions** must include at least one field; field names must be unique valid strings
+7. **Field definitions** must be valid (letters and digits only) and type must be one of: String, Boolean, Ref, Object
+8. **objName values** must exist in objects field within group
+9. **refTo values** must exist in groups keys in the schema
+10. **Filters** must be valid (filter modifier only acceptable for fields with type String)
+11. **Ref field names** should not conflict with other fields after trimming "Ref" suffix
 
 ### Backward Compatibility Validation
 - Namespace and TypePrefix must not change

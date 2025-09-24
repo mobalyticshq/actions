@@ -41,7 +41,7 @@ describe('validateSchemaStructure', () => {
 
       const errors = validateSchemaStructure(schema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Namespace must be defined and contain only letters and digits');
+      expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits and underscores');
     });
 
     it('should fail with empty namespace', () => {
@@ -59,7 +59,7 @@ describe('validateSchemaStructure', () => {
 
       const errors = validateSchemaStructure(schema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Namespace must be defined and contain only letters and digits');
+      expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits and underscores');
     });
   });
 
