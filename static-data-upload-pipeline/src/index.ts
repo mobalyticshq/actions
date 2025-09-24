@@ -12,7 +12,8 @@ import { overrideStaticData } from './steps/override-static-data';
 import { validateStaticData } from './steps/validate-static-data';
 import { createReportStep } from './steps/create-report';
 import { syncStaticData } from './steps/sync-static-data';
-import { schemaValidationStep } from './steps/schema-validation';
+
+import { schemaValidationStep } from './steps/schema-validation/schema-validation';
 
 const execAsync = promisify(exec);
 
@@ -202,7 +203,7 @@ async function run() {
     // Читаем schema.json файл из staticDataPath
     const schemaPath = path.join(staticDataPath, 'schema.json');
     let schemaFilePath = '';
-    
+
     if (existsSync(schemaPath)) {
       schemaFilePath = schemaPath;
       console.log(`ℹ️ Found schema.json at: ${schemaPath}`);

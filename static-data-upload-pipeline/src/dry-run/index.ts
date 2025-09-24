@@ -10,6 +10,7 @@ import { mergeStaticDataStep } from '../steps/merge-static-data';
 import { overrideStaticData } from '../steps/override-static-data';
 import { validateStaticData } from '../steps/validate-static-data';
 import { createReportStep } from '../steps/create-report';
+import { schemaValidationStep } from '../steps/schema-validation/schema-validation';
 
 initSlugify();
 
@@ -23,6 +24,7 @@ async function runPipeline(
   testsDir: string,
   dryRun: Boolean,
   slackManager: SlackMessageManager,
+  schemaPath: string,
 ) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
@@ -58,6 +60,15 @@ async function runPipeline(
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
 
   try {
+    // Schema validation step
+    if (schemaPath) {
+      const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
+      if (!schemaValidationResult.success) {
+        throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
+      }
+      console.log('');
+    }
+
     let configDir = path.dirname(versions[0]);
     let gameConfig = '';
     let scheme = '';
@@ -204,6 +215,7 @@ async function run() {
         tests,
         true,
         slackManager,
+        staticDataPath,
       );
     }
   } else {
