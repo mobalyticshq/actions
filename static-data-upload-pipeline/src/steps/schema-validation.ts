@@ -47,7 +47,7 @@ async function downloadReferenceSchema(schemaPath: string): Promise<Schema | nul
 
     // Create path to file in bucket (remove local path and add bucket path)
     const schemaFileName = 'schema.json';
-    const gcsPath = `gs://${bucketName}/${schemaFileName}`;
+    const gcsPath = `gs://${bucketName}/${schemaPath}/${schemaFileName}`;
     
     console.log(`📥 Downloading reference schema from: ${gcsPath}`);
     
@@ -234,6 +234,7 @@ function validateSchemaCompatibility(newSchema: Schema, referenceSchema: Schema)
 export async function schemaValidationStep(
   slackManager: SlackMessageManager,
   schemaPath: string,
+  staticDataPath: string,
 ) {
   logger.group('📋 Validate schema.json');
   await slackManager.sendOrUpdate(`Validating schema.json...`, ':clipboard:', true);
@@ -246,7 +247,7 @@ export async function schemaValidationStep(
     const newSchema = JSON.parse(newSchemaContent) as Schema;
     
     // Download reference schema from GCS
-    const referenceSchema = await downloadReferenceSchema(schemaPath);
+    const referenceSchema = await downloadReferenceSchema(staticDataPath);
     
     if (!referenceSchema) {
       console.log(`⚠️ No reference schema found, skipping backward compatibility validation`);
