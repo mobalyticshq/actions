@@ -44,7 +44,7 @@ describe('Schema Validation Integration Tests', () => {
 
     const errors = validateSchemaStructure(invalidSchema);
     expect(errors).toHaveLength(1);
-    expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits and underscores');
+    expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits, underscores and dots');
   });
 
   it('should detect invalid namespace starting with digit', () => {
@@ -62,7 +62,7 @@ describe('Schema Validation Integration Tests', () => {
 
     const errors = validateSchemaStructure(invalidSchema);
     expect(errors).toHaveLength(1);
-    expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits and underscores');
+    expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits, underscores and dots');
   });
 
   it('should accept valid namespace with underscores', () => {
@@ -85,6 +85,40 @@ describe('Schema Validation Integration Tests', () => {
   it('should accept valid namespace with numbers', () => {
     const validSchema: Schema = {
       namespace: 'poeStaticData123',
+      typePrefix: 'Poe',
+      groups: {
+        weapons: {
+          fields: {
+            id: { type: 'String' },
+          },
+        },
+      },
+    };
+
+    const errors = validateSchemaStructure(validSchema);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('should accept valid namespace with dots', () => {
+    const validSchema: Schema = {
+      namespace: 'poe.static.data',
+      typePrefix: 'Poe',
+      groups: {
+        weapons: {
+          fields: {
+            id: { type: 'String' },
+          },
+        },
+      },
+    };
+
+    const errors = validateSchemaStructure(validSchema);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('should accept valid namespace with dots and underscores', () => {
+    const validSchema: Schema = {
+      namespace: 'poe.static_data.v2',
       typePrefix: 'Poe',
       groups: {
         weapons: {

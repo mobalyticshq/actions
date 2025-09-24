@@ -19,7 +19,7 @@ This folder contains the schema validation logic and unit tests for the static d
 ## Validation Rules
 
 ### Schema Structure Validation
-1. **Namespace** must be defined and start with letter or underscore, contain only letters, digits and underscores
+1. **Namespace** must be defined and start with letter or underscore, contain only letters, digits, underscores and dots
 2. **TypePrefix** must be defined and contain only letters and digits
 3. **Groups** cannot be empty; group names must be unique valid strings
 4. **Groups** must include at least one field (id); field names must be unique valid strings

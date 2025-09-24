@@ -15,9 +15,9 @@ function isValidObjectString(str: string): boolean {
   return /^[a-zA-Z]+$/.test(str);
 }
 
-// Helper function to validate namespace format (starts with letter or underscore, contains letters, digits, underscores)
+// Helper function to validate namespace format (starts with letter or underscore, contains letters, digits, underscores, dots)
 function isValidNamespace(str: string): boolean {
-  return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(str);
+  return /^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(str);
 }
 
 // Function to download reference schema from GCS
@@ -195,7 +195,7 @@ export function validateSchemaStructure(schema: Schema): ValidationError[] {
   if (!schema.namespace || !isValidNamespace(schema.namespace)) {
     errors.push({
       type: 'error',
-      message: `Namespace must be defined and start with letter or underscore, contain only letters, digits and underscores, got: "${schema.namespace}"`,
+      message: `Namespace must be defined and start with letter or underscore, contain only letters, digits, underscores and dots, got: "${schema.namespace}"`,
       path: 'namespace',
     });
   }

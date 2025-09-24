@@ -22,8 +22,7 @@ describe('validateSchemaStructure', () => {
       };
 
       const errors = validateSchemaStructure(schema);
-      expect(errors).toHaveLength(1); // Only namespace error, typePrefix should be valid
-      expect(errors[0].path).toBe('namespace');
+      expect(errors).toHaveLength(0); // Valid namespace with dots should pass
     });
 
     it('should fail with invalid namespace containing special characters', () => {
@@ -41,7 +40,7 @@ describe('validateSchemaStructure', () => {
 
       const errors = validateSchemaStructure(schema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits and underscores');
+      expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits, underscores and dots');
     });
 
     it('should fail with empty namespace', () => {
@@ -59,7 +58,7 @@ describe('validateSchemaStructure', () => {
 
       const errors = validateSchemaStructure(schema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits and underscores');
+      expect(errors[0].message).toContain('Namespace must be defined and start with letter or underscore, contain only letters, digits, underscores and dots');
     });
   });
 
