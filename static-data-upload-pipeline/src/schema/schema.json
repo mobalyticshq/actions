@@ -1,0 +1,755 @@
+{
+  "namespace": "poe.staticData",
+  "typePrefix": "Poe",
+  "groups": {
+    "amulets": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      }
+    },
+    "armours": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        },
+        "stats": {
+          "type": "Object",
+          "array": true,
+          "objName": "stats"
+        }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "keywordRef": {
+              "type": "Ref",
+              "refTo": "keywords"
+            },
+            "value": {
+              "type": "String"
+            }
+          }
+        }
+      }
+    },
+    "ascendancies": {
+      "fields": {
+        "ascendancyId": {
+          "type": "String"
+        },
+        "background": {
+          "type": "String"
+        },
+        "classTag": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "passiveTreeImage": {
+          "type": "String"
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      }
+    },
+    "belts": {
+      "fields": {
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      }
+    },
+    "characters": {
+      "fields": {
+        "description": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        },
+        "startNodeIcon": {
+          "type": "String"
+        },
+        "startingNodeRef": {
+          "type": "Ref",
+          "refTo": "passiveSkillsNodes"
+        },
+        "stats": {
+          "type": "Object",
+          "array": true,
+          "objName": "stats"
+        }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "keywordRef": {
+              "type": "Ref",
+              "refTo": "keywords"
+            },
+            "value": {
+              "type": "String"
+            }
+          }
+        }
+      }
+    },
+    "flasks": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        },
+        "stats": {
+          "type": "Object",
+          "array": true,
+          "objName": "stats"
+        }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "keywordRef": {
+              "type": "Ref",
+              "refTo": "keywords"
+            },
+            "value": {
+              "type": "String"
+            }
+          }
+        }
+      }
+    },
+    "gems": {
+      "fields": {
+        "description": {
+          "type": "String"
+        },
+        "dex": {
+          "type": "String"
+        },
+        "gameId": {
+          "type": "String"
+        },
+        "gemTags": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "int": {
+          "type": "String"
+        },
+        "isSupport": {
+          "type": "Boolean"
+        },
+        "itemIcon": {
+          "type": "String"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "skillRef": {
+          "type": "Ref",
+          "refTo": "skills"
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        },
+        "stats": {
+          "type": "Object",
+          "array": true,
+          "objName": "stats"
+        },
+        "str": {
+          "type": "String"
+        }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "keywordRef": {
+              "type": "Ref",
+              "refTo": "keywords"
+            },
+            "value": {
+              "type": "String"
+            }
+          }
+        }
+      }
+    },
+    "jewelRadii": {
+      "fields": {
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "radius": {
+          "type": "String"
+        },
+        "ringInner": {
+          "type": "String"
+        },
+        "ringOuter": {
+          "type": "String"
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      }
+    },
+    "jewels": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "radiusRef": {
+          "type": "Ref",
+          "refTo": "jewelRadii"
+        },
+        "slug": {
+          "type": "String"
+        },
+        "subType": {
+          "type": "String"
+        }
+      }
+    },
+    "keywords": {
+      "fields": {
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String"
+        }
+      }
+    },
+    "masteryEffects": {
+      "fields": {
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "stats": {
+          "type": "String",
+          "array": true
+        }
+      }
+    },
+    "passiveSkills": {
+      "fields": {
+        "ascendancy": {
+          "type": "String"
+        },
+        "ascendancyStart": {
+          "type": "Boolean"
+        },
+        "characterRef": {
+          "type": "Ref",
+          "array": true,
+          "refTo": "characters"
+        },
+        "clusterSize": {
+          "type": "String"
+        },
+        "descriptions": {
+          "type": "String",
+          "array": true
+        },
+        "flavorText": {
+          "type": "String"
+        },
+        "flavourText": {
+          "type": "String"
+        },
+        "gameId": {
+          "type": "String"
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "jewelSocket": {
+          "type": "Boolean"
+        },
+        "keystone": {
+          "type": "Boolean"
+        },
+        "mastery": {
+          "type": "Boolean"
+        },
+        "masteryActiveImage": {
+          "type": "String"
+        },
+        "masteryEffectImage": {
+          "type": "String"
+        },
+        "masteryGroup": {
+          "type": "String"
+        },
+        "masteryInactiveImage": {
+          "type": "String"
+        },
+        "multipleChoice": {
+          "type": "Boolean"
+        },
+        "multipleChoiceOption": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "notable": {
+          "type": "Boolean"
+        },
+        "skillPointsGranted": {
+          "type": "String"
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      }
+    },
+    "passiveSkillsGraph": {
+      "fields": {
+        "groups": {
+          "type": "Object",
+          "array": true,
+          "objName": "groups"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "orbits": {
+          "type": "String",
+          "array": true
+        },
+        "radii": {
+          "type": "String",
+          "array": true
+        },
+        "rootEdgeRef": {
+          "type": "Ref",
+          "array": true,
+          "refTo": "passiveSkillsNodes"
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      },
+      "objects": {
+        "groups": {
+          "fields": {
+            "centerX": {
+              "type": "String"
+            },
+            "centerY": {
+              "type": "String"
+            },
+            "orbits": {
+              "type": "String",
+              "array": true
+            },
+            "passiveSkillNodeRef": {
+              "type": "Ref",
+              "array": true,
+              "refTo": "passiveSkillsNodes"
+            },
+            "slug": {
+              "type": "String",
+              "filter": true
+            }
+          }
+        }
+      }
+    },
+    "passiveSkillsNodes": {
+      "fields": {
+        "edgeRef": {
+          "type": "Ref",
+          "array": true,
+          "refTo": "passiveSkillsNodes"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "isBlighted": {
+          "type": "Boolean"
+        },
+        "isNotable": {
+          "type": "Boolean"
+        },
+        "masteryEffectsRef": {
+          "type": "Ref",
+          "array": true,
+          "refTo": "masteryEffects"
+        },
+        "orbit": {
+          "type": "String"
+        },
+        "orbitIndex": {
+          "type": "String"
+        },
+        "passiveSlug": {
+          "type": "String"
+        }
+      }
+    },
+    "quivers": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      }
+    },
+    "rings": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        }
+      }
+    },
+    "shields": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        },
+        "stats": {
+          "type": "Object",
+          "array": true,
+          "objName": "stats"
+        }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "keywordRef": {
+              "type": "Ref",
+              "refTo": "keywords"
+            },
+            "value": {
+              "type": "String"
+            }
+          }
+        }
+      }
+    },
+    "skills": {
+      "fields": {
+        "description": {
+          "type": "String"
+        },
+        "effectFromQuality": {
+          "type": "String",
+          "array": true
+        },
+        "gameId": {
+          "type": "String"
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "intrinsics": {
+          "type": "String",
+          "array": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        },
+        "stats": {
+          "type": "Object",
+          "array": true,
+          "objName": "stats"
+        }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "keywordRef": {
+              "type": "Ref",
+              "refTo": "keywords"
+            },
+            "value": {
+              "type": "String"
+            }
+          }
+        }
+      }
+    },
+    "weapons": {
+      "fields": {
+        "explicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "icon": {
+          "type": "String"
+        },
+        "id": {
+          "type": "String",
+          "filter": true
+        },
+        "implicitMods": {
+          "type": "String",
+          "array": true
+        },
+        "isUnique": {
+          "type": "Boolean"
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "slug": {
+          "type": "String",
+          "filter": true
+        },
+        "stats": {
+          "type": "Object",
+          "array": true,
+          "objName": "stats"
+        }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "keywordRef": {
+              "type": "Ref",
+              "refTo": "keywords"
+            },
+            "value": {
+              "type": "String"
+            }
+          }
+        }
+      }
+    }
+  }
+}

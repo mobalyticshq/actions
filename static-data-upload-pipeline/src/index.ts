@@ -12,6 +12,7 @@ import { overrideStaticData } from './steps/override-static-data';
 import { validateStaticData } from './steps/validate-static-data';
 import { createReportStep } from './steps/create-report';
 import { syncStaticData } from './steps/sync-static-data';
+import { schemaValidationStep } from './steps/schema-validation';
 
 const execAsync = promisify(exec);
 
@@ -27,6 +28,7 @@ async function runPipeline(
   testsDir: string,
   dryRun: Boolean,
   slackManager: SlackMessageManager,
+  schemaPath: string,
 ) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
@@ -64,6 +66,15 @@ async function runPipeline(
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
 
   try {
+    // Schema validation step
+    if (schemaPath) {
+      const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath);
+      if (!schemaValidationResult.success) {
+        throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
+      }
+      console.log('');
+    }
+
     let configDir = path.dirname(versions[0]);
     let gameConfig = '';
     let scheme = '';
@@ -188,6 +199,17 @@ async function run() {
   if (sortedFiles.length > 0) {
     //newest version added
 
+    // Читаем schema.json файл из staticDataPath
+    const schemaPath = path.join(staticDataPath, 'schema.json');
+    let schemaFilePath = '';
+    
+    if (existsSync(schemaPath)) {
+      schemaFilePath = schemaPath;
+      console.log(`ℹ️ Found schema.json at: ${schemaPath}`);
+    } else {
+      console.log(`⚠️ schema.json not found in ${staticDataPath}`);
+    }
+
     if (sortedFiles.length > 0) {
       await runPipeline(
         sortedFiles,
@@ -199,6 +221,7 @@ async function run() {
         tests,
         dryRun,
         slackManager,
+        schemaFilePath,
       );
     }
   } else {
