@@ -13,10 +13,10 @@ export async function schemaValidationStep(
   await slackManager.sendOrUpdate(`Validating schema.json...`, ':clipboard:', true);
 
   try {
-    console.log(`ℹ️ Schema validation for: ${schemaPath}`);
-
     // Read new schema
-    const newSchemaContent = readFileSync(schemaPath, 'utf8');
+    const schemaFilePath = `${schemaPath}/schema.json`;
+    console.log(`ℹ️ Schema validation for: ${schemaFilePath}`);
+    const newSchemaContent = readFileSync(schemaFilePath, 'utf8');
     const newSchema = JSON.parse(newSchemaContent) as Schema;
 
     // Always perform structure validation first
