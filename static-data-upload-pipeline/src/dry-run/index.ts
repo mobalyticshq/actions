@@ -3,12 +3,12 @@ import * as github from '@actions/github';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 import { StaticDataConfig } from '../types';
-import { gameIconsMap, gameNamesMap, initSlugify } from '../utils';
-import { logColors, logger } from '../logger';
+import { gameIconsMap, gameNamesMap, initSlugify } from '../utils/common.utils';
+import { logColors, logger } from '../utils/logger.utils';
 import { SlackMessageManager } from '../utils/slack-manager.utils';
 import { mergeStaticDataStep } from '../steps/merge-static-data';
 import { overrideStaticData } from '../steps/override-static-data';
-import { validateStaticData } from '../steps/validate-static-data';
+import { validateStaticData } from '../steps/validate-static-data/validate-static-data';
 import { createReportStep } from '../steps/create-report';
 import { schemaValidationStep } from '../steps/schema-validation/schema-validation';
 

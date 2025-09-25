@@ -3,9 +3,10 @@ import { Entity, ValidationRecords, ValidationReport } from '../types';
 import { google } from 'googleapis';
 
 import { GoogleAuth } from 'google-auth-library';
-import { addSheet, clearSheets, setColor } from '../spreadsheets.utils';
-import { stringify } from '../utils';
-import { ReportMessages } from '../validation';
+import { stringify } from './common.utils';
+
+import { ReportMessages } from '../steps/validate-static-data/utils';
+import { addSheet, clearSheets, setColor } from './spreadsheets.utils';
 
 const sheets = google.sheets('v4');
 

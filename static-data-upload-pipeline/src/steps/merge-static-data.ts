@@ -1,4 +1,4 @@
-import { logColors, logger } from '../logger';
+import { logColors, logger } from '../utils/logger.utils';
 import { StaticData } from '../types';
 import { readFileSync } from 'fs';
 import { isValidDataForMerge, mergeStaticData } from '../utils/merge.utils';

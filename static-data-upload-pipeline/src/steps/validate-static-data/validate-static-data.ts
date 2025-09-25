@@ -1,10 +1,10 @@
-import { logger } from '../logger';
-import { StaticData, StaticDataConfig, ValidationReport } from '../types';
-import { validate } from '../validation';
-import { SlackMessageManager } from '../utils/slack-manager.utils';
+import { logger } from '../../utils/logger.utils';
+import { StaticData, StaticDataConfig, ValidationReport } from '../../types';
+import { SlackMessageManager } from '../../utils/slack-manager.utils';
 import { readdirSync } from 'fs';
 import path from 'path';
-import { isValidReport } from '../utils/is-valid-report.utils';
+import { isValidReport } from '../../utils/is-valid-report.utils';
+import { validate } from './utils';
 
 export async function validateStaticData(
   slackManager: SlackMessageManager,

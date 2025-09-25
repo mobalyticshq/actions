@@ -1,5 +1,5 @@
 import { SlackMessageManager } from '../../utils/slack-manager.utils';
-import { logger } from '../../logger';
+import { logger } from '../../utils/logger.utils';
 import { readFileSync } from 'fs';
 import { Schema } from './types';
 import { downloadReferenceSchema, validateSchemaCompatibility, validateSchemaStructure } from './utils';

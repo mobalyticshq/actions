@@ -1,4 +1,4 @@
-import { logColors, logger } from '../logger';
+import { logColors, logger } from '../utils/logger.utils';
 import { SlackMessageManager } from '../utils/slack-manager.utils';
 import { replaceAssets } from '../utils/merge.utils';
 import { StaticData } from '../types';

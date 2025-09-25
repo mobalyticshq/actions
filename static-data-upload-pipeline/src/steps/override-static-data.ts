@@ -1,4 +1,4 @@
-import { logger } from '../logger';
+import { logger } from '../utils/logger.utils';
 import { mergeWithSpreadsheets } from '../utils/spreadsheets.utils';
 import { SlackMessageManager } from '../utils/slack-manager.utils';
 import { StaticData } from '../types';

@@ -1,4 +1,4 @@
-import { logger } from '../logger';
+import { logger } from '../utils/logger.utils';
 import { ValidationReport } from '../types';
 import { createReport } from '../utils/report.utils';
 import { SlackMessageManager } from '../utils/slack-manager.utils';

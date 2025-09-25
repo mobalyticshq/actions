@@ -1,6 +1,7 @@
 import { Storage } from '@google-cloud/storage';
-import { ValidationEntityReport } from '../types';
-import { ReportMessages } from '../validation';
+import { ValidationEntityReport } from '../../types';
+
+import { ReportMessages } from '../../steps/validate-static-data/utils';
 
 interface GCSValidationOptions {
   bucketName: string;

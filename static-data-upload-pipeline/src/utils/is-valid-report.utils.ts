@@ -1,5 +1,5 @@
 import { ValidationReport } from '../types';
-import { logColors } from '../logger';
+import { logColors } from './logger.utils';
 
 export function isValidReport(reports: ValidationReport[]) {
   let errors = 0,

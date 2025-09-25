@@ -2,8 +2,7 @@ import { google } from 'googleapis';
 import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
-import { addFilterToSheet, addSheet, clearSheets, protect, removeAllMetadata, setColor } from '../spreadsheets.utils';
-import { isImage, stringify, tryParse } from '../utils';
+import { isImage, stringify, tryParse } from './common.utils';
 
 const sheets = google.sheets('v4');
 
@@ -258,6 +257,198 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
   });
 
   return resultRows;
+}
+
+export function addFilterToSheet(
+  sheetId: number,
+  startRowIndex: number,
+  endRowIndex: number,
+  startColumnIndex: number,
+  endColumnIndex: number,
+) {
+  const request = {
+    addFilterView: {
+      filter: {
+        title: 'Filter view',
+        range: {
+          sheetId: sheetId,
+          startRowIndex,
+          endRowIndex,
+          startColumnIndex,
+          endColumnIndex,
+        },
+        filterSpecs: [],
+      },
+    },
+  };
+  return request;
+}
+
+export function setColor(
+  sheetId: number,
+  startRowIndex: number,
+  endRowIndex: number,
+  startColumnIndex: number,
+  endColumnIndex: number,
+  red = 1.0,
+  green = 1.0,
+  blue = 1.0,
+) {
+  const request = {
+    repeatCell: {
+      range: {
+        sheetId,
+        startRowIndex,
+        endRowIndex,
+        startColumnIndex,
+        endColumnIndex,
+      },
+      cell: {
+        userEnteredFormat: {
+          backgroundColor: {
+            red,
+            green,
+            blue,
+          },
+        },
+      },
+      fields: 'userEnteredFormat.backgroundColor',
+    },
+  };
+  return request;
+}
+
+export async function removeAllMetadata(spreadsheetId: string, auth: GoogleAuth) {
+  const sheetData = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: 'sheets.properties,sheets.protectedRanges,sheets.properties,sheets.filterViews.filterViewId',
+    auth: auth,
+  });
+  const requests = [];
+
+  const filterIds = (sheetData.data.sheets || []).flatMap(s => s.filterViews || []).map(v => v.filterViewId);
+
+  filterIds.forEach(id => {
+    requests.push({
+      deleteFilterView: { filterId: id },
+    });
+  });
+
+  for (const sheet of sheetData.data.sheets || []) {
+    requests.push({
+      clearBasicFilter: { sheetId: sheet.properties?.sheetId },
+    });
+    const ranges = sheet.protectedRanges || [];
+    for (const range of ranges) {
+      if (range.protectedRangeId != null) {
+        requests.push({
+          deleteProtectedRange: {
+            protectedRangeId: range.protectedRangeId,
+          },
+        });
+      }
+    }
+  }
+
+  if (requests.length > 0) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      auth: auth,
+      requestBody: {
+        requests: requests,
+      },
+    });
+  }
+}
+
+export function protect(sheetId: number, rows: number, columns: number, clientEmail: string) {
+  const request = {
+    addProtectedRange: {
+      protectedRange: {
+        range: {
+          sheetId,
+          startRowIndex: 0,
+          endRowIndex: rows,
+          startColumnIndex: 0,
+          endColumnIndex: columns,
+        },
+        description: 'Read-only column for users',
+        warningOnly: false,
+        editors: {
+          users: [clientEmail],
+        },
+      },
+    },
+  };
+  return request;
+}
+
+export async function addSheet(spreadsheetId: string, auth: GoogleAuth, title: string) {
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    auth: auth,
+    requestBody: {
+      requests: [
+        {
+          addSheet: {
+            properties: {
+              title,
+              gridProperties: {
+                rowCount: 1000,
+                columnCount: 26,
+              },
+              tabColor: {
+                red: 0.8,
+                green: 0.8,
+                blue: 1,
+              },
+            },
+          },
+        },
+      ],
+    },
+  });
+}
+
+export async function deleteSheet(spreadsheetId: string, auth: GoogleAuth, sheetId: number) {
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    auth: auth,
+    requestBody: {
+      requests: [
+        {
+          deleteSheet: {
+            sheetId,
+          },
+        },
+      ],
+    },
+  });
+}
+
+export async function clearSheets(
+  spreadsheetData: {
+    [key: string]: Array<Array<string>>;
+  },
+  spreadsheetId: string,
+  auth: GoogleAuth,
+) {
+  if (Object.keys(spreadsheetData).length > 0) {
+    const sheetsData = await sheets.spreadsheets.get({ spreadsheetId, auth, includeGridData: false });
+    if (sheetsData.data.sheets && sheetsData.data.sheets.length > 1) {
+      for (let i = 0; i < sheetsData.data.sheets.length; ++i) {
+        const sheet = sheetsData.data.sheets[i];
+        if (
+          sheet.properties &&
+          sheet.properties.sheetId != null &&
+          sheet.properties?.title &&
+          !spreadsheetData[sheet.properties.title]
+        ) {
+          await deleteSheet(spreadsheetId, auth, sheet.properties.sheetId);
+        }
+      }
+    }
+  }
 }
 
 //set colors and protections for data

@@ -1,9 +1,9 @@
-import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from './types';
-import { Schema, SchemaField, SchemaGroup, SchemaObject } from './steps/schema-validation/types';
-import { slugify } from './utils';
-import { processUrlsInChunks as processUrlsWithGCS } from './assets-utils/assets-cdn-validation.utils';
-import { logger } from './logger';
-import { readFileSync, existsSync } from 'fs';
+import { Schema, SchemaObject } from '../schema-validation/types';
+import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from '../../types';
+import { slugify } from '../../utils/common.utils';
+import { logger } from '../../utils/logger.utils';
+import { processUrlsInChunks as processUrlsWithGCS } from '../../utils/assets-utils';
+import { existsSync, readFileSync } from 'fs';
 
 export enum ReportMessages {
   assetURLNotAvailable = 'Asset URL not available',
@@ -42,9 +42,7 @@ export enum ReportMessages {
 }
 
 const assetExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.svg', '.avif', '.webm', '.mp4'];
-
 const assetSizeLimit = 100 * 1024 * 1024; //100MB
-
 //cameCalse and numbers
 function isCamelCase(str: string) {
   const pattern = /^[a-z][a-zA-Z0-9]*$/;
@@ -219,18 +217,6 @@ function validateObjectAgainstSchema(
       }
     }
   }
-}
-
-function fetchRetry(url: string, delay: number, tries: number, fetchOptions: RequestInit = {}): Promise<Response> {
-  const onError = (err: unknown): Promise<Response> => {
-    const triesLeft = tries - 1;
-    if (triesLeft <= 0) {
-      return Promise.reject(err instanceof Error ? err : new Error(String(err)));
-    }
-    return wait(delay).then(() => fetchRetry(url, delay, triesLeft, fetchOptions));
-  };
-
-  return fetch(url, fetchOptions).catch(onError);
 }
 
 function validateAsset(

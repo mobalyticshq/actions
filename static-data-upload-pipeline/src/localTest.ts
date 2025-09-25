@@ -1,10 +1,11 @@
 import { readdirSync, readFileSync, existsSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { StaticData, StaticDataConfig } from './types';
-import { logColors } from './logger';
+import { logColors } from './utils/logger.utils';
 import { mergeStaticData } from './utils/merge.utils';
 import { mergeWithSpreadsheets } from './utils/spreadsheets.utils';
-import { validate } from './validation';
+
+import { validate } from './steps/validate-static-data/utils';
 
 async function run() {
   const dirName = '/Users/alexmittsel/WORK/ngf-configuration/poe/dev/static_data';

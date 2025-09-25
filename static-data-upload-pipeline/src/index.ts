@@ -2,14 +2,14 @@ import * as core from '@actions/core';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 import { StaticDataConfig } from './types';
-import { gameIconsMap, gameNamesMap, initSlugify } from './utils';
+import { gameIconsMap, gameNamesMap, initSlugify } from './utils/common.utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { logColors, logger } from './logger';
+import { logColors, logger } from './utils/logger.utils';
 import { SlackMessageManager } from './utils/slack-manager.utils';
 import { mergeStaticDataStep } from './steps/merge-static-data';
 import { overrideStaticData } from './steps/override-static-data';
-import { validateStaticData } from './steps/validate-static-data';
+import { validateStaticData } from './steps/validate-static-data/validate-static-data';
 import { createReportStep } from './steps/create-report';
 import { syncStaticData } from './steps/sync-static-data';
 
