@@ -121,6 +121,7 @@ async function runPipeline(
       config,
       testsDir,
       tmpAssetPrefix,
+      schemaPath,
     );
 
     // If errors or warnings or infos - create report

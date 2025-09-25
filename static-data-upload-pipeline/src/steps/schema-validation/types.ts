@@ -1,6 +1,6 @@
 // Types for schema validation
 export interface SchemaField {
-  type: string;
+  type: 'String' | 'Boolean' | 'Object' | 'Ref';
   array?: boolean;
   required?: boolean;
   filter?: boolean;

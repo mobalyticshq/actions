@@ -13,12 +13,13 @@ export async function validateStaticData(
   config: StaticDataConfig,
   testsDir: string,
   tmpAssetPrefix: string,
+  schemaPath?: string,
 ) {
   logger.group('🔍 Validate final static data ');
   await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true, true);
 
   const reports = new Array<ValidationReport>();
-  const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix);
+  const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix, schemaPath);
   reports.push(commonReport);
   reports.push(...(await runValidationExtensions(testsDir, overridedData, oldData)));
 

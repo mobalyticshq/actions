@@ -32,7 +32,7 @@ describe('validateObjectFieldStructure', () => {
   describe('field type validation', () => {
     it('should fail with invalid field type containing special characters', () => {
       const field: SchemaField = {
-        type: 'field-type',
+        type: 'field-type' as any,
       };
 
       const errors = validateObjectFieldStructure(field, 'testField', 'stats', 'testGroup', mockGroup, mockSchema);
@@ -43,7 +43,7 @@ describe('validateObjectFieldStructure', () => {
 
     it('should fail with disallowed field type', () => {
       const field: SchemaField = {
-        type: 'Number',
+        type: 'Number' as any,
       };
 
       const errors = validateObjectFieldStructure(field, 'testField', 'stats', 'testGroup', mockGroup, mockSchema);
@@ -55,7 +55,7 @@ describe('validateObjectFieldStructure', () => {
       const validTypes = ['String', 'Boolean', 'Ref', 'Object'];
 
       validTypes.forEach(type => {
-        const field: SchemaField = { type };
+        const field: SchemaField = { type: type as any };
         const errors = validateObjectFieldStructure(field, 'testField', 'stats', 'testGroup', mockGroup, mockSchema);
         expect(errors).toHaveLength(0);
       });
@@ -134,7 +134,7 @@ describe('validateObjectFieldStructure', () => {
   describe('combined validation', () => {
     it('should return multiple errors for invalid field', () => {
       const field: SchemaField = {
-        type: 'Number',
+        type: 'Number' as any,
         objName: 'nonexistent',
         refTo: 'nonexistent',
       };

@@ -1,7 +1,9 @@
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from './types';
+import { Schema, SchemaField, SchemaGroup, SchemaObject } from './steps/schema-validation/types';
 import { slugify } from './utils';
 import { processUrlsInChunks as processUrlsWithGCS } from './assets-utils/assets-cdn-validation.utils';
 import { logger } from './logger';
+import { readFileSync, existsSync } from 'fs';
 
 export enum ReportMessages {
   assetURLNotAvailable = 'Asset URL not available',
@@ -30,6 +32,13 @@ export enum ReportMessages {
 
   justMsg = 'wrong id, expected:',
   justColor = 'wrong slug, expected:',
+
+  // Schema validation messages
+  requiredFieldMissing = 'required field is missing',
+  invalidFieldType = 'invalid field type',
+  invalidRefTarget = 'invalid ref target',
+  schemaNotFound = 'schema file not found',
+  groupNotInSchema = 'group not found in schema',
 }
 
 const assetExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.svg', '.avif', '.webm', '.mp4'];
@@ -43,6 +52,174 @@ function isCamelCase(str: string) {
 }
 
 const wait = (delay: number): Promise<void> => new Promise(resolve => setTimeout(resolve, delay));
+
+// Schema validation functions
+function readSchema(schemaPath: string): Schema | null {
+  const schemaFilePath = `${schemaPath}/schema.json`;
+
+  try {
+    if (!existsSync(schemaFilePath)) {
+      console.log(`⚠️ Schema file not found at: ${schemaFilePath}`);
+      return null;
+    }
+
+    const schemaContent = readFileSync(schemaFilePath, 'utf8');
+    return JSON.parse(schemaContent) as Schema;
+  } catch (error) {
+    console.log(`❌ Error reading schema file: ${error}`);
+    return null;
+  }
+}
+
+function validateFieldType(value: any, fieldType: string, isArray: boolean = false): boolean {
+  if (isArray) {
+    if (!Array.isArray(value)) return false;
+    return value.every(item => validateFieldType(item, fieldType, false));
+  }
+
+  switch (fieldType) {
+    case 'String':
+      return typeof value === 'string';
+    case 'Boolean':
+      return typeof value === 'boolean';
+    case 'Object':
+      return typeof value === 'object' && value !== null && !Array.isArray(value);
+    case 'Ref':
+      return typeof value === 'string';
+    default:
+      return false;
+  }
+}
+
+function validateRefTarget(refValue: any, refTo: string, data: StaticData): boolean {
+  if (!data[refTo]) return false;
+
+  if (typeof refValue === 'string') {
+    return data[refTo].some(entity => entity.id === refValue);
+  }
+
+  if (Array.isArray(refValue)) {
+    return refValue.every(id => typeof id === 'string' && data[refTo].some(entity => entity.id === id));
+  }
+
+  return false;
+}
+
+function validateEntityAgainstSchema(
+  entity: Entity,
+  groupName: string,
+  schema: Schema,
+  data: StaticData,
+  report: ValidationEntityReport,
+): void {
+  const groupSchema = schema.groups[groupName];
+  if (!groupSchema) {
+    report.errors[ReportMessages.groupNotInSchema].add(groupName);
+    return;
+  }
+
+  // Validate required fields
+  for (const [fieldName, fieldSchema] of Object.entries(groupSchema.fields)) {
+    const fieldPath = fieldName;
+    const fieldValue = entity[fieldName];
+
+    // Check required fields
+    if (fieldSchema.required && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
+      report.errors[ReportMessages.requiredFieldMissing].add(fieldPath);
+      continue;
+    }
+
+    // Skip validation if field is not present and not required
+    if (fieldValue === undefined || fieldValue === null) continue;
+
+    // Validate field type
+    if (!validateFieldType(fieldValue, fieldSchema.type, fieldSchema.array)) {
+      report.errors[ReportMessages.invalidFieldType].add(fieldPath);
+      continue;
+    }
+
+    // Validate Ref fields
+    if (fieldSchema.type === 'Ref' && fieldSchema.refTo) {
+      if (!validateRefTarget(fieldValue, fieldSchema.refTo, data)) {
+        report.errors[ReportMessages.invalidRefTarget].add(fieldPath);
+      }
+    }
+
+    // Validate Object fields recursively
+    if (fieldSchema.type === 'Object' && fieldSchema.objName) {
+      const objectSchema = groupSchema.objects?.[fieldSchema.objName];
+      if (objectSchema) {
+        if (fieldSchema.array && Array.isArray(fieldValue)) {
+          fieldValue.forEach((obj, index) => {
+            validateObjectAgainstSchema(obj, objectSchema, groupName, schema, data, report, `${fieldPath}[${index}]`);
+          });
+        } else if (!fieldSchema.array && typeof fieldValue === 'object') {
+          validateObjectAgainstSchema(fieldValue, objectSchema, groupName, schema, data, report, fieldPath);
+        }
+      }
+    }
+  }
+}
+
+function validateObjectAgainstSchema(
+  obj: any,
+  objectSchema: SchemaObject,
+  groupName: string,
+  schema: Schema,
+  data: StaticData,
+  report: ValidationEntityReport,
+  path: string,
+): void {
+  for (const [fieldName, fieldSchema] of Object.entries(objectSchema.fields)) {
+    const fieldPath = `${path}.${fieldName}`;
+    const fieldValue = obj[fieldName];
+
+    // Check required fields
+    if (fieldSchema.required && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
+      report.errors[ReportMessages.requiredFieldMissing].add(fieldPath);
+      continue;
+    }
+
+    // Skip validation if field is not present and not required
+    if (fieldValue === undefined || fieldValue === null) continue;
+
+    // Validate field type
+    if (!validateFieldType(fieldValue, fieldSchema.type, fieldSchema.array)) {
+      report.errors[ReportMessages.invalidFieldType].add(fieldPath);
+      continue;
+    }
+
+    // Validate Ref fields
+    if (fieldSchema.type === 'Ref' && fieldSchema.refTo) {
+      if (!validateRefTarget(fieldValue, fieldSchema.refTo, data)) {
+        report.errors[ReportMessages.invalidRefTarget].add(fieldPath);
+      }
+    }
+
+    // Validate nested Object fields recursively
+    if (fieldSchema.type === 'Object' && fieldSchema.objName) {
+      const groupSchema = schema.groups[groupName];
+      const nestedObjectSchema = groupSchema.objects?.[fieldSchema.objName];
+      if (nestedObjectSchema) {
+        if (fieldSchema.array && Array.isArray(fieldValue)) {
+          fieldValue.forEach((nestedObj, index) => {
+            validateObjectAgainstSchema(
+              nestedObj,
+              nestedObjectSchema,
+              groupName,
+              schema,
+              data,
+              report,
+              `${fieldPath}[${index}]`,
+            );
+          });
+        } else if (!fieldSchema.array && typeof fieldValue === 'object') {
+          validateObjectAgainstSchema(fieldValue, nestedObjectSchema, groupName, schema, data, report, fieldPath);
+        }
+      }
+    }
+  }
+}
 
 function fetchRetry(url: string, delay: number, tries: number, fetchOptions: RequestInit = {}): Promise<Response> {
   const onError = (err: unknown): Promise<Response> => {
@@ -230,7 +407,13 @@ function deepTests(
   }
 }
 
-export async function validate(data: StaticData, oldData: StaticData, config: StaticDataConfig, tmpBucket: string) {
+export async function validate(
+  data: StaticData,
+  oldData: StaticData,
+  config: StaticDataConfig,
+  tmpBucket: string,
+  schemaPath?: string,
+) {
   const validationReport = {
     errors: {
       unavailableURLs: new Set<string>(),
@@ -240,6 +423,15 @@ export async function validate(data: StaticData, oldData: StaticData, config: St
     byGroup: {} as { [key: string]: Array<ValidationEntityReport> },
   };
   const knownAssets = new Map<string, Array<{ report: ValidationEntityReport; path: string }>>();
+
+  // Read and validate schema if provided
+  let schema: Schema | null = null;
+  if (schemaPath) {
+    schema = readSchema(schemaPath);
+    if (!schema) {
+      validationReport.errors[ReportMessages.schemaNotFound] = new Set([schemaPath]);
+    }
+  }
 
   //groups are flat array Of entities
   for (const group of Object.keys(data)) {
@@ -288,6 +480,12 @@ export async function validate(data: StaticData, oldData: StaticData, config: St
 
           [ReportMessages.justMsg]: new Set<string>(),
           [ReportMessages.justColor]: new Set<string>(),
+
+          // Schema validation errors
+          [ReportMessages.requiredFieldMissing]: new Set<string>(),
+          [ReportMessages.invalidFieldType]: new Set<string>(),
+          [ReportMessages.invalidRefTarget]: new Set<string>(),
+          [ReportMessages.groupNotInSchema]: new Set<string>(),
         },
       } as ValidationEntityReport;
       //entities has id
@@ -374,6 +572,12 @@ export async function validate(data: StaticData, oldData: StaticData, config: St
       }
       //rest tests
       await deepTests(ent, group, config, data, tmpBucket, knownAssets, entityReport);
+
+      // Entity validation according to Schema
+      if (schema) {
+        validateEntityAgainstSchema(ent, group, schema, data, entityReport);
+      }
+
       validationReport.byGroup[group].push(entityReport);
     }
   }
