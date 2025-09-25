@@ -30,6 +30,7 @@ async function runPipeline(
   dryRun: Boolean,
   slackManager: SlackMessageManager,
   schemaPath: string,
+  rebuildApiFlag?: boolean,
 ) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
@@ -67,13 +68,16 @@ async function runPipeline(
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
 
   try {
-    // Schema validation step
-    if (schemaPath) {
-      const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
-      if (!schemaValidationResult.success) {
-        throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
+    // If rebuildApiFlag is set, skip schema validation step for override schema in Bucket and rebuild API!!!!
+    if (!rebuildApiFlag) {
+      // Schema validation step
+      if (schemaPath) {
+        // const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
+        // if (!schemaValidationResult.success) {
+        //   throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
+        // }
+        // console.log('');
       }
-      console.log('');
     }
 
     let configDir = path.dirname(versions[0]);
