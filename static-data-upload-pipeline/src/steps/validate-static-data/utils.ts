@@ -53,15 +53,13 @@ const wait = (delay: number): Promise<void> => new Promise(resolve => setTimeout
 
 // Schema validation functions
 function readSchema(schemaPath: string): Schema | null {
-  const schemaFilePath = `${schemaPath}/schema.json`;
-
   try {
-    if (!existsSync(schemaFilePath)) {
-      console.log(`⚠️ Schema file not found at: ${schemaFilePath}`);
+    if (!existsSync(schemaPath)) {
+      console.log(`⚠️ Schema file not found at: ${schemaPath}`);
       return null;
     }
 
-    const schemaContent = readFileSync(schemaFilePath, 'utf8');
+    const schemaContent = readFileSync(schemaPath, 'utf8');
     return JSON.parse(schemaContent) as Schema;
   } catch (error) {
     console.log(`❌ Error reading schema file: ${error}`);
