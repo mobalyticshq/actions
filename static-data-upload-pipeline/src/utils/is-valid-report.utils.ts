@@ -47,7 +47,7 @@ export function isValidReport(reports: ValidationReport[]) {
       }
       if (errorsSet.size > 0) {
         console.log(
-          `⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}}]${logColors.reset}`,
+          `⚠️For group ${logColors.green}${group}${logColors.reset} errors:\n${logColors.yellow}[${Array.from(errorsSet)}]\n in fields:\n${logColors.blue}[${Array.from(errorFields)}]${logColors.reset}`,
         );
       }
     }

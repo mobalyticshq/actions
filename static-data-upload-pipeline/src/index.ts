@@ -30,6 +30,7 @@ async function runPipeline(
   dryRun: Boolean,
   slackManager: SlackMessageManager,
   schemaPath: string,
+  skipSchemaValidation: boolean = false,
   rebuildApiFlag?: boolean,
 ) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
@@ -69,7 +70,7 @@ async function runPipeline(
 
   try {
     // If rebuildApiFlag is set, skip schema validation step for override schema in Bucket and rebuild API!!!!
-    if (!rebuildApiFlag) {
+    if (!skipSchemaValidation) {
       // Schema validation step
       if (schemaPath) {
         // const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
@@ -172,6 +173,7 @@ async function run() {
   const tmpAssetFolder = core.getInput('tmp_assets_folder');
   const prodAssetFolder = core.getInput('prod_assets_folder');
   const dryRun = core.getInput('dry_run')?.toLowerCase() === 'true';
+  const skipSchemaValidation = core.getInput('skip_schema_validation')?.toLowerCase() === 'true';
 
   const tests = core.getInput('game_specific_tests');
 
@@ -228,6 +230,7 @@ async function run() {
         dryRun,
         slackManager,
         schemaFilePath,
+        skipSchemaValidation,
       );
     }
   } else {

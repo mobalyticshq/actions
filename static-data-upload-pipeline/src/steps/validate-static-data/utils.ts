@@ -106,11 +106,11 @@ function validateEntityAgainstSchema(
   groupName: string,
   schema: Schema,
   data: StaticData,
-  report: ValidationEntityReport,
-): void {
+  entityReport: ValidationEntityReport,
+) {
   const groupSchema = schema.groups[groupName];
   if (!groupSchema) {
-    report.errors[ReportMessages.groupNotInSchema].add(groupName);
+    entityReport.errors[ReportMessages.groupNotInSchema].add(groupName);
     return;
   }
 
@@ -121,7 +121,7 @@ function validateEntityAgainstSchema(
 
     // Check required fields
     if (fieldSchema.required && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
-      report.errors[ReportMessages.requiredFieldMissing].add(fieldPath);
+      entityReport.errors[ReportMessages.requiredFieldMissing].add(fieldPath);
       continue;
     }
 
@@ -130,14 +130,14 @@ function validateEntityAgainstSchema(
 
     // Validate field type
     if (!validateFieldType(fieldValue, fieldSchema.type, fieldSchema.array)) {
-      report.errors[ReportMessages.invalidFieldType].add(fieldPath);
+      entityReport.errors[ReportMessages.invalidFieldType].add(fieldPath);
       continue;
     }
 
     // Validate Ref fields
     if (fieldSchema.type === 'Ref' && fieldSchema.refTo) {
       if (!validateRefTarget(fieldValue, fieldSchema.refTo, data)) {
-        report.errors[ReportMessages.invalidRefTarget].add(fieldPath);
+        entityReport.errors[ReportMessages.invalidRefTarget].add(fieldPath);
       }
     }
 
@@ -147,10 +147,18 @@ function validateEntityAgainstSchema(
       if (objectSchema) {
         if (fieldSchema.array && Array.isArray(fieldValue)) {
           fieldValue.forEach((obj, index) => {
-            validateObjectAgainstSchema(obj, objectSchema, groupName, schema, data, report, `${fieldPath}[${index}]`);
+            validateObjectAgainstSchema(
+              obj,
+              objectSchema,
+              groupName,
+              schema,
+              data,
+              entityReport,
+              `${fieldPath}[${index}]`,
+            );
           });
         } else if (!fieldSchema.array && typeof fieldValue === 'object') {
-          validateObjectAgainstSchema(fieldValue, objectSchema, groupName, schema, data, report, fieldPath);
+          validateObjectAgainstSchema(fieldValue, objectSchema, groupName, schema, data, entityReport, fieldPath);
         }
       }
     }
