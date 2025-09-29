@@ -1,75 +1,91 @@
-/******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
-/******/ 	var __webpack_modules__ = ({
+import * as fs from 'fs';
+import * as path from 'path';
 
-/***/ 936:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+// Types and interfaces
+interface FieldConfig {
+    type: string;
+    array?: boolean;
+    filter?: boolean;
+    required?: boolean;
+    objName?: string;
+    refTo?: string;
+}
 
+interface ObjectConfig {
+    fields: Record<string, FieldConfig>;
+}
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.writeJsonFile = exports.readJsonFile = exports.processSchemaGeneration = exports.mergeWithExistingSchema = exports.applyRefConfig = exports.generateSchemaFromData = void 0;
-const fs = __importStar(__nccwpck_require__(896));
-const path = __importStar(__nccwpck_require__(928));
+interface GroupConfig {
+    fields: Record<string, FieldConfig>;
+    objects?: Record<string, ObjectConfig>;
+}
+
+interface Schema {
+    namespace: string;
+    typePrefix: string;
+    groups: Record<string, GroupConfig>;
+}
+
+interface RefConfig {
+    refs: Array<{
+        from: string;
+        to: string;
+    }>;
+}
+
+interface GroupConfBuilder {
+    source: any;
+    groupName: string;
+    fields: Record<string, FieldConfig>;
+    objects: Record<string, ObjectConfig>;
+}
+
+interface ArrayTypeResult {
+    type: string;
+    valid: boolean;
+}
+
+interface FieldConfigResult {
+    config: FieldConfig;
+    valid: boolean;
+}
+
+interface ObjectConfigResult {
+    config: ObjectConfig;
+    valid: boolean;
+}
+
 // Constants
 const FIELD_TYPES = {
     STRING: 'String',
     BOOLEAN: 'Boolean',
     OBJECT: 'Object',
     REF: 'Ref',
-};
+} as const;
+
 const FIELD_NAMES = {
     ID: 'id',
     SLUG: 'slug',
-};
+} as const;
+
 const MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
 const REFERENCE_SUFFIX = 'Ref';
 const REF_FIELD_NAME_SUFFIX = 'Ref';
+
 // Utility functions
-const capitalize = (s) => {
-    if (!s)
-        return s;
+const capitalize = (s: string): string => {
+    if (!s) return s;
     return s.charAt(0).toUpperCase() + s.slice(1);
 };
-const buildObjectName = (parentPath, objFieldName) => {
+
+const buildObjectName = (parentPath: string, objFieldName: string): string => {
     if (!parentPath) {
         return objFieldName;
     }
     return parentPath + capitalize(objFieldName);
 };
-const detectArrayType = (arr) => {
+
+const detectArrayType = (arr: any[]): ArrayTypeResult => {
     if (arr.length === 0) {
         return { type: FIELD_TYPES.STRING, valid: false };
     }
@@ -91,8 +107,9 @@ const detectArrayType = (arr) => {
             return { type: FIELD_TYPES.STRING, valid: false };
     }
 };
-const mergeObjectConfigs = (existing, newConfig) => {
-    const result = {
+
+const mergeObjectConfigs = (existing: ObjectConfig, newConfig: ObjectConfig): ObjectConfig => {
+    const result: ObjectConfig = {
         fields: { ...existing.fields },
     };
     for (const [fieldName, fieldConfig] of Object.entries(newConfig.fields)) {
@@ -102,18 +119,20 @@ const mergeObjectConfigs = (existing, newConfig) => {
     }
     return result;
 };
-const createGroupConfBuilder = (source, groupName) => ({
+
+const createGroupConfBuilder = (source: any, groupName: string): GroupConfBuilder => ({
     source,
     groupName,
     fields: {},
     objects: {},
 });
+
 // Simple pluralize implementation (since we can't use external libraries in Node.js)
 const pluralize = {
-    isSingular: (word) => {
+    isSingular: (word: string): boolean => {
         return !word.endsWith('s') || word.endsWith('ss') || word.endsWith('us') || word.endsWith('is');
     },
-    plural: (word) => {
+    plural: (word: string): string => {
         if (word.endsWith('y') && !word.endsWith('ay') && !word.endsWith('ey') && !word.endsWith('oy') && !word.endsWith('uy')) {
             return word.slice(0, -1) + 'ies';
         }
@@ -123,7 +142,8 @@ const pluralize = {
         return word + 's';
     }
 };
-const resolveRefTarget = (builder, fieldName, array) => {
+
+const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string, array: boolean): string => {
     let refGroup = fieldName.replace(new RegExp(REF_FIELD_NAME_SUFFIX + '$'), '');
     if (!array) {
         if (pluralize.isSingular(refGroup)) {
@@ -135,8 +155,9 @@ const resolveRefTarget = (builder, fieldName, array) => {
     }
     return refGroup;
 };
-const detectFieldConfig = (builder, fieldName, value) => {
-    const fieldConfig = { type: FIELD_TYPES.STRING };
+
+const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any): FieldConfigResult => {
+    const fieldConfig: FieldConfig = { type: FIELD_TYPES.STRING };
     if (fieldName === FIELD_NAMES.ID) {
         fieldConfig.filter = true;
         fieldConfig.required = true;
@@ -180,7 +201,8 @@ const detectFieldConfig = (builder, fieldName, value) => {
     }
     return { config: fieldConfig, valid: true };
 };
-const detectGroupFields = (builder, fieldName, value) => {
+
+const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: any): void => {
     const result = detectFieldConfig(builder, fieldName, value);
     if (!result.valid) {
         return;
@@ -188,15 +210,18 @@ const detectGroupFields = (builder, fieldName, value) => {
     if (fieldName in builder.fields) {
         return;
     }
+    
     // Add required and filter for slug field (only in group fields, not in objects)
     if (fieldName === FIELD_NAMES.SLUG) {
         result.config.required = true;
         result.config.filter = true;
     }
+    
     builder.fields[fieldName] = result.config;
 };
-const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
-    const objConfig = {
+
+const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string, obj: any, parentPath: string): ObjectConfig => {
+    const objConfig: ObjectConfig = {
         fields: {},
     };
     for (const [fieldName, value] of Object.entries(obj)) {
@@ -216,8 +241,9 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
     }
     return objConfig;
 };
-const analyzeObjectStructureFromArray = (builder, fieldName, arr, parentPath) => {
-    let accumulated = { fields: {} };
+
+const analyzeObjectStructureFromArray = (builder: GroupConfBuilder, fieldName: string, arr: any[], parentPath: string): ObjectConfig => {
+    let accumulated: ObjectConfig = { fields: {} };
     for (const item of arr) {
         if (typeof item !== 'object' || item === null || Array.isArray(item)) {
             continue;
@@ -227,7 +253,8 @@ const analyzeObjectStructureFromArray = (builder, fieldName, arr, parentPath) =>
     }
     return accumulated;
 };
-const detectObjectConfig = (builder, fieldName, value, parentPath) => {
+
+const detectObjectConfig = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): ObjectConfigResult => {
     if (typeof value !== 'object' || value === null) {
         return { config: { fields: {} }, valid: false };
     }
@@ -250,7 +277,8 @@ const detectObjectConfig = (builder, fieldName, value, parentPath) => {
         };
     }
 };
-const detectGroupObjects = (builder, fieldName, value, parentPath) => {
+
+const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): void => {
     if (value === null || value === undefined) {
         return;
     }
@@ -266,6 +294,7 @@ const detectGroupObjects = (builder, fieldName, value, parentPath) => {
     else {
         builder.objects[fullObjName] = result.config;
     }
+    
     if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
             for (const item of value) {
@@ -283,7 +312,8 @@ const detectGroupObjects = (builder, fieldName, value, parentPath) => {
         }
     }
 };
-const buildGroupConfig = (builder, groupEntries) => {
+
+const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[]): boolean => {
     if (groupEntries.length === 0) {
         return false;
     }
@@ -299,15 +329,18 @@ const buildGroupConfig = (builder, groupEntries) => {
             detectGroupObjects(builder, fieldName, value, '');
         }
     }
+    
     // Post-process: add required and filter for name field if slug exists
     if (builder.fields.name && builder.fields.slug) {
         builder.fields.name.required = true;
         builder.fields.name.filter = true;
     }
+    
     return true;
 };
-const generateSchemaFromData = (source) => {
-    const schema = {
+
+const generateSchemaFromData = (source: any): Schema => {
+    const schema: Schema = {
         namespace: MANUAL_FILL_PLACEHOLDER,
         typePrefix: MANUAL_FILL_PLACEHOLDER,
         groups: {},
@@ -321,7 +354,7 @@ const generateSchemaFromData = (source) => {
         if (!success) {
             continue;
         }
-        const groupConfig = {
+        const groupConfig: GroupConfig = {
             fields: builder.fields,
         };
         if (Object.keys(builder.objects).length > 0) {
@@ -331,8 +364,8 @@ const generateSchemaFromData = (source) => {
     }
     return schema;
 };
-exports.generateSchemaFromData = generateSchemaFromData;
-const writeFieldConfigInline = (fieldConfig) => {
+
+const writeFieldConfigInline = (fieldConfig: FieldConfig): string => {
     const parts = [`"type": "${fieldConfig.type}"`];
     if (fieldConfig.array) {
         parts.push('"array": true');
@@ -351,9 +384,10 @@ const writeFieldConfigInline = (fieldConfig) => {
     }
     return `{ ${parts.join(', ')} }`;
 };
-const serializeToJson = (cfg) => {
-    const indent = (n) => '  '.repeat(n);
-    const lines = [];
+
+const serializeToJson = (cfg: Schema): string => {
+    const indent = (n: number): string => '  '.repeat(n);
+    const lines: string[] = [];
     lines.push('{');
     lines.push(`${indent(1)}"namespace": "${cfg.namespace}",`);
     lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
@@ -380,7 +414,7 @@ const serializeToJson = (cfg) => {
             lines.push(`${indent(3)}"objects": {`);
             const objNames = Object.keys(group.objects).sort();
             objNames.forEach((objName, objIdx) => {
-                const obj = group.objects[objName];
+                const obj = group.objects![objName];
                 if (objIdx > 0) {
                     lines.push(',');
                 }
@@ -408,24 +442,29 @@ const serializeToJson = (cfg) => {
     lines.push('}');
     return lines.join('\n');
 };
+
 // Function to apply ref-config mappings
-const applyRefConfig = (schema, refConfig) => {
-    if (!refConfig || !refConfig.refs)
-        return schema;
-    const refMap = {};
+const applyRefConfig = (schema: Schema, refConfig: RefConfig): Schema => {
+    if (!refConfig || !refConfig.refs) return schema;
+
+    const refMap: Record<string, string> = {};
     refConfig.refs.forEach(ref => {
         refMap[ref.from] = ref.to;
     });
+
     // Create a deep copy of the schema
-    const result = JSON.parse(JSON.stringify(schema));
+    const result = JSON.parse(JSON.stringify(schema)) as Schema;
+
     // Iterate through groups
     Object.keys(result.groups).forEach(groupName => {
         const group = result.groups[groupName];
+        
         // Check fields in the group
         if (group.fields) {
             Object.keys(group.fields).forEach(fieldName => {
                 const field = group.fields[fieldName];
                 const fullPath = `${groupName}.${fieldName}`;
+                
                 if (field.type === 'Ref' && field.refTo === MANUAL_FILL_PLACEHOLDER) {
                     if (refMap[fullPath]) {
                         field.refTo = refMap[fullPath];
@@ -433,16 +472,18 @@ const applyRefConfig = (schema, refConfig) => {
                 }
             });
         }
+        
         // Check fields in nested objects
         if (group.objects) {
             Object.keys(group.objects).forEach(objName => {
-                const obj = group.objects[objName];
+                const obj = group.objects![objName];
                 if (obj.fields) {
                     Object.keys(obj.fields).forEach(fieldName => {
                         const field = obj.fields[fieldName];
                         // For nested objects, we need to construct the path differently
                         // The path should be groupName.fieldName for the original data structure
                         const fullPath = `${groupName}.${fieldName}`;
+                        
                         if (field.type === 'Ref' && field.refTo === MANUAL_FILL_PLACEHOLDER) {
                             if (refMap[fullPath]) {
                                 field.refTo = refMap[fullPath];
@@ -453,15 +494,18 @@ const applyRefConfig = (schema, refConfig) => {
             });
         }
     });
+
     return result;
 };
-exports.applyRefConfig = applyRefConfig;
+
 // Function to merge existing schema with new schema
-const mergeWithExistingSchema = (newSchema, existingSchema) => {
+const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schema): Schema => {
     if (!existingSchema || !existingSchema.groups) {
         return newSchema;
     }
-    const result = JSON.parse(JSON.stringify(newSchema));
+
+    const result = JSON.parse(JSON.stringify(newSchema)) as Schema;
+    
     // Use namespace and typePrefix from existing schema if available
     if (existingSchema.namespace && existingSchema.namespace !== MANUAL_FILL_PLACEHOLDER) {
         result.namespace = existingSchema.namespace;
@@ -469,116 +513,128 @@ const mergeWithExistingSchema = (newSchema, existingSchema) => {
     if (existingSchema.typePrefix && existingSchema.typePrefix !== MANUAL_FILL_PLACEHOLDER) {
         result.typePrefix = existingSchema.typePrefix;
     }
+    
     // Merge groups from existing schema
     Object.keys(existingSchema.groups).forEach(groupName => {
         if (result.groups[groupName]) {
             // Group exists in both schemas - merge fields and objects
             const existingGroup = existingSchema.groups[groupName];
             const newGroup = result.groups[groupName];
+            
             // Preserve existing fields
             if (existingGroup.fields) {
                 Object.keys(existingGroup.fields).forEach(fieldName => {
                     if (newGroup.fields[fieldName]) {
                         // Field exists in both - preserve existing configuration
                         newGroup.fields[fieldName] = existingGroup.fields[fieldName];
-                    }
-                    else {
+                    } else {
                         // Field only exists in existing schema - add it
                         newGroup.fields[fieldName] = existingGroup.fields[fieldName];
                     }
                 });
             }
+            
             // Preserve existing objects
             if (existingGroup.objects) {
                 if (!newGroup.objects) {
                     newGroup.objects = {};
                 }
                 Object.keys(existingGroup.objects).forEach(objName => {
-                    if (newGroup.objects[objName]) {
+                    if (newGroup.objects![objName]) {
                         // Object exists in both - merge fields
-                        const existingObj = existingGroup.objects[objName];
-                        const newObj = newGroup.objects[objName];
+                        const existingObj = existingGroup.objects![objName];
+                        const newObj = newGroup.objects![objName];
+                        
                         if (existingObj.fields) {
                             Object.keys(existingObj.fields).forEach(fieldName => {
                                 if (newObj.fields[fieldName]) {
                                     // Field exists in both - preserve existing configuration
                                     newObj.fields[fieldName] = existingObj.fields[fieldName];
-                                }
-                                else {
+                                } else {
                                     // Field only exists in existing schema - add it
                                     newObj.fields[fieldName] = existingObj.fields[fieldName];
                                 }
                             });
                         }
-                    }
-                    else {
+                    } else {
                         // Object only exists in existing schema - add it
-                        newGroup.objects[objName] = existingGroup.objects[objName];
+                        newGroup.objects![objName] = existingGroup.objects![objName];
                     }
                 });
             }
-        }
-        else {
+        } else {
             // Group only exists in existing schema - add it completely
             result.groups[groupName] = existingSchema.groups[groupName];
         }
     });
+    
     return result;
 };
-exports.mergeWithExistingSchema = mergeWithExistingSchema;
+
 // File system operations
-const readJsonFile = (filePath) => {
+const readJsonFile = (filePath: string): any => {
     try {
         const content = fs.readFileSync(filePath, 'utf8');
         return JSON.parse(content);
-    }
-    catch (error) {
+    } catch (error) {
         throw new Error(`Error reading file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 };
-exports.readJsonFile = readJsonFile;
-const writeJsonFile = (filePath, data) => {
+
+const writeJsonFile = (filePath: string, data: any): void => {
     try {
         const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
         fs.writeFileSync(filePath, content, 'utf8');
-    }
-    catch (error) {
+    } catch (error) {
         throw new Error(`Error writing file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 };
-exports.writeJsonFile = writeJsonFile;
+
 // Main processing function
-const processSchemaGeneration = (inputFilePath, outputFilePath, existingSchemaPath, refConfigPath) => {
+const processSchemaGeneration = (
+    inputFilePath: string,
+    outputFilePath?: string,
+    existingSchemaPath?: string,
+    refConfigPath?: string
+): string => {
     console.log(`Processing file: ${inputFilePath}`);
+    
     // Read input data
     const jsonData = readJsonFile(inputFilePath);
+    
     // Generate schema
     let schema = generateSchemaFromData(jsonData);
+    
     // Merge with existing schema if available
     if (existingSchemaPath && fs.existsSync(existingSchemaPath)) {
         console.log(`Merging with existing schema: ${existingSchemaPath}`);
         const existingSchemaData = readJsonFile(existingSchemaPath);
         schema = mergeWithExistingSchema(schema, existingSchemaData);
     }
+    
     // Apply ref-config if available
     if (refConfigPath && fs.existsSync(refConfigPath)) {
         console.log(`Applying ref-config: ${refConfigPath}`);
         const refConfigData = readJsonFile(refConfigPath);
         schema = applyRefConfig(schema, refConfigData);
     }
+    
     // Serialize to JSON
     const processedSchema = serializeToJson(schema);
+    
     // Write output file if specified
     if (outputFilePath) {
         writeJsonFile(outputFilePath, processedSchema);
         console.log(`Schema written to: ${outputFilePath}`);
     }
+    
     return processedSchema;
 };
-exports.processSchemaGeneration = processSchemaGeneration;
+
 // CLI interface
-const main = () => {
+const main = (): void => {
     const args = process.argv.slice(2);
+    
     if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
         console.log(`
 Schema Generator - TypeScript Version
@@ -601,26 +657,30 @@ Examples:
         `);
         process.exit(0);
     }
+    
     const inputFile = args[0];
+    
     if (!fs.existsSync(inputFile)) {
         console.error(`Error: Input file '${inputFile}' does not exist`);
         process.exit(1);
     }
+    
     // Parse command line options
-    let outputFile;
-    let existingSchemaFile;
-    let refConfigFile;
+    let outputFile: string | undefined;
+    let existingSchemaFile: string | undefined;
+    let refConfigFile: string | undefined;
+    
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
         const nextArg = args[i + 1];
+        
         switch (arg) {
             case '--output':
             case '-o':
                 if (nextArg && !nextArg.startsWith('-')) {
                     outputFile = nextArg;
                     i++; // Skip next argument
-                }
-                else {
+                } else {
                     console.error('Error: --output requires a file path');
                     process.exit(1);
                 }
@@ -630,8 +690,7 @@ Examples:
                 if (nextArg && !nextArg.startsWith('-')) {
                     existingSchemaFile = nextArg;
                     i++; // Skip next argument
-                }
-                else {
+                } else {
                     console.error('Error: --existing requires a file path');
                     process.exit(1);
                 }
@@ -641,96 +700,47 @@ Examples:
                 if (nextArg && !nextArg.startsWith('-')) {
                     refConfigFile = nextArg;
                     i++; // Skip next argument
-                }
-                else {
+                } else {
                     console.error('Error: --ref-config requires a file path');
                     process.exit(1);
                 }
                 break;
         }
     }
+    
     // Set default output file if not specified
     if (!outputFile) {
         const inputDir = path.dirname(inputFile);
         const inputName = path.basename(inputFile, path.extname(inputFile));
         outputFile = path.join(inputDir, `${inputName}_schema.json`);
     }
+    
     try {
         const result = processSchemaGeneration(inputFile, outputFile, existingSchemaFile, refConfigFile);
         console.log('Schema generation completed successfully!');
         console.log(`Output written to: ${outputFile}`);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         process.exit(1);
     }
 };
+
+// Export functions for use as a module
+export {
+    generateSchemaFromData,
+    applyRefConfig,
+    mergeWithExistingSchema,
+    processSchemaGeneration,
+    readJsonFile,
+    writeJsonFile,
+    Schema,
+    FieldConfig,
+    GroupConfig,
+    ObjectConfig,
+    RefConfig
+};
+
 // Run CLI if this file is executed directly
-if (require.main === require.cache[eval('__filename')]) {
+if (require.main === module) {
     main();
 }
-
-
-/***/ }),
-
-/***/ 896:
-/***/ ((module) => {
-
-module.exports = require("fs");
-
-/***/ }),
-
-/***/ 928:
-/***/ ((module) => {
-
-module.exports = require("path");
-
-/***/ })
-
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __nccwpck_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		var threw = true;
-/******/ 		try {
-/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nccwpck_require__);
-/******/ 			threw = false;
-/******/ 		} finally {
-/******/ 			if(threw) delete __webpack_module_cache__[moduleId];
-/******/ 		}
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/compat */
-/******/ 	
-/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
-/******/ 	
-/************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(936);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
-/******/ })()
-;
