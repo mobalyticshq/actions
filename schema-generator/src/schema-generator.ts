@@ -65,10 +65,7 @@ const FIELD_TYPES = {
     REF: 'Ref',
 } as const;
 
-const FIELD_NAMES = {
-    ID: 'id',
-    SLUG: 'slug',
-} as const;
+const REQUIRED_FIELD_NAMES = ['id', 'slug', 'name'];
 
 const MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
 const REFERENCE_SUFFIX = 'Ref';
@@ -144,10 +141,7 @@ const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string, array: b
 
 const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any): FieldConfigResult => {
     const fieldConfig: FieldConfig = { type: FIELD_TYPES.STRING };
-    if (fieldName === FIELD_NAMES.ID) {
-        fieldConfig.filter = true;
-        fieldConfig.required = true;
-    }
+   
     switch (typeof value) {
         case 'boolean':
             fieldConfig.type = FIELD_TYPES.BOOLEAN;
@@ -197,8 +191,8 @@ const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: 
         return;
     }
     
-    // Add required and filter for slug field (only in group fields, not in objects)
-    if (fieldName === FIELD_NAMES.SLUG) {
+    // Add required and filter for mandatory fields
+    if (REQUIRED_FIELD_NAMES.includes(fieldName)) {
         result.config.required = true;
         result.config.filter = true;
     }
@@ -314,12 +308,6 @@ const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[]): boole
             detectGroupFields(builder, fieldName, value);
             detectGroupObjects(builder, fieldName, value, '');
         }
-    }
-    
-    // Post-process: add required and filter for name field if slug exists
-    if (builder.fields.name && builder.fields.slug) {
-        builder.fields.name.required = true;
-        builder.fields.name.filter = true;
     }
     
     return true;

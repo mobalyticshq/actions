@@ -10,7 +10,7 @@
         "deprecated": { "type": "Boolean" },
         "description": { "type": "String" },
         "id": { "type": "String", "filter": true, "required": true },
-        "name": { "type": "String" },
+        "name": { "type": "String", "filter": true, "required": true },
         "type": { "type": "String" }
       }
     },
@@ -19,7 +19,7 @@
         "deprecated": { "type": "Boolean" },
         "description": { "type": "String" },
         "id": { "type": "String", "filter": true, "required": true },
-        "name": { "type": "String" }
+        "name": { "type": "String", "filter": true, "required": true }
       }
     },
     "weapons": {
@@ -29,7 +29,7 @@
         "id": { "type": "String", "filter": true, "required": true },
         "info": { "type": "Object", "objName": "info" },
         "level": { "type": "Object", "objName": "level" },
-        "name": { "type": "String", "filter": true, "required": true },
+        "name2": { "type": "String", "filter": true, "required": true },
         "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons" },
         "setRef": { "type": "Ref", "refTo": "sets" },
         "stats": { "type": "Object", "array": true, "objName": "stats" }
