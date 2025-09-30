@@ -2,9 +2,9 @@
   "name": "schema-generator",
   "version": "1.0.0",
   "description": "Schema generator for static data files",
-  "main": "src/schema-generator.ts",
+  "main": "src/main.ts",
   "scripts": {
-    "build": "ncc build src/schema-generator.ts -o dist",
+    "build": "ncc build src/main.ts -o dist",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

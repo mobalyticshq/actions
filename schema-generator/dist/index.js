@@ -503,63 +503,18 @@
 
 /***/ }),
 
-/***/ 300:
+/***/ 323:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parseVersionFromFilename = exports.findLatestStaticDataFile = exports.writeJsonFile = exports.readJsonFile = exports.processSchemaGeneration = exports.mergeWithExistingSchema = exports.applyRefConfig = exports.generateSchemaFromData = void 0;
-const fs = __importStar(__nccwpck_require__(896));
-const path = __importStar(__nccwpck_require__(928));
+exports.generateSchemaFromData = void 0;
 const pluralize_1 = __importDefault(__nccwpck_require__(112));
-// Constants
-const FIELD_TYPES = {
-    STRING: 'String',
-    BOOLEAN: 'Boolean',
-    OBJECT: 'Object',
-    REF: 'Ref',
-};
-const REQUIRED_FIELD_NAMES = ['id', 'slug', 'name'];
-const MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
-const REFERENCE_SUFFIX = 'Ref';
-const REF_FIELD_NAME_SUFFIX = 'Ref';
+const schema_1 = __nccwpck_require__(60);
 // Utility functions
 const capitalize = (s) => {
     if (!s)
@@ -574,24 +529,24 @@ const buildObjectName = (parentPath, objFieldName) => {
 };
 const detectArrayType = (arr) => {
     if (arr.length === 0) {
-        return { type: FIELD_TYPES.STRING, valid: false };
+        return { type: schema_1.FIELD_TYPES.STRING, valid: false };
     }
     const firstItem = arr[0];
     if (firstItem === null || firstItem === undefined) {
-        return { type: FIELD_TYPES.STRING, valid: false };
+        return { type: schema_1.FIELD_TYPES.STRING, valid: false };
     }
     switch (typeof firstItem) {
         case 'boolean':
-            return { type: FIELD_TYPES.BOOLEAN, valid: true };
+            return { type: schema_1.FIELD_TYPES.BOOLEAN, valid: true };
         case 'string':
-            return { type: FIELD_TYPES.STRING, valid: true };
+            return { type: schema_1.FIELD_TYPES.STRING, valid: true };
         case 'object':
             if (firstItem !== null && !Array.isArray(firstItem)) {
-                return { type: FIELD_TYPES.OBJECT, valid: true };
+                return { type: schema_1.FIELD_TYPES.OBJECT, valid: true };
             }
-            return { type: FIELD_TYPES.STRING, valid: false };
+            return { type: schema_1.FIELD_TYPES.STRING, valid: false };
         default:
-            return { type: FIELD_TYPES.STRING, valid: false };
+            return { type: schema_1.FIELD_TYPES.STRING, valid: false };
     }
 };
 const mergeObjectConfigs = (existing, newConfig) => {
@@ -612,25 +567,25 @@ const createGroupConfBuilder = (source, groupName) => ({
     objects: {},
 });
 const resolveRefTarget = (builder, fieldName, array) => {
-    let refGroup = fieldName.replace(new RegExp(REF_FIELD_NAME_SUFFIX + '$'), '');
+    let refGroup = fieldName.replace(new RegExp(schema_1.REF_FIELD_NAME_SUFFIX + '$'), '');
     if (!array) {
         if (pluralize_1.default.isSingular(refGroup)) {
             refGroup = pluralize_1.default.plural(refGroup);
         }
     }
     if (!(refGroup in builder.source)) {
-        return MANUAL_FILL_PLACEHOLDER;
+        return schema_1.MANUAL_FILL_PLACEHOLDER;
     }
     return refGroup;
 };
 const detectFieldConfig = (builder, fieldName, value) => {
-    const fieldConfig = { type: FIELD_TYPES.STRING };
+    const fieldConfig = { type: schema_1.FIELD_TYPES.STRING };
     switch (typeof value) {
         case 'boolean':
-            fieldConfig.type = FIELD_TYPES.BOOLEAN;
+            fieldConfig.type = schema_1.FIELD_TYPES.BOOLEAN;
             break;
         case 'string':
-            fieldConfig.type = FIELD_TYPES.STRING;
+            fieldConfig.type = schema_1.FIELD_TYPES.STRING;
             break;
         case 'object':
             if (value === null) {
@@ -646,20 +601,20 @@ const detectFieldConfig = (builder, fieldName, value) => {
                     return { config: fieldConfig, valid: false };
                 }
                 fieldConfig.type = arrayTypeResult.type;
-                if (arrayTypeResult.type === FIELD_TYPES.OBJECT) {
+                if (arrayTypeResult.type === schema_1.FIELD_TYPES.OBJECT) {
                     fieldConfig.objName = fieldName;
                 }
             }
             else {
-                fieldConfig.type = FIELD_TYPES.OBJECT;
+                fieldConfig.type = schema_1.FIELD_TYPES.OBJECT;
                 fieldConfig.objName = fieldName;
             }
             break;
         default:
             return { config: fieldConfig, valid: false };
     }
-    if (fieldName.endsWith(REFERENCE_SUFFIX)) {
-        fieldConfig.type = FIELD_TYPES.REF;
+    if (fieldName.endsWith(schema_1.REFERENCE_SUFFIX)) {
+        fieldConfig.type = schema_1.FIELD_TYPES.REF;
         fieldConfig.refTo = resolveRefTarget(builder, fieldName, fieldConfig.array || false);
     }
     return { config: fieldConfig, valid: true };
@@ -673,7 +628,7 @@ const detectGroupFields = (builder, fieldName, value) => {
         return;
     }
     // Add required and filter for mandatory fields
-    if (REQUIRED_FIELD_NAMES.includes(fieldName)) {
+    if (schema_1.REQUIRED_FIELD_NAMES.includes(fieldName)) {
         result.config.required = true;
         result.config.filter = true;
     }
@@ -692,7 +647,7 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
             continue;
         }
         const detected = result.config;
-        if (detected.type === FIELD_TYPES.OBJECT) {
+        if (detected.type === schema_1.FIELD_TYPES.OBJECT) {
             const nestedObjectParentPath = buildObjectName(parentPath, objFieldName);
             detected.objName = buildObjectName(nestedObjectParentPath, fieldName);
         }
@@ -787,8 +742,8 @@ const buildGroupConfig = (builder, groupEntries) => {
 };
 const generateSchemaFromData = (source) => {
     const schema = {
-        namespace: MANUAL_FILL_PLACEHOLDER,
-        typePrefix: MANUAL_FILL_PLACEHOLDER,
+        namespace: schema_1.MANUAL_FILL_PLACEHOLDER,
+        typePrefix: schema_1.MANUAL_FILL_PLACEHOLDER,
         groups: {},
     };
     for (const [groupName, groupEntries] of Object.entries(source)) {
@@ -811,248 +766,56 @@ const generateSchemaFromData = (source) => {
     return schema;
 };
 exports.generateSchemaFromData = generateSchemaFromData;
-const writeFieldConfigInline = (fieldConfig) => {
-    const parts = [`"type": "${fieldConfig.type}"`];
-    if (fieldConfig.array) {
-        parts.push('"array": true');
+
+
+/***/ }),
+
+/***/ 950:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-    if (fieldConfig.filter) {
-        parts.push('"filter": true');
-    }
-    if (fieldConfig.required) {
-        parts.push('"required": true');
-    }
-    if (fieldConfig.objName) {
-        parts.push(`"objName": "${fieldConfig.objName}"`);
-    }
-    if (fieldConfig.refTo) {
-        parts.push(`"refTo": "${fieldConfig.refTo}"`);
-    }
-    return `{ ${parts.join(', ')} }`;
-};
-const serializeToJson = (cfg) => {
-    const indent = (n) => '  '.repeat(n);
-    const lines = [];
-    lines.push('{');
-    lines.push(`${indent(1)}"namespace": "${cfg.namespace}",`);
-    lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
-    // Add gqlTypesOverrides if it exists
-    if (cfg.gqlTypesOverrides && Object.keys(cfg.gqlTypesOverrides).length > 0) {
-        const gqlTypesOverridesJson = JSON.stringify(cfg.gqlTypesOverrides, null, 2);
-        const indentedJson = gqlTypesOverridesJson.split('\n').map((line, idx) => idx === 0 ? line : indent(1) + line).join('\n');
-        lines.push(`${indent(1)}"gqlTypesOverrides": ${indentedJson},`);
-    }
-    lines.push(`${indent(1)}"groups": {`);
-    const groupNames = Object.keys(cfg.groups).sort();
-    groupNames.forEach((groupName, groupIdx) => {
-        const group = cfg.groups[groupName];
-        lines.push(`${indent(2)}"${groupName}": {`);
-        lines.push(`${indent(3)}"fields": {`);
-        const fieldNames = Object.keys(group.fields).sort();
-        if (fieldNames.length > 0) {
-            fieldNames.forEach((fieldName, fieldIdx) => {
-                const fieldConfig = group.fields[fieldName];
-                const comma = fieldIdx < fieldNames.length - 1 ? ',' : '';
-                lines.push(`${indent(4)}"${fieldName}": ${writeFieldConfigInline(fieldConfig)}${comma}`);
-            });
-        }
-        if (group.objects && Object.keys(group.objects).length > 0) {
-            lines.push(`${indent(3)}},`);
-            lines.push(`${indent(3)}"objects": {`);
-            const objNames = Object.keys(group.objects).sort();
-            objNames.forEach((objName, objIdx) => {
-                const obj = group.objects[objName];
-                lines.push(`${indent(4)}"${objName}": {`);
-                lines.push(`${indent(5)}"fields": {`);
-                const objFieldNames = Object.keys(obj.fields).sort();
-                if (objFieldNames.length > 0) {
-                    objFieldNames.forEach((fieldName, fieldIdx) => {
-                        const fieldConfig = obj.fields[fieldName];
-                        const comma = fieldIdx < objFieldNames.length - 1 ? ',' : '';
-                        lines.push(`${indent(6)}"${fieldName}": ${writeFieldConfigInline(fieldConfig)}${comma}`);
-                    });
-                }
-                lines.push(`${indent(5)}}`);
-                // Add comma after object if it's not the last object
-                const objEndLine = `${indent(4)}}`;
-                if (objIdx < objNames.length - 1) {
-                    lines.push(objEndLine + ',');
-                }
-                else {
-                    lines.push(objEndLine);
-                }
-            });
-            lines.push(`${indent(3)}}`);
-        }
-        else {
-            lines.push(`${indent(3)}}`);
-        }
-        // Add comma after group if it's not the last group
-        const groupEndLine = `${indent(2)}}`;
-        if (groupIdx < groupNames.length - 1) {
-            lines.push(groupEndLine + ',');
-        }
-        else {
-            lines.push(groupEndLine);
-        }
-    });
-    lines.push(`${indent(1)}}`);
-    lines.push('}');
-    return lines.join('\n');
-};
-// Function to apply ref-config mappings
-const applyRefConfig = (schema, refConfig) => {
-    if (!refConfig || !refConfig.refs)
-        return schema;
-    const refMap = {};
-    refConfig.refs.forEach(ref => {
-        refMap[ref.from] = ref.to;
-    });
-    // Create a deep copy of the schema
-    const result = JSON.parse(JSON.stringify(schema));
-    // Iterate through groups
-    Object.keys(result.groups).forEach(groupName => {
-        const group = result.groups[groupName];
-        // Check fields in the group
-        if (group.fields) {
-            Object.keys(group.fields).forEach(fieldName => {
-                const field = group.fields[fieldName];
-                const fullPath = `${groupName}.${fieldName}`;
-                if (field.type === 'Ref' && field.refTo === MANUAL_FILL_PLACEHOLDER) {
-                    if (refMap[fullPath]) {
-                        field.refTo = refMap[fullPath];
-                    }
-                }
-            });
-        }
-        // Check fields in nested objects
-        if (group.objects) {
-            Object.keys(group.objects).forEach(objName => {
-                const obj = group.objects[objName];
-                if (obj.fields) {
-                    Object.keys(obj.fields).forEach(fieldName => {
-                        const field = obj.fields[fieldName];
-                        // For nested objects, we need to construct the path differently
-                        // The path should be groupName.fieldName for the original data structure
-                        const fullPath = `${groupName}.${fieldName}`;
-                        if (field.type === 'Ref' && field.refTo === MANUAL_FILL_PLACEHOLDER) {
-                            if (refMap[fullPath]) {
-                                field.refTo = refMap[fullPath];
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    });
-    return result;
-};
-exports.applyRefConfig = applyRefConfig;
-// Helper function to merge field configurations
-const mergeFieldConfig = (newFieldConfig, existingFieldConfig) => {
-    const merged = { ...newFieldConfig };
-    // Override refTo from existing if present
-    if (existingFieldConfig.refTo) {
-        merged.refTo = existingFieldConfig.refTo;
-    }
-    // Override filter from existing if it's true
-    if (existingFieldConfig.filter === true) {
-        merged.filter = true;
-    }
-    // Override required from existing if it's true
-    if (existingFieldConfig.required === true) {
-        merged.required = true;
-    }
-    return merged;
-};
-// Helper function to merge fields (works for both group fields and object fields)
-const mergeFields = (newFields, existingFields, ignoreDeleted) => {
-    // First, merge fields that exist in new schema
-    Object.keys(newFields).forEach(fieldName => {
-        if (existingFields[fieldName]) {
-            // Field exists in both - merge configurations selectively
-            newFields[fieldName] = mergeFieldConfig(newFields[fieldName], existingFields[fieldName]);
-        }
-    });
-    // Then, add fields that only exist in existing schema (if not ignoring deleted)
-    if (!ignoreDeleted) {
-        Object.keys(existingFields).forEach(fieldName => {
-            if (!newFields[fieldName]) {
-                // Field only exists in existing schema - add it completely
-                newFields[fieldName] = existingFields[fieldName];
-            }
-        });
-    }
-};
-// Helper function to merge group objects
-const mergeGroupObjects = (newGroup, existingGroupObjects, ignoreDeleted) => {
-    // First, merge objects that exist in new schema
-    if (newGroup.objects) {
-        Object.keys(newGroup.objects).forEach(objName => {
-            const existingObj = existingGroupObjects[objName];
-            if (existingObj?.fields) {
-                // Object exists in both - merge fields
-                mergeFields(newGroup.objects[objName].fields, existingObj.fields, ignoreDeleted);
-            }
-        });
-    }
-    // Then, add objects that only exist in existing schema (if not ignoring deleted)
-    if (!ignoreDeleted) {
-        Object.keys(existingGroupObjects).forEach(objName => {
-            if (!newGroup.objects?.[objName]) {
-                // Object only exists in existing schema - add it completely
-                if (!newGroup.objects) {
-                    newGroup.objects = {};
-                }
-                newGroup.objects[objName] = existingGroupObjects[objName];
-            }
-        });
-    }
-};
-// Function to merge existing schema with new schema
-const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = false) => {
-    if (!existingSchema || !existingSchema.groups) {
-        return newSchema;
-    }
-    const result = JSON.parse(JSON.stringify(newSchema));
-    // Always use namespace and typePrefix from existing schema if available
-    if (existingSchema.namespace && existingSchema.namespace !== MANUAL_FILL_PLACEHOLDER) {
-        result.namespace = existingSchema.namespace;
-    }
-    if (existingSchema.typePrefix && existingSchema.typePrefix !== MANUAL_FILL_PLACEHOLDER) {
-        result.typePrefix = existingSchema.typePrefix;
-    }
-    // Always copy gqlTypesOverrides from existing schema if it exists
-    if (existingSchema.gqlTypesOverrides) {
-        result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
-    }
-    // First, merge groups that exist in new schema
-    Object.keys(result.groups).forEach(groupName => {
-        const existingGroup = existingSchema.groups[groupName];
-        if (existingGroup) {
-            const newGroup = result.groups[groupName];
-            // Merge fields
-            if (existingGroup.fields) {
-                mergeFields(newGroup.fields, existingGroup.fields, ignoreDeleted);
-            }
-            // Merge objects
-            if (existingGroup.objects) {
-                mergeGroupObjects(newGroup, existingGroup.objects, ignoreDeleted);
-            }
-        }
-    });
-    // Then, add groups that only exist in existing schema (if not ignoring deleted)
-    if (!ignoreDeleted) {
-        Object.keys(existingSchema.groups).forEach(groupName => {
-            if (!result.groups[groupName]) {
-                // Group only exists in existing schema - add it completely
-                result.groups[groupName] = existingSchema.groups[groupName];
-            }
-        });
-    }
-    return result;
-};
-exports.mergeWithExistingSchema = mergeWithExistingSchema;
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = void 0;
+const fs = __importStar(__nccwpck_require__(896));
+const path = __importStar(__nccwpck_require__(928));
+const schema_1 = __nccwpck_require__(60);
+const build_1 = __nccwpck_require__(323);
+const merge_1 = __nccwpck_require__(107);
+const serialization_1 = __nccwpck_require__(55);
 // File system operations
 const readJsonFile = (filePath) => {
     try {
@@ -1074,6 +837,7 @@ const writeJsonFile = (filePath, data) => {
     }
 };
 exports.writeJsonFile = writeJsonFile;
+// Version parsing and file finding utilities
 const parseVersionFromFilename = (filename) => {
     // Match patterns like: static_data_v0.0.2.json, static_data_v1.2.3.json
     const versionMatch = filename.match(/static_data_v(\d+)\.(\d+)\.(\d+)\.json$/);
@@ -1103,7 +867,7 @@ const findLatestStaticDataFile = (staticDataPath) => {
     const versionFiles = [];
     // Find all files matching the version pattern
     for (const file of files) {
-        const versionInfo = parseVersionFromFilename(file);
+        const versionInfo = (0, exports.parseVersionFromFilename)(file);
         if (versionInfo) {
             versionFiles.push(versionInfo);
         }
@@ -1128,28 +892,28 @@ exports.findLatestStaticDataFile = findLatestStaticDataFile;
 const processSchemaGeneration = (config) => {
     console.log(`Processing static data from path: ${config.staticDataPath}`);
     // Find the latest static data file
-    const inputFilePath = findLatestStaticDataFile(config.staticDataPath);
+    const inputFilePath = (0, exports.findLatestStaticDataFile)(config.staticDataPath);
     // Read input data
-    const jsonData = readJsonFile(inputFilePath);
+    const jsonData = (0, exports.readJsonFile)(inputFilePath);
     // Generate schema
-    let schema = generateSchemaFromData(jsonData);
+    let schema = (0, build_1.generateSchemaFromData)(jsonData);
     // Merge with existing schema if available
     if (config.existingSchemaPath && fs.existsSync(config.existingSchemaPath)) {
         console.log(`Merging with existing schema: ${config.existingSchemaPath}`);
-        const existingSchemaData = readJsonFile(config.existingSchemaPath);
-        schema = mergeWithExistingSchema(schema, existingSchemaData, config.ignoreDeleted || false);
+        const existingSchemaData = (0, exports.readJsonFile)(config.existingSchemaPath);
+        schema = (0, merge_1.mergeWithExistingSchema)(schema, existingSchemaData, config.ignoreDeleted || false);
     }
     // Apply ref-config if available
     if (config.refConfigPath && fs.existsSync(config.refConfigPath)) {
         console.log(`Applying ref-config: ${config.refConfigPath}`);
-        const refConfigData = readJsonFile(config.refConfigPath);
-        schema = applyRefConfig(schema, refConfigData);
+        const refConfigData = (0, exports.readJsonFile)(config.refConfigPath);
+        schema = (0, schema_1.applyRefConfig)(schema, refConfigData);
     }
     // Serialize to JSON
-    const processedSchema = serializeToJson(schema);
+    const processedSchema = (0, serialization_1.serializeToJson)(schema);
     // Write output file if specified
     if (config.outputFilePath) {
-        writeJsonFile(config.outputFilePath, processedSchema);
+        (0, exports.writeJsonFile)(config.outputFilePath, processedSchema);
         console.log(`Schema written to: ${config.outputFilePath}`);
     }
     return processedSchema;
@@ -1249,7 +1013,7 @@ Examples:
             refConfigPath: refConfigFile,
             ignoreDeleted: ignoreDeleted
         };
-        const result = processSchemaGeneration(config);
+        const result = (0, exports.processSchemaGeneration)(config);
         console.log('Schema generation completed successfully!');
         console.log(`Output written to: ${outputFile}`);
     }
@@ -1259,9 +1023,298 @@ Examples:
     }
 };
 // Run CLI if this file is executed directly
-if (require.main === require.cache[eval('__filename')]) {
-    main();
-}
+if (false) {}
+
+
+/***/ }),
+
+/***/ 107:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = void 0;
+const schema_1 = __nccwpck_require__(60);
+// Helper function to merge field configurations
+const mergeFieldConfig = (newFieldConfig, existingFieldConfig) => {
+    const merged = { ...newFieldConfig };
+    // Override refTo from existing if present
+    if (existingFieldConfig.refTo) {
+        merged.refTo = existingFieldConfig.refTo;
+    }
+    // Override filter from existing if it's true
+    if (existingFieldConfig.filter === true) {
+        merged.filter = true;
+    }
+    // Override required from existing if it's true
+    if (existingFieldConfig.required === true) {
+        merged.required = true;
+    }
+    return merged;
+};
+exports.mergeFieldConfig = mergeFieldConfig;
+// Helper function to merge fields (works for both group fields and object fields)
+const mergeFields = (newFields, existingFields, ignoreDeleted) => {
+    // First, merge fields that exist in new schema
+    Object.keys(newFields).forEach(fieldName => {
+        if (existingFields[fieldName]) {
+            // Field exists in both - merge configurations selectively
+            newFields[fieldName] = (0, exports.mergeFieldConfig)(newFields[fieldName], existingFields[fieldName]);
+        }
+    });
+    // Then, add fields that only exist in existing schema (if not ignoring deleted)
+    if (!ignoreDeleted) {
+        Object.keys(existingFields).forEach(fieldName => {
+            if (!newFields[fieldName]) {
+                // Field only exists in existing schema - add it completely
+                newFields[fieldName] = existingFields[fieldName];
+            }
+        });
+    }
+};
+exports.mergeFields = mergeFields;
+// Helper function to merge group objects
+const mergeGroupObjects = (newGroup, existingGroupObjects, ignoreDeleted) => {
+    // First, merge objects that exist in new schema
+    if (newGroup.objects) {
+        Object.keys(newGroup.objects).forEach(objName => {
+            const existingObj = existingGroupObjects[objName];
+            if (existingObj?.fields) {
+                // Object exists in both - merge fields
+                (0, exports.mergeFields)(newGroup.objects[objName].fields, existingObj.fields, ignoreDeleted);
+            }
+        });
+    }
+    // Then, add objects that only exist in existing schema (if not ignoring deleted)
+    if (!ignoreDeleted) {
+        Object.keys(existingGroupObjects).forEach(objName => {
+            if (!newGroup.objects?.[objName]) {
+                // Object only exists in existing schema - add it completely
+                if (!newGroup.objects) {
+                    newGroup.objects = {};
+                }
+                newGroup.objects[objName] = existingGroupObjects[objName];
+            }
+        });
+    }
+};
+exports.mergeGroupObjects = mergeGroupObjects;
+// Function to merge existing schema with new schema
+const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = false) => {
+    if (!existingSchema || !existingSchema.groups) {
+        return newSchema;
+    }
+    const result = JSON.parse(JSON.stringify(newSchema));
+    // Always use namespace and typePrefix from existing schema if available
+    if (existingSchema.namespace && existingSchema.namespace !== schema_1.MANUAL_FILL_PLACEHOLDER) {
+        result.namespace = existingSchema.namespace;
+    }
+    if (existingSchema.typePrefix && existingSchema.typePrefix !== schema_1.MANUAL_FILL_PLACEHOLDER) {
+        result.typePrefix = existingSchema.typePrefix;
+    }
+    // Always copy gqlTypesOverrides from existing schema if it exists
+    if (existingSchema.gqlTypesOverrides) {
+        result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
+    }
+    // First, merge groups that exist in new schema
+    Object.keys(result.groups).forEach(groupName => {
+        const existingGroup = existingSchema.groups[groupName];
+        if (existingGroup) {
+            const newGroup = result.groups[groupName];
+            // Merge fields
+            if (existingGroup.fields) {
+                (0, exports.mergeFields)(newGroup.fields, existingGroup.fields, ignoreDeleted);
+            }
+            // Merge objects
+            if (existingGroup.objects) {
+                (0, exports.mergeGroupObjects)(newGroup, existingGroup.objects, ignoreDeleted);
+            }
+        }
+    });
+    // Then, add groups that only exist in existing schema (if not ignoring deleted)
+    if (!ignoreDeleted) {
+        Object.keys(existingSchema.groups).forEach(groupName => {
+            if (!result.groups[groupName]) {
+                // Group only exists in existing schema - add it completely
+                result.groups[groupName] = existingSchema.groups[groupName];
+            }
+        });
+    }
+    return result;
+};
+exports.mergeWithExistingSchema = mergeWithExistingSchema;
+
+
+/***/ }),
+
+/***/ 60:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.applyRefConfig = exports.REF_FIELD_NAME_SUFFIX = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
+// Constants
+exports.FIELD_TYPES = {
+    STRING: 'String',
+    BOOLEAN: 'Boolean',
+    OBJECT: 'Object',
+    REF: 'Ref',
+};
+exports.REQUIRED_FIELD_NAMES = ['id', 'slug', 'name'];
+exports.MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
+exports.REFERENCE_SUFFIX = 'Ref';
+exports.REF_FIELD_NAME_SUFFIX = 'Ref';
+// Function to apply ref-config mappings
+const applyRefConfig = (schema, refConfig) => {
+    if (!refConfig || !refConfig.refs)
+        return schema;
+    const refMap = {};
+    refConfig.refs.forEach(ref => {
+        refMap[ref.from] = ref.to;
+    });
+    // Create a deep copy of the schema
+    const result = JSON.parse(JSON.stringify(schema));
+    // Iterate through groups
+    Object.keys(result.groups).forEach(groupName => {
+        const group = result.groups[groupName];
+        // Check fields in the group
+        if (group.fields) {
+            Object.keys(group.fields).forEach(fieldName => {
+                const field = group.fields[fieldName];
+                const fullPath = `${groupName}.${fieldName}`;
+                if (field.type === 'Ref' && field.refTo === exports.MANUAL_FILL_PLACEHOLDER) {
+                    if (refMap[fullPath]) {
+                        field.refTo = refMap[fullPath];
+                    }
+                }
+            });
+        }
+        // Check fields in nested objects
+        if (group.objects) {
+            Object.keys(group.objects).forEach(objName => {
+                const obj = group.objects[objName];
+                if (obj.fields) {
+                    Object.keys(obj.fields).forEach(fieldName => {
+                        const field = obj.fields[fieldName];
+                        // For nested objects, we need to construct the path differently
+                        // The path should be groupName.fieldName for the original data structure
+                        const fullPath = `${groupName}.${fieldName}`;
+                        if (field.type === 'Ref' && field.refTo === exports.MANUAL_FILL_PLACEHOLDER) {
+                            if (refMap[fullPath]) {
+                                field.refTo = refMap[fullPath];
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    });
+    return result;
+};
+exports.applyRefConfig = applyRefConfig;
+
+
+/***/ }),
+
+/***/ 55:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.serializeToJson = void 0;
+const writeFieldConfigInline = (fieldConfig) => {
+    const parts = [`"type": "${fieldConfig.type}"`];
+    if (fieldConfig.array) {
+        parts.push('"array": true');
+    }
+    if (fieldConfig.filter) {
+        parts.push('"filter": true');
+    }
+    if (fieldConfig.required) {
+        parts.push('"required": true');
+    }
+    if (fieldConfig.objName) {
+        parts.push(`"objName": "${fieldConfig.objName}"`);
+    }
+    if (fieldConfig.refTo) {
+        parts.push(`"refTo": "${fieldConfig.refTo}"`);
+    }
+    return `{ ${parts.join(', ')} }`;
+};
+const serializeToJson = (cfg) => {
+    const indent = (n) => '  '.repeat(n);
+    const lines = [];
+    lines.push('{');
+    lines.push(`${indent(1)}"namespace": "${cfg.namespace}",`);
+    lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
+    // Add gqlTypesOverrides if it exists
+    if (cfg.gqlTypesOverrides && Object.keys(cfg.gqlTypesOverrides).length > 0) {
+        const gqlTypesOverridesJson = JSON.stringify(cfg.gqlTypesOverrides, null, 2);
+        const indentedJson = gqlTypesOverridesJson.split('\n').map((line, idx) => idx === 0 ? line : indent(1) + line).join('\n');
+        lines.push(`${indent(1)}"gqlTypesOverrides": ${indentedJson},`);
+    }
+    lines.push(`${indent(1)}"groups": {`);
+    const groupNames = Object.keys(cfg.groups).sort();
+    groupNames.forEach((groupName, groupIdx) => {
+        const group = cfg.groups[groupName];
+        lines.push(`${indent(2)}"${groupName}": {`);
+        lines.push(`${indent(3)}"fields": {`);
+        const fieldNames = Object.keys(group.fields).sort();
+        if (fieldNames.length > 0) {
+            fieldNames.forEach((fieldName, fieldIdx) => {
+                const fieldConfig = group.fields[fieldName];
+                const comma = fieldIdx < fieldNames.length - 1 ? ',' : '';
+                lines.push(`${indent(4)}"${fieldName}": ${writeFieldConfigInline(fieldConfig)}${comma}`);
+            });
+        }
+        if (group.objects && Object.keys(group.objects).length > 0) {
+            lines.push(`${indent(3)}},`);
+            lines.push(`${indent(3)}"objects": {`);
+            const objNames = Object.keys(group.objects).sort();
+            objNames.forEach((objName, objIdx) => {
+                const obj = group.objects[objName];
+                lines.push(`${indent(4)}"${objName}": {`);
+                lines.push(`${indent(5)}"fields": {`);
+                const objFieldNames = Object.keys(obj.fields).sort();
+                if (objFieldNames.length > 0) {
+                    objFieldNames.forEach((fieldName, fieldIdx) => {
+                        const fieldConfig = obj.fields[fieldName];
+                        const comma = fieldIdx < objFieldNames.length - 1 ? ',' : '';
+                        lines.push(`${indent(6)}"${fieldName}": ${writeFieldConfigInline(fieldConfig)}${comma}`);
+                    });
+                }
+                lines.push(`${indent(5)}}`);
+                // Add comma after object if it's not the last object
+                const objEndLine = `${indent(4)}}`;
+                if (objIdx < objNames.length - 1) {
+                    lines.push(objEndLine + ',');
+                }
+                else {
+                    lines.push(objEndLine);
+                }
+            });
+            lines.push(`${indent(3)}}`);
+        }
+        else {
+            lines.push(`${indent(3)}}`);
+        }
+        // Add comma after group if it's not the last group
+        const groupEndLine = `${indent(2)}}`;
+        if (groupIdx < groupNames.length - 1) {
+            lines.push(groupEndLine + ',');
+        }
+        else {
+            lines.push(groupEndLine);
+        }
+    });
+    lines.push(`${indent(1)}}`);
+    lines.push('}');
+    return lines.join('\n');
+};
+exports.serializeToJson = serializeToJson;
 
 
 /***/ }),
@@ -1320,12 +1373,55 @@ module.exports = require("path");
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(300);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+var exports = __webpack_exports__;
+
+/**
+ * Schema Generator - Main entry point
+ *
+ * This file serves as the main entry point and re-exports all functionality
+ * from the refactored modules for backward compatibility.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = exports.generateSchemaFromData = exports.serializeToJson = exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = exports.applyRefConfig = exports.REF_FIELD_NAME_SUFFIX = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
+// Re-export types and schema operations from schema.ts
+var schema_1 = __nccwpck_require__(60);
+Object.defineProperty(exports, "FIELD_TYPES", ({ enumerable: true, get: function () { return schema_1.FIELD_TYPES; } }));
+Object.defineProperty(exports, "REQUIRED_FIELD_NAMES", ({ enumerable: true, get: function () { return schema_1.REQUIRED_FIELD_NAMES; } }));
+Object.defineProperty(exports, "MANUAL_FILL_PLACEHOLDER", ({ enumerable: true, get: function () { return schema_1.MANUAL_FILL_PLACEHOLDER; } }));
+Object.defineProperty(exports, "REFERENCE_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REFERENCE_SUFFIX; } }));
+Object.defineProperty(exports, "REF_FIELD_NAME_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REF_FIELD_NAME_SUFFIX; } }));
+Object.defineProperty(exports, "applyRefConfig", ({ enumerable: true, get: function () { return schema_1.applyRefConfig; } }));
+// Re-export merge functions from merge.ts
+var merge_1 = __nccwpck_require__(107);
+Object.defineProperty(exports, "mergeFieldConfig", ({ enumerable: true, get: function () { return merge_1.mergeFieldConfig; } }));
+Object.defineProperty(exports, "mergeFields", ({ enumerable: true, get: function () { return merge_1.mergeFields; } }));
+Object.defineProperty(exports, "mergeGroupObjects", ({ enumerable: true, get: function () { return merge_1.mergeGroupObjects; } }));
+Object.defineProperty(exports, "mergeWithExistingSchema", ({ enumerable: true, get: function () { return merge_1.mergeWithExistingSchema; } }));
+// Re-export serialization functions from serialization.ts
+var serialization_1 = __nccwpck_require__(55);
+Object.defineProperty(exports, "serializeToJson", ({ enumerable: true, get: function () { return serialization_1.serializeToJson; } }));
+// Re-export schema building functions from build.ts
+var build_1 = __nccwpck_require__(323);
+Object.defineProperty(exports, "generateSchemaFromData", ({ enumerable: true, get: function () { return build_1.generateSchemaFromData; } }));
+// Re-export generator functions from generator.ts
+var generator_1 = __nccwpck_require__(950);
+Object.defineProperty(exports, "readJsonFile", ({ enumerable: true, get: function () { return generator_1.readJsonFile; } }));
+Object.defineProperty(exports, "writeJsonFile", ({ enumerable: true, get: function () { return generator_1.writeJsonFile; } }));
+Object.defineProperty(exports, "parseVersionFromFilename", ({ enumerable: true, get: function () { return generator_1.parseVersionFromFilename; } }));
+Object.defineProperty(exports, "findLatestStaticDataFile", ({ enumerable: true, get: function () { return generator_1.findLatestStaticDataFile; } }));
+Object.defineProperty(exports, "processSchemaGeneration", ({ enumerable: true, get: function () { return generator_1.processSchemaGeneration; } }));
+// Run CLI if this file is executed directly
+if (require.main === require.cache[eval('__filename')]) {
+    // Import and run the CLI
+    __nccwpck_require__(950);
+}
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;

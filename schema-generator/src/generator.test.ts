@@ -1,4 +1,4 @@
-import { processSchemaGeneration, SchemaGenerationConfig } from './schema-generator';
+import { processSchemaGeneration, SchemaGenerationConfig } from './main';
 import * as path from 'path';
 import * as fs from 'fs';
 
