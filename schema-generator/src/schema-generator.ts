@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import pluralize from 'pluralize';
 
 // Types and interfaces
 interface FieldConfig {
@@ -126,22 +127,6 @@ const createGroupConfBuilder = (source: any, groupName: string): GroupConfBuilde
     fields: {},
     objects: {},
 });
-
-// Simple pluralize implementation (since we can't use external libraries in Node.js)
-const pluralize = {
-    isSingular: (word: string): boolean => {
-        return !word.endsWith('s') || word.endsWith('ss') || word.endsWith('us') || word.endsWith('is');
-    },
-    plural: (word: string): string => {
-        if (word.endsWith('y') && !word.endsWith('ay') && !word.endsWith('ey') && !word.endsWith('oy') && !word.endsWith('uy')) {
-            return word.slice(0, -1) + 'ies';
-        }
-        if (word.endsWith('s') || word.endsWith('sh') || word.endsWith('ch') || word.endsWith('x') || word.endsWith('z')) {
-            return word + 'es';
-        }
-        return word + 's';
-    }
-};
 
 const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string, array: boolean): string => {
     let refGroup = fieldName.replace(new RegExp(REF_FIELD_NAME_SUFFIX + '$'), '');
