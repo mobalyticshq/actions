@@ -5,8 +5,10 @@ export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfi
     const merged = { ...newFieldConfig };
     
     // Override refTo from existing if present
-    if (existingFieldConfig.refTo) {
-        merged.refTo = existingFieldConfig.refTo;
+    if (!newFieldConfig.refTo || newFieldConfig.refTo === MANUAL_FILL_PLACEHOLDER) { 
+        if (existingFieldConfig.refTo && existingFieldConfig.refTo !== MANUAL_FILL_PLACEHOLDER) {
+            merged.refTo = existingFieldConfig.refTo;
+        }
     }
     
     // Override filter from existing if it's true

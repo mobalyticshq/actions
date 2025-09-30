@@ -1040,8 +1040,10 @@ const schema_1 = __nccwpck_require__(60);
 const mergeFieldConfig = (newFieldConfig, existingFieldConfig) => {
     const merged = { ...newFieldConfig };
     // Override refTo from existing if present
-    if (existingFieldConfig.refTo) {
-        merged.refTo = existingFieldConfig.refTo;
+    if (!newFieldConfig.refTo || newFieldConfig.refTo === schema_1.MANUAL_FILL_PLACEHOLDER) {
+        if (existingFieldConfig.refTo && existingFieldConfig.refTo !== schema_1.MANUAL_FILL_PLACEHOLDER) {
+            merged.refTo = existingFieldConfig.refTo;
+        }
     }
     // Override filter from existing if it's true
     if (existingFieldConfig.filter === true) {
