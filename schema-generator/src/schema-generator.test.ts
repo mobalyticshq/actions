@@ -42,4 +42,26 @@ describe('processSchemaGeneration', () => {
     // Compare the exact string output (including formatting)
     expect(result.trim()).toBe(expectedSchemaContent.trim());
   });
+
+  it('should prune unused fields and groups when pruneUnusedFields is true', () => {
+    // Arrange
+    const staticDataPath = path.join(__dirname, 'test_data');
+    const existingSchemaPath = path.join(__dirname, 'test_data', 'existing_schema.json');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', 'expected', 'pruned_schema.json');
+    
+    const config: SchemaGenerationConfig = {
+      staticDataPath,
+      existingSchemaPath,
+      pruneUnusedFields: true
+    };
+    
+    // Act
+    const result = processSchemaGeneration(config);
+    
+    // Assert
+    const expectedSchemaContent = fs.readFileSync(expectedSchemaPath, 'utf8');
+    
+    // Compare the exact string output (including formatting)
+    expect(result.trim()).toBe(expectedSchemaContent.trim());
+  });
 });
