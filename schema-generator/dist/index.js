@@ -556,10 +556,7 @@ const FIELD_TYPES = {
     OBJECT: 'Object',
     REF: 'Ref',
 };
-const FIELD_NAMES = {
-    ID: 'id',
-    SLUG: 'slug',
-};
+const REQUIRED_FIELD_NAMES = ['id', 'slug', 'name'];
 const MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
 const REFERENCE_SUFFIX = 'Ref';
 const REF_FIELD_NAME_SUFFIX = 'Ref';
@@ -628,10 +625,6 @@ const resolveRefTarget = (builder, fieldName, array) => {
 };
 const detectFieldConfig = (builder, fieldName, value) => {
     const fieldConfig = { type: FIELD_TYPES.STRING };
-    if (fieldName === FIELD_NAMES.ID) {
-        fieldConfig.filter = true;
-        fieldConfig.required = true;
-    }
     switch (typeof value) {
         case 'boolean':
             fieldConfig.type = FIELD_TYPES.BOOLEAN;
@@ -679,8 +672,8 @@ const detectGroupFields = (builder, fieldName, value) => {
     if (fieldName in builder.fields) {
         return;
     }
-    // Add required and filter for slug field (only in group fields, not in objects)
-    if (fieldName === FIELD_NAMES.SLUG) {
+    // Add required and filter for mandatory fields
+    if (REQUIRED_FIELD_NAMES.includes(fieldName)) {
         result.config.required = true;
         result.config.filter = true;
     }
@@ -789,11 +782,6 @@ const buildGroupConfig = (builder, groupEntries) => {
             detectGroupFields(builder, fieldName, value);
             detectGroupObjects(builder, fieldName, value, '');
         }
-    }
-    // Post-process: add required and filter for name field if slug exists
-    if (builder.fields.name && builder.fields.slug) {
-        builder.fields.name.required = true;
-        builder.fields.name.filter = true;
     }
     return true;
 };
@@ -978,7 +966,7 @@ const mergeFieldConfig = (newFieldConfig, existingFieldConfig) => {
     return merged;
 };
 // Function to merge existing schema with new schema
-const mergeWithExistingSchema = (newSchema, existingSchema, pruneUnusedFields = false) => {
+const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = false) => {
     if (!existingSchema || !existingSchema.groups) {
         return newSchema;
     }
@@ -994,8 +982,8 @@ const mergeWithExistingSchema = (newSchema, existingSchema, pruneUnusedFields = 
     if (existingSchema.gqlTypesOverrides) {
         result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
-    if (pruneUnusedFields) {
-        // Prune mode: only update existing fields with selective properties from existing schema
+    if (ignoreDeleted) {
+        // Ignore deleted mode: only update existing fields with selective properties from existing schema
         // Don't add fields/groups that don't exist in the new schema
         Object.keys(result.groups).forEach(groupName => {
             if (existingSchema.groups[groupName]) {
@@ -1174,7 +1162,7 @@ const processSchemaGeneration = (config) => {
     if (config.existingSchemaPath && fs.existsSync(config.existingSchemaPath)) {
         console.log(`Merging with existing schema: ${config.existingSchemaPath}`);
         const existingSchemaData = readJsonFile(config.existingSchemaPath);
-        schema = mergeWithExistingSchema(schema, existingSchemaData, config.pruneUnusedFields || false);
+        schema = mergeWithExistingSchema(schema, existingSchemaData, config.ignoreDeleted || false);
     }
     // Apply ref-config if available
     if (config.refConfigPath && fs.existsSync(config.refConfigPath)) {
@@ -1210,7 +1198,7 @@ Options:
   --output, -o <file>       Output file path (default: static_data_latest_schema.json)
   --existing, -e <file>     Path to existing schema file to merge with
   --ref-config, -r <file>   Path to ref-config file
-  --prune-unused            Prune unused fields/groups from existing schema (keeps metadata & refTo)
+  --ignore-deleted          Ignore deleted fields/groups from existing schema (keeps metadata & refTo)
   --help, -h                Show this help message
 
 Examples:
@@ -1230,7 +1218,7 @@ Examples:
     let outputFile;
     let existingSchemaFile;
     let refConfigFile;
-    let pruneUnused = false;
+    let ignoreDeleted = false;
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
         const nextArg = args[i + 1];
@@ -1268,8 +1256,8 @@ Examples:
                     process.exit(1);
                 }
                 break;
-            case '--prune-unused':
-                pruneUnused = true;
+            case '--ignore-deleted':
+                ignoreDeleted = true;
                 break;
         }
     }
@@ -1284,7 +1272,7 @@ Examples:
             outputFilePath: outputFile,
             existingSchemaPath: existingSchemaFile,
             refConfigPath: refConfigFile,
-            pruneUnusedFields: pruneUnused
+            ignoreDeleted: ignoreDeleted
         };
         const result = processSchemaGeneration(config);
         console.log('Schema generation completed successfully!');

@@ -43,7 +43,7 @@ describe('processSchemaGeneration', () => {
     expect(result.trim()).toBe(expectedSchemaContent.trim());
   });
 
-  it('should prune unused fields and groups when pruneUnusedFields is true', () => {
+  it('should ignore deleted fields and groups when ignoreDeleted is true', () => {
     // Arrange
     const staticDataPath = path.join(__dirname, 'test_data');
     const existingSchemaPath = path.join(__dirname, 'test_data', 'existing_schema.json');
@@ -52,7 +52,7 @@ describe('processSchemaGeneration', () => {
     const config: SchemaGenerationConfig = {
       staticDataPath,
       existingSchemaPath,
-      pruneUnusedFields: true
+      ignoreDeleted: true
     };
     
     // Act

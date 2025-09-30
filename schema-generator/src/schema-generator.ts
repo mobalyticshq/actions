@@ -509,7 +509,7 @@ const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfig: Fiel
 };
 
 // Function to merge existing schema with new schema
-const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schema, pruneUnusedFields: boolean = false): Schema => {
+const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schema, ignoreDeleted: boolean = false): Schema => {
     if (!existingSchema || !existingSchema.groups) {
         return newSchema;
     }
@@ -529,8 +529,8 @@ const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schema, prun
         result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
     
-    if (pruneUnusedFields) {
-        // Prune mode: only update existing fields with selective properties from existing schema
+    if (ignoreDeleted) {
+        // Ignore deleted mode: only update existing fields with selective properties from existing schema
         // Don't add fields/groups that don't exist in the new schema
         Object.keys(result.groups).forEach(groupName => {
             if (existingSchema.groups[groupName]) {
@@ -672,7 +672,7 @@ interface SchemaGenerationConfig {
     outputFilePath?: string;
     existingSchemaPath?: string;
     refConfigPath?: string;
-    pruneUnusedFields?: boolean;
+    ignoreDeleted?: boolean;
 }
 
 const parseVersionFromFilename = (filename: string): VersionInfo | null => {
@@ -749,7 +749,7 @@ const processSchemaGeneration = (config: SchemaGenerationConfig): string => {
     if (config.existingSchemaPath && fs.existsSync(config.existingSchemaPath)) {
         console.log(`Merging with existing schema: ${config.existingSchemaPath}`);
         const existingSchemaData = readJsonFile(config.existingSchemaPath);
-        schema = mergeWithExistingSchema(schema, existingSchemaData, config.pruneUnusedFields || false);
+        schema = mergeWithExistingSchema(schema, existingSchemaData, config.ignoreDeleted || false);
     }
     
     // Apply ref-config if available
@@ -790,7 +790,7 @@ Options:
   --output, -o <file>       Output file path (default: static_data_latest_schema.json)
   --existing, -e <file>     Path to existing schema file to merge with
   --ref-config, -r <file>   Path to ref-config file
-  --prune-unused            Prune unused fields/groups from existing schema (keeps metadata & refTo)
+  --ignore-deleted          Ignore deleted fields/groups from existing schema (keeps metadata & refTo)
   --help, -h                Show this help message
 
 Examples:
@@ -813,7 +813,7 @@ Examples:
     let outputFile: string | undefined;
     let existingSchemaFile: string | undefined;
     let refConfigFile: string | undefined;
-    let pruneUnused = false;
+    let ignoreDeleted = false;
     
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
@@ -850,8 +850,8 @@ Examples:
                     process.exit(1);
                 }
                 break;
-            case '--prune-unused':
-                pruneUnused = true;
+            case '--ignore-deleted':
+                ignoreDeleted = true;
                 break;
         }
     }
@@ -868,7 +868,7 @@ Examples:
             outputFilePath: outputFile,
             existingSchemaPath: existingSchemaFile,
             refConfigPath: refConfigFile,
-            pruneUnusedFields: pruneUnused
+            ignoreDeleted: ignoreDeleted
         };
         
         const result = processSchemaGeneration(config);
