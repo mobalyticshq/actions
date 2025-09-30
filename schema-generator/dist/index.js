@@ -848,6 +848,12 @@ const serializeToJson = (cfg) => {
     lines.push('{');
     lines.push(`${indent(1)}"namespace": "${cfg.namespace}",`);
     lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
+    // Add gqlTypesOverrides if it exists
+    if (cfg.gqlTypesOverrides && Object.keys(cfg.gqlTypesOverrides).length > 0) {
+        const gqlTypesOverridesJson = JSON.stringify(cfg.gqlTypesOverrides, null, 2);
+        const indentedJson = gqlTypesOverridesJson.split('\n').map((line, idx) => idx === 0 ? line : indent(1) + line).join('\n');
+        lines.push(`${indent(1)}"gqlTypesOverrides": ${indentedJson},`);
+    }
     lines.push(`${indent(1)}"groups": {`);
     const groupNames = Object.keys(cfg.groups).sort();
     groupNames.forEach((groupName, groupIdx) => {
@@ -966,6 +972,10 @@ const mergeWithExistingSchema = (newSchema, existingSchema) => {
     }
     if (existingSchema.typePrefix && existingSchema.typePrefix !== MANUAL_FILL_PLACEHOLDER) {
         result.typePrefix = existingSchema.typePrefix;
+    }
+    // Copy gqlTypesOverrides from existing schema if it exists
+    if (existingSchema.gqlTypesOverrides) {
+        result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
     // Merge groups from existing schema
     Object.keys(existingSchema.groups).forEach(groupName => {

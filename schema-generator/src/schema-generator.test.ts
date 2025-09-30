@@ -5,8 +5,8 @@ import * as fs from 'fs';
 describe('processSchemaGeneration', () => {
   it('should generate schema from static data and match expected output', () => {
     // Arrange
-    const staticDataPath = path.join(__dirname, 'test');
-    const expectedSchemaPath = path.join(__dirname, 'test', 'new_schema_expected.json');
+    const staticDataPath = path.join(__dirname, 'test_data');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', 'expected', 'new_schema.json');
     
     const config: SchemaGenerationConfig = {
       staticDataPath
@@ -24,9 +24,9 @@ describe('processSchemaGeneration', () => {
 
   it('should update schema from static data using existing schema and match expected output', () => {
     // Arrange
-    const staticDataPath = path.join(__dirname, 'test');
-    const existingSchemaPath = path.join(__dirname, 'test', 'previous_schema_sample.json');
-    const expectedSchemaPath = path.join(__dirname, 'test', 'update_schema_expected.json');
+    const staticDataPath = path.join(__dirname, 'test_data');
+    const existingSchemaPath = path.join(__dirname, 'test_data', 'existing_schema.json');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', 'expected', 'updated_schema.json');
     
     const config: SchemaGenerationConfig = {
       staticDataPath,

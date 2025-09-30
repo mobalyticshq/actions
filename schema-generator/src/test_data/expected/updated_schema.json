@@ -1,6 +1,9 @@
 {
   "namespace": "someGame.staticData",
   "typePrefix": "SomeGame",
+  "gqlTypesOverrides": {
+    "entityObject": "SomeGameEntityObject"
+  },
   "groups": {
     "characteristics": {
       "fields": {
