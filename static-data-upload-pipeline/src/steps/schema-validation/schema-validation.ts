@@ -14,7 +14,7 @@ export async function schemaValidationStep(
 
   try {
     // Read new schema
-    const schemaFilePath = `${schemaPath}/schema.json`;
+    const schemaFilePath = schemaPath;
     console.log(`ℹ️ Schema validation for: ${schemaFilePath}`);
     const newSchemaContent = readFileSync(schemaFilePath, 'utf8');
     const newSchema = JSON.parse(newSchemaContent) as Schema;

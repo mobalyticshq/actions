@@ -12,7 +12,6 @@ import { overrideStaticData } from './steps/override-static-data';
 import { validateStaticData } from './steps/validate-static-data/validate-static-data';
 import { createReportStep } from './steps/create-report';
 import { syncStaticData } from './steps/sync-static-data';
-
 import { schemaValidationStep } from './steps/schema-validation/schema-validation';
 
 const execAsync = promisify(exec);
