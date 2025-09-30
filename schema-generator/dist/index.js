@@ -361,9 +361,6 @@ const serializeToJson = (cfg) => {
     const groupNames = Object.keys(cfg.groups).sort();
     groupNames.forEach((groupName, groupIdx) => {
         const group = cfg.groups[groupName];
-        if (groupIdx > 0) {
-            lines.push(',');
-        }
         lines.push(`${indent(2)}"${groupName}": {`);
         lines.push(`${indent(3)}"fields": {`);
         const fieldNames = Object.keys(group.fields).sort();
@@ -374,16 +371,12 @@ const serializeToJson = (cfg) => {
                 lines.push(`${indent(4)}"${fieldName}": ${writeFieldConfigInline(fieldConfig)}${comma}`);
             });
         }
-        lines.push(`${indent(3)}}`);
         if (group.objects && Object.keys(group.objects).length > 0) {
-            lines.push(',');
+            lines.push(`${indent(3)}},`);
             lines.push(`${indent(3)}"objects": {`);
             const objNames = Object.keys(group.objects).sort();
             objNames.forEach((objName, objIdx) => {
                 const obj = group.objects[objName];
-                if (objIdx > 0) {
-                    lines.push(',');
-                }
                 lines.push(`${indent(4)}"${objName}": {`);
                 lines.push(`${indent(5)}"fields": {`);
                 const objFieldNames = Object.keys(obj.fields).sort();
@@ -395,15 +388,29 @@ const serializeToJson = (cfg) => {
                     });
                 }
                 lines.push(`${indent(5)}}`);
-                lines.push(`${indent(4)}}`);
+                // Add comma after object if it's not the last object
+                const objEndLine = `${indent(4)}}`;
+                if (objIdx < objNames.length - 1) {
+                    lines.push(objEndLine + ',');
+                }
+                else {
+                    lines.push(objEndLine);
+                }
             });
             lines.push(`${indent(3)}}`);
         }
-        lines.push(`${indent(2)}}`);
+        else {
+            lines.push(`${indent(3)}}`);
+        }
+        // Add comma after group if it's not the last group
+        const groupEndLine = `${indent(2)}}`;
+        if (groupIdx < groupNames.length - 1) {
+            lines.push(groupEndLine + ',');
+        }
+        else {
+            lines.push(groupEndLine);
+        }
     });
-    if (groupNames.length > 0) {
-        lines.push('');
-    }
     lines.push(`${indent(1)}}`);
     lines.push('}');
     return lines.join('\n');
@@ -707,7 +714,7 @@ Examples:
     // Set default output file if not specified
     if (!outputFile) {
         const staticDataDir = path.dirname(staticDataPath);
-        outputFile = path.join(staticDataDir, 'static_data_latest_schema.json');
+        outputFile = path.join(staticDataDir, 'schema.json');
     }
     try {
         const config = {

@@ -16,14 +16,9 @@ describe('processSchemaGeneration', () => {
     const result = processSchemaGeneration(config);
     
     // Assert
-    expect(result).toBeDefined();
-    expect(typeof result).toBe('string');
-    
-    // Parse the result to compare with expected schema
-    const generatedSchema = JSON.parse(result);
     const expectedSchemaContent = fs.readFileSync(expectedSchemaPath, 'utf8');
-    const expectedSchema = JSON.parse(expectedSchemaContent);
     
-    expect(generatedSchema).toEqual(expectedSchema);
+    // Compare the exact string output (including formatting)
+    expect(result.trim()).toBe(expectedSchemaContent.trim());
   });
 });
