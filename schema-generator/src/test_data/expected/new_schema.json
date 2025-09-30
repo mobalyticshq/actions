@@ -26,6 +26,7 @@
         "id": { "type": "String", "filter": true, "required": true },
         "info": { "type": "Object", "objName": "info" },
         "level": { "type": "Object", "objName": "level" },
+        "name": { "type": "String" },
         "recommendationsRef": { "type": "Ref", "array": true, "refTo": "@@@ TO BE FILLED MANUALLY @@@" },
         "setRef": { "type": "Ref", "refTo": "sets" },
         "stats": { "type": "Object", "array": true, "objName": "stats" }

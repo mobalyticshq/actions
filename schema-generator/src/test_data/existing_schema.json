@@ -14,9 +14,10 @@
     "weapons": {
       "fields": {
         "damage": { "type": "String", "array": true },
-        "deprecated": { "type": "Boolean" },
+        "deprecated": { "type": "Boolean"},
         "id": { "type": "String", "filter": true, "required": true },
         "info": { "type": "Object", "objName": "info" },
+        "name": { "type": "String", "filter": true, "required": true },
         "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons" },
         "stats": { "type": "Object", "array": true, "objName": "stats" },
         "unusedField": { "type": "String", "array": true }
