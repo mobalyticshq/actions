@@ -1,14 +1,17 @@
 import { readdirSync, readFileSync, existsSync, writeFileSync } from 'fs';
 import * as path from 'path';
-import { StaticData, StaticDataConfig } from './types';
+import { StaticData, StaticDataConfig, ValidationReport } from './types';
 import { logColors } from './utils/logger.utils';
 import { mergeStaticData } from './utils/merge.utils';
 import { mergeWithSpreadsheets } from './utils/spreadsheets.utils';
 
 import { validate } from './steps/validate-static-data/utils';
+import { validateStaticData } from './steps/validate-static-data/validate-static-data';
+import { isValidReport } from './utils/is-valid-report.utils';
 
 async function run() {
-  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/poe/dev/static_data';
+  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2';
+  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2/schema.json';
 
   const pattern = /static_data_v\d+.\d+.\d+.json/;
 
@@ -54,9 +57,25 @@ async function run() {
     if (i == sortedFiles.length - 2) oldData = structuredClone(staticData);
   }
 
-  const { overridedData } = await mergeWithSpreadsheets('184EURmpMq-m3Oy-4fuE1oNFZFDVlLU6U89A3ktvsv7k', staticData);
+  const { overridedData } = await mergeWithSpreadsheets('1I76ZyGFHA9JCr5lSMBK2zJaPpqZ1xb4F5M_wQxKAvSI', staticData);
 
-  const commonReport = await validate(overridedData, oldData, config, 'gs://cdn.mobalytics.gg/assets/the-bazaar');
+  const reports = new Array<ValidationReport>();
+
+  const commonReport = await validate(
+    staticData,
+    oldData,
+    config,
+    'https://cdn.mobalytics.gg/assets/the-bazaar',
+    schemaPath,
+  );
+
+  reports.push(commonReport);
+
+  const { errors, warnings, infos } = isValidReport(reports);
+
+  console.log(`⚠️ Errors:${errors}`);
+  console.log(`❗ Warnings:${warnings}`);
+  console.log(`ℹ️ Infos:${infos}`);
 
   writeFileSync('staticData.json', JSON.stringify(overridedData), 'utf8');
 }

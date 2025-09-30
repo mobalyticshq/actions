@@ -73,11 +73,11 @@ async function runPipeline(
     if (!skipSchemaValidation) {
       // Schema validation step
       if (schemaPath) {
-        // const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
-        // if (!schemaValidationResult.success) {
-        //   throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
-        // }
-        // console.log('');
+        const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
+        if (!schemaValidationResult.success) {
+          throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
+        }
+        console.log('');
       }
     }
 

@@ -130,6 +130,7 @@ function validateEntityAgainstSchema(
 
     // Validate field type
     if (!validateFieldType(fieldValue, fieldSchema.type, fieldSchema.array)) {
+      console.log(fieldValue);
       entityReport.errors[ReportMessages.invalidFieldType].add(fieldPath);
       continue;
     }
@@ -189,6 +190,7 @@ function validateObjectAgainstSchema(
 
     // Validate field type
     if (!validateFieldType(fieldValue, fieldSchema.type, fieldSchema.array)) {
+      console.log(fieldValue);
       report.errors[ReportMessages.invalidFieldType].add(fieldPath);
       continue;
     }
