@@ -1,4 +1,4 @@
-import { processSchemaGeneration } from './schema-generator';
+import { processSchemaGeneration, SchemaGenerationConfig } from './schema-generator';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -8,8 +8,12 @@ describe('processSchemaGeneration', () => {
     const staticDataPath = path.join(__dirname, 'test');
     const expectedSchemaPath = path.join(__dirname, 'test', 'schema_expected.json');
     
+    const config: SchemaGenerationConfig = {
+      staticDataPath
+    };
+    
     // Act
-    const result = processSchemaGeneration(staticDataPath);
+    const result = processSchemaGeneration(config);
     
     // Assert
     expect(result).toBeDefined();

@@ -599,6 +599,13 @@ interface VersionInfo {
     patch: number;
 }
 
+interface SchemaGenerationConfig {
+    staticDataPath: string;
+    outputFilePath?: string;
+    existingSchemaPath?: string;
+    refConfigPath?: string;
+}
+
 const parseVersionFromFilename = (filename: string): VersionInfo | null => {
     // Match patterns like: static_data_v0.0.2.json, static_data_v1.2.3.json
     const versionMatch = filename.match(/static_data_v(\d+)\.(\d+)\.(\d+)\.json$/);
@@ -657,16 +664,11 @@ const findLatestStaticDataFile = (staticDataPath: string): string => {
 };
 
 // Main processing function
-const processSchemaGeneration = (
-    staticDataPath: string,
-    outputFilePath?: string,
-    existingSchemaPath?: string,
-    refConfigPath?: string
-): string => {
-    console.log(`Processing static data from path: ${staticDataPath}`);
+const processSchemaGeneration = (config: SchemaGenerationConfig): string => {
+    console.log(`Processing static data from path: ${config.staticDataPath}`);
     
     // Find the latest static data file
-    const inputFilePath = findLatestStaticDataFile(staticDataPath);
+    const inputFilePath = findLatestStaticDataFile(config.staticDataPath);
     
     // Read input data
     const jsonData = readJsonFile(inputFilePath);
@@ -675,16 +677,16 @@ const processSchemaGeneration = (
     let schema = generateSchemaFromData(jsonData);
     
     // Merge with existing schema if available
-    if (existingSchemaPath && fs.existsSync(existingSchemaPath)) {
-        console.log(`Merging with existing schema: ${existingSchemaPath}`);
-        const existingSchemaData = readJsonFile(existingSchemaPath);
+    if (config.existingSchemaPath && fs.existsSync(config.existingSchemaPath)) {
+        console.log(`Merging with existing schema: ${config.existingSchemaPath}`);
+        const existingSchemaData = readJsonFile(config.existingSchemaPath);
         schema = mergeWithExistingSchema(schema, existingSchemaData);
     }
     
     // Apply ref-config if available
-    if (refConfigPath && fs.existsSync(refConfigPath)) {
-        console.log(`Applying ref-config: ${refConfigPath}`);
-        const refConfigData = readJsonFile(refConfigPath);
+    if (config.refConfigPath && fs.existsSync(config.refConfigPath)) {
+        console.log(`Applying ref-config: ${config.refConfigPath}`);
+        const refConfigData = readJsonFile(config.refConfigPath);
         schema = applyRefConfig(schema, refConfigData);
     }
     
@@ -692,9 +694,9 @@ const processSchemaGeneration = (
     const processedSchema = serializeToJson(schema);
     
     // Write output file if specified
-    if (outputFilePath) {
-        writeJsonFile(outputFilePath, processedSchema);
-        console.log(`Schema written to: ${outputFilePath}`);
+    if (config.outputFilePath) {
+        writeJsonFile(config.outputFilePath, processedSchema);
+        console.log(`Schema written to: ${config.outputFilePath}`);
     }
     
     return processedSchema;
@@ -783,11 +785,18 @@ Examples:
     // Set default output file if not specified
     if (!outputFile) {
         const staticDataDir = path.dirname(staticDataPath);
-        outputFile = path.join(staticDataDir, 'static_data_latest_schema.json');
+        outputFile = path.join(staticDataDir, 'schema.json');
     }
     
     try {
-        const result = processSchemaGeneration(staticDataPath, outputFile, existingSchemaFile, refConfigFile);
+        const config: SchemaGenerationConfig = {
+            staticDataPath,
+            outputFilePath: outputFile,
+            existingSchemaPath: existingSchemaFile,
+            refConfigPath: refConfigFile
+        };
+        
+        const result = processSchemaGeneration(config);
         console.log('Schema generation completed successfully!');
         console.log(`Output written to: ${outputFile}`);
     } catch (error) {
@@ -811,7 +820,8 @@ export {
     GroupConfig,
     ObjectConfig,
     RefConfig,
-    VersionInfo
+    VersionInfo,
+    SchemaGenerationConfig
 };
 
 // Run CLI if this file is executed directly

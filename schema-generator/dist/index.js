@@ -598,32 +598,32 @@ const findLatestStaticDataFile = (staticDataPath) => {
 };
 exports.findLatestStaticDataFile = findLatestStaticDataFile;
 // Main processing function
-const processSchemaGeneration = (staticDataPath, outputFilePath, existingSchemaPath, refConfigPath) => {
-    console.log(`Processing static data from path: ${staticDataPath}`);
+const processSchemaGeneration = (config) => {
+    console.log(`Processing static data from path: ${config.staticDataPath}`);
     // Find the latest static data file
-    const inputFilePath = findLatestStaticDataFile(staticDataPath);
+    const inputFilePath = findLatestStaticDataFile(config.staticDataPath);
     // Read input data
     const jsonData = readJsonFile(inputFilePath);
     // Generate schema
     let schema = generateSchemaFromData(jsonData);
     // Merge with existing schema if available
-    if (existingSchemaPath && fs.existsSync(existingSchemaPath)) {
-        console.log(`Merging with existing schema: ${existingSchemaPath}`);
-        const existingSchemaData = readJsonFile(existingSchemaPath);
+    if (config.existingSchemaPath && fs.existsSync(config.existingSchemaPath)) {
+        console.log(`Merging with existing schema: ${config.existingSchemaPath}`);
+        const existingSchemaData = readJsonFile(config.existingSchemaPath);
         schema = mergeWithExistingSchema(schema, existingSchemaData);
     }
     // Apply ref-config if available
-    if (refConfigPath && fs.existsSync(refConfigPath)) {
-        console.log(`Applying ref-config: ${refConfigPath}`);
-        const refConfigData = readJsonFile(refConfigPath);
+    if (config.refConfigPath && fs.existsSync(config.refConfigPath)) {
+        console.log(`Applying ref-config: ${config.refConfigPath}`);
+        const refConfigData = readJsonFile(config.refConfigPath);
         schema = applyRefConfig(schema, refConfigData);
     }
     // Serialize to JSON
     const processedSchema = serializeToJson(schema);
     // Write output file if specified
-    if (outputFilePath) {
-        writeJsonFile(outputFilePath, processedSchema);
-        console.log(`Schema written to: ${outputFilePath}`);
+    if (config.outputFilePath) {
+        writeJsonFile(config.outputFilePath, processedSchema);
+        console.log(`Schema written to: ${config.outputFilePath}`);
     }
     return processedSchema;
 };
@@ -710,7 +710,13 @@ Examples:
         outputFile = path.join(staticDataDir, 'static_data_latest_schema.json');
     }
     try {
-        const result = processSchemaGeneration(staticDataPath, outputFile, existingSchemaFile, refConfigFile);
+        const config = {
+            staticDataPath,
+            outputFilePath: outputFile,
+            existingSchemaPath: existingSchemaFile,
+            refConfigPath: refConfigFile
+        };
+        const result = processSchemaGeneration(config);
         console.log('Schema generation completed successfully!');
         console.log(`Output written to: ${outputFile}`);
     }

@@ -32,9 +32,22 @@ node dist/index.js <static-data-path> [options]
 ### Programmatic
 
 ```typescript
-import { processSchemaGeneration } from './src/schema-generator';
+import { processSchemaGeneration, SchemaGenerationConfig } from './src/schema-generator';
 
-const schema = processSchemaGeneration('/path/to/static/data');
+// Basic usage with only required parameter
+const config: SchemaGenerationConfig = {
+  staticDataPath: '/path/to/static/data'
+};
+const schema = processSchemaGeneration(config);
+
+// Advanced usage with all options
+const advancedConfig: SchemaGenerationConfig = {
+  staticDataPath: '/path/to/static/data',
+  outputFilePath: '/path/to/output/schema.json',
+  existingSchemaPath: '/path/to/existing/schema.json',
+  refConfigPath: '/path/to/ref-config.json'
+};
+const advancedSchema = processSchemaGeneration(advancedConfig);
 ```
 
 ## Development
