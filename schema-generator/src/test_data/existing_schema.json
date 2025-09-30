@@ -5,6 +5,12 @@
     "entityObject": "SomeGameEntityObject"
   },
   "groups": {
+    "unusedGroup": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "unusedField": { "type": "String" }
+      }
+    },
     "weapons": {
       "fields": {
         "damage": { "type": "String", "array": true },
@@ -12,7 +18,8 @@
         "id": { "type": "String", "filter": true, "required": true },
         "info": { "type": "Object", "objName": "info" },
         "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons" },
-        "stats": { "type": "Object", "array": true, "objName": "stats" }
+        "stats": { "type": "Object", "array": true, "objName": "stats" },
+        "unusedField": { "type": "String", "array": true }
       },
       "objects": {
         "info": {

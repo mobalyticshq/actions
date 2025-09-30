@@ -22,6 +22,12 @@
         "name": { "type": "String" }
       }
     },
+    "unusedGroup": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "unusedField": { "type": "String" }
+      }
+    },
     "weapons": {
       "fields": {
         "damage": { "type": "String", "array": true },
@@ -31,7 +37,8 @@
         "level": { "type": "Object", "objName": "level" },
         "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons" },
         "setRef": { "type": "Ref", "refTo": "sets" },
-        "stats": { "type": "Object", "array": true, "objName": "stats" }
+        "stats": { "type": "Object", "array": true, "objName": "stats" },
+        "unusedField": { "type": "String", "array": true }
       },
       "objects": {
         "info": {
