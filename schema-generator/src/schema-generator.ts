@@ -508,6 +508,65 @@ const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfig: Fiel
     return merged;
 };
 
+// Helper function to merge fields (works for both group fields and object fields)
+const mergeFields = (
+    newFields: Record<string, FieldConfig>,
+    existingFields: Record<string, FieldConfig>,
+    ignoreDeleted: boolean
+): void => {
+    // First, merge fields that exist in new schema
+    Object.keys(newFields).forEach(fieldName => {
+        if (existingFields[fieldName]) {
+            // Field exists in both - merge configurations selectively
+            newFields[fieldName] = mergeFieldConfig(
+                newFields[fieldName],
+                existingFields[fieldName]
+            );
+        }
+    });
+    
+    // Then, add fields that only exist in existing schema (if not ignoring deleted)
+    if (!ignoreDeleted) {
+        Object.keys(existingFields).forEach(fieldName => {
+            if (!newFields[fieldName]) {
+                // Field only exists in existing schema - add it completely
+                newFields[fieldName] = existingFields[fieldName];
+            }
+        });
+    }
+};
+
+// Helper function to merge group objects
+const mergeGroupObjects = (
+    newGroup: GroupConfig,
+    existingGroupObjects: Record<string, ObjectConfig>,
+    ignoreDeleted: boolean
+): void => {
+    // First, merge objects that exist in new schema
+    if (newGroup.objects) {
+        Object.keys(newGroup.objects).forEach(objName => {
+            const existingObj = existingGroupObjects[objName];
+            if (existingObj?.fields) {
+                // Object exists in both - merge fields
+                mergeFields(newGroup.objects![objName].fields, existingObj.fields, ignoreDeleted);
+            }
+        });
+    }
+    
+    // Then, add objects that only exist in existing schema (if not ignoring deleted)
+    if (!ignoreDeleted) {
+        Object.keys(existingGroupObjects).forEach(objName => {
+            if (!newGroup.objects?.[objName]) {
+                // Object only exists in existing schema - add it completely
+                if (!newGroup.objects) {
+                    newGroup.objects = {};
+                }
+                newGroup.objects[objName] = existingGroupObjects[objName];
+            }
+        });
+    }
+};
+
 // Function to merge existing schema with new schema
 const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schema, ignoreDeleted: boolean = false): Schema => {
     if (!existingSchema || !existingSchema.groups) {
@@ -529,107 +588,28 @@ const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schema, igno
         result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
     
-    if (ignoreDeleted) {
-        // Ignore deleted mode: only update existing fields with selective properties from existing schema
-        // Don't add fields/groups that don't exist in the new schema
-        Object.keys(result.groups).forEach(groupName => {
-            if (existingSchema.groups[groupName]) {
-                const existingGroup = existingSchema.groups[groupName];
-                const newGroup = result.groups[groupName];
-                
-                // Merge fields that exist in both schemas
-                if (existingGroup.fields) {
-                    Object.keys(newGroup.fields).forEach(fieldName => {
-                        if (existingGroup.fields[fieldName]) {
-                            // Field exists in both - merge configurations selectively
-                            newGroup.fields[fieldName] = mergeFieldConfig(
-                                newGroup.fields[fieldName],
-                                existingGroup.fields[fieldName]
-                            );
-                        }
-                    });
-                }
-                
-                // Merge objects that exist in both schemas
-                if (existingGroup.objects && newGroup.objects) {
-                    Object.keys(newGroup.objects).forEach(objName => {
-                        if (existingGroup.objects![objName]) {
-                            const existingObj = existingGroup.objects![objName];
-                            const newObj = newGroup.objects![objName];
-                            
-                            if (existingObj.fields) {
-                                // Merge fields that exist in both objects
-                                Object.keys(newObj.fields).forEach(fieldName => {
-                                    if (existingObj.fields[fieldName]) {
-                                        // Field exists in both - merge configurations selectively
-                                        newObj.fields[fieldName] = mergeFieldConfig(
-                                            newObj.fields[fieldName],
-                                            existingObj.fields[fieldName]
-                                        );
-                                    }
-                                });
-                            }
-                        }
-                    });
-                }
+    // First, merge groups that exist in new schema
+    Object.keys(result.groups).forEach(groupName => {
+        const existingGroup = existingSchema.groups[groupName];
+        if (existingGroup) {
+            const newGroup = result.groups[groupName];
+            
+            // Merge fields
+            if (existingGroup.fields) {
+                mergeFields(newGroup.fields, existingGroup.fields, ignoreDeleted);
             }
-        });
-    } else {
-        // Standard merge mode: include all fields and groups from existing schema
+            
+            // Merge objects
+            if (existingGroup.objects) {
+                mergeGroupObjects(newGroup, existingGroup.objects, ignoreDeleted);
+            }
+        }
+    });
+    
+    // Then, add groups that only exist in existing schema (if not ignoring deleted)
+    if (!ignoreDeleted) {
         Object.keys(existingSchema.groups).forEach(groupName => {
-            if (result.groups[groupName]) {
-                // Group exists in both schemas - merge fields and objects
-                const existingGroup = existingSchema.groups[groupName];
-                const newGroup = result.groups[groupName];
-                
-                // Merge existing fields
-                if (existingGroup.fields) {
-                    Object.keys(existingGroup.fields).forEach(fieldName => {
-                        if (newGroup.fields[fieldName]) {
-                            // Field exists in both - merge configurations selectively
-                            newGroup.fields[fieldName] = mergeFieldConfig(
-                                newGroup.fields[fieldName],
-                                existingGroup.fields[fieldName]
-                            );
-                        } else {
-                            // Field only exists in existing schema - add it completely
-                            newGroup.fields[fieldName] = existingGroup.fields[fieldName];
-                        }
-                    });
-                }
-                
-                // Merge existing objects
-                if (existingGroup.objects) {
-                    if (!newGroup.objects) {
-                        newGroup.objects = {};
-                    }
-                    Object.keys(existingGroup.objects).forEach(objName => {
-                        if (newGroup.objects![objName]) {
-                            // Object exists in both - merge fields
-                            const existingObj = existingGroup.objects![objName];
-                            const newObj = newGroup.objects![objName];
-                            
-                            if (existingObj.fields) {
-                                Object.keys(existingObj.fields).forEach(fieldName => {
-                                    if (newObj.fields[fieldName]) {
-                                        // Field exists in both - merge configurations selectively
-                                        newObj.fields[fieldName] = mergeFieldConfig(
-                                            newObj.fields[fieldName],
-                                            existingObj.fields[fieldName]
-                                        );
-                                    } else {
-                                        // Field only exists in existing schema - add it completely
-                                        newObj.fields[fieldName] = existingObj.fields[fieldName];
-                                    }
-                                });
-                            }
-                        } else {
-                            // Object only exists in existing schema - add it completely
-                            newGroup.objects![objName] = existingGroup.objects![objName];
-                        }
-                    });
-                }
-            } else {
+            if (!result.groups[groupName]) {
                 // Group only exists in existing schema - add it completely
                 result.groups[groupName] = existingSchema.groups[groupName];
             }
