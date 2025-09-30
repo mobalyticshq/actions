@@ -4,7 +4,7 @@
   "scripts": {
     "build": "ncc build src/index.ts -o dist",
     "build:dry": "ncc build src/dry-run/index.ts -o dist/dry-run",
-    "build:schema-generator": "ncc build src/schema-generator/schema-generator.ts -o dist",
+    "build:schema-generator": "ncc build src/schema-generator/schema-generator.ts -o dist/schema-generator",
     "ext": "ncc build src/extension.ts -o dist/tests",
     "test": "jest",
     "test:watch": "jest --watch",

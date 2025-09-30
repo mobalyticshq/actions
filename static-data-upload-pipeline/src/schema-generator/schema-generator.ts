@@ -590,14 +590,83 @@ const writeJsonFile = (filePath: string, data: any): void => {
     }
 };
 
+// Version parsing and file finding utilities
+interface VersionInfo {
+    file: string;
+    version: string;
+    major: number;
+    minor: number;
+    patch: number;
+}
+
+const parseVersionFromFilename = (filename: string): VersionInfo | null => {
+    // Match patterns like: static_data_v0.0.2.json, static_data_v1.2.3.json
+    const versionMatch = filename.match(/static_data_v(\d+)\.(\d+)\.(\d+)\.json$/);
+    if (!versionMatch) {
+        return null;
+    }
+    
+    const major = parseInt(versionMatch[1], 10);
+    const minor = parseInt(versionMatch[2], 10);
+    const patch = parseInt(versionMatch[3], 10);
+    
+    return {
+        file: filename,
+        version: versionMatch[0].replace(/\.json$/, ''),
+        major,
+        minor,
+        patch
+    };
+};
+
+const findLatestStaticDataFile = (staticDataPath: string): string => {
+    if (!fs.existsSync(staticDataPath)) {
+        throw new Error(`Static data path does not exist: ${staticDataPath}`);
+    }
+    
+    if (!fs.statSync(staticDataPath).isDirectory()) {
+        throw new Error(`Static data path is not a directory: ${staticDataPath}`);
+    }
+    
+    const files = fs.readdirSync(staticDataPath);
+    const versionFiles: VersionInfo[] = [];
+    
+    // Find all files matching the version pattern
+    for (const file of files) {
+        const versionInfo = parseVersionFromFilename(file);
+        if (versionInfo) {
+            versionFiles.push(versionInfo);
+        }
+    }
+    
+    if (versionFiles.length === 0) {
+        throw new Error(`No versioned static data files found in: ${staticDataPath}`);
+    }
+    
+    // Sort by version (latest first)
+    versionFiles.sort((a, b) => {
+        if (a.major !== b.major) return b.major - a.major;
+        if (a.minor !== b.minor) return b.minor - a.minor;
+        return b.patch - a.patch;
+    });
+    
+    const latestFile = path.join(staticDataPath, versionFiles[0].file);
+    console.log(`Found latest static data file: ${versionFiles[0].file} (v${versionFiles[0].major}.${versionFiles[0].minor}.${versionFiles[0].patch})`);
+    
+    return latestFile;
+};
+
 // Main processing function
 const processSchemaGeneration = (
-    inputFilePath: string,
+    staticDataPath: string,
     outputFilePath?: string,
     existingSchemaPath?: string,
     refConfigPath?: string
 ): string => {
-    console.log(`Processing file: ${inputFilePath}`);
+    console.log(`Processing static data from path: ${staticDataPath}`);
+    
+    // Find the latest static data file
+    const inputFilePath = findLatestStaticDataFile(staticDataPath);
     
     // Read input data
     const jsonData = readJsonFile(inputFilePath);
@@ -639,29 +708,32 @@ const main = (): void => {
         console.log(`
 Schema Generator - TypeScript Version
 
-Usage: node schema-generator.js <input-file> [options]
+Usage: node schema-generator.js <static-data-path> [options]
 
 Arguments:
-  <input-file>              Path to the input JSON file
+  <static-data-path>        Path to the directory containing versioned static data files
+                            (e.g., static_data_v0.0.1.json, static_data_v0.0.2.json)
+                            The script will automatically find and use the latest version.
 
 Options:
-  --output, -o <file>       Output file path (default: input-file_schema.json)
+  --output, -o <file>       Output file path (default: static_data_latest_schema.json)
   --existing, -e <file>     Path to existing schema file to merge with
   --ref-config, -r <file>   Path to ref-config file
   --help, -h                Show this help message
 
 Examples:
-  node schema-generator.js data.json
-  node schema-generator.js data.json --output schema.json
-  node schema-generator.js data.json --existing existing.json --ref-config refs.json
+  node schema-generator.js ./data/static_data/
+  node schema-generator.js ./data/static_data/ --output schema.json
+  node schema-generator.js ./data/static_data/ --existing existing.json --ref-config refs.json
+  node schema-generator.js /full/path/to/static_data/
         `);
         process.exit(0);
     }
     
-    const inputFile = args[0];
+    const staticDataPath = args[0];
     
-    if (!fs.existsSync(inputFile)) {
-        console.error(`Error: Input file '${inputFile}' does not exist`);
+    if (!fs.existsSync(staticDataPath)) {
+        console.error(`Error: Static data path '${staticDataPath}' does not exist`);
         process.exit(1);
     }
     
@@ -710,13 +782,12 @@ Examples:
     
     // Set default output file if not specified
     if (!outputFile) {
-        const inputDir = path.dirname(inputFile);
-        const inputName = path.basename(inputFile, path.extname(inputFile));
-        outputFile = path.join(inputDir, `${inputName}_schema.json`);
+        const staticDataDir = path.dirname(staticDataPath);
+        outputFile = path.join(staticDataDir, 'static_data_latest_schema.json');
     }
     
     try {
-        const result = processSchemaGeneration(inputFile, outputFile, existingSchemaFile, refConfigFile);
+        const result = processSchemaGeneration(staticDataPath, outputFile, existingSchemaFile, refConfigFile);
         console.log('Schema generation completed successfully!');
         console.log(`Output written to: ${outputFile}`);
     } catch (error) {
@@ -733,11 +804,14 @@ export {
     processSchemaGeneration,
     readJsonFile,
     writeJsonFile,
+    findLatestStaticDataFile,
+    parseVersionFromFilename,
     Schema,
     FieldConfig,
     GroupConfig,
     ObjectConfig,
-    RefConfig
+    RefConfig,
+    VersionInfo
 };
 
 // Run CLI if this file is executed directly

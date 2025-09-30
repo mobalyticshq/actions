@@ -39,18 +39,18 @@ npx tsc src/schema-generator/schema-generator.ts --outDir dist --target es2020 -
 ### Basic Syntax
 
 ```bash
-node dist/schema-generator.js <input-file> [options]
+node dist/schema-generator.js <static-data-path> [options]
 ```
 
 ### Arguments
 
-- `<input-file>` - **Required**. Path to the input JSON file containing static data
+- `<static-data-path>` - **Required**. Path to the directory containing versioned static data files (e.g., `static_data_v0.0.1.json`, `static_data_v0.0.2.json`). The script will automatically find and use the latest version.
 
 ### Options
 
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
-| `--output` | `-o` | Output file path | `{input-file}_schema.json` |
+| `--output` | `-o` | Output file path | `static_data_latest_schema.json` |
 | `--existing` | `-e` | Path to existing schema file to merge with | None |
 | `--ref-config` | `-r` | Path to ref-config file for reference mappings | None |
 | `--help` | `-h` | Show help message | - |
@@ -59,20 +59,20 @@ node dist/schema-generator.js <input-file> [options]
 
 ### 1. Basic Schema Generation
 
-Generate a schema from a JSON file:
+Generate a schema from the latest version in a directory:
 
 ```bash
-node dist/schema-generator.js data/items.json
+node dist/schema-generator.js data/static_data/
 ```
 
-This creates `data/items_schema.json` with the generated schema.
+This automatically finds the latest versioned file (e.g., `static_data_v0.0.7.json`) and creates `static_data_latest_schema.json` with the generated schema.
 
 ### 2. Custom Output Path
 
 Specify a custom output file:
 
 ```bash
-node dist/schema-generator.js data/items.json --output schemas/items_schema.json
+node dist/schema-generator.js data/static_data/ --output schemas/latest_schema.json
 ```
 
 ### 3. Merge with Existing Schema
@@ -80,7 +80,7 @@ node dist/schema-generator.js data/items.json --output schemas/items_schema.json
 Merge new schema with an existing one to preserve manual configurations:
 
 ```bash
-node dist/schema-generator.js data/items.json --existing schemas/existing_schema.json
+node dist/schema-generator.js data/static_data/ --existing schemas/existing_schema.json
 ```
 
 ### 4. Apply Reference Configuration
@@ -88,7 +88,7 @@ node dist/schema-generator.js data/items.json --existing schemas/existing_schema
 Use a ref-config file to map reference relationships:
 
 ```bash
-node dist/schema-generator.js data/items.json --ref-config config/refs.json
+node dist/schema-generator.js data/static_data/ --ref-config config/refs.json
 ```
 
 ### 5. Full Configuration
@@ -96,17 +96,27 @@ node dist/schema-generator.js data/items.json --ref-config config/refs.json
 Combine all options for complete schema generation:
 
 ```bash
-node dist/schema-generator.js data/items.json \
-  --output schemas/items_schema.json \
+node dist/schema-generator.js data/static_data/ \
+  --output schemas/latest_schema.json \
   --existing schemas/base_schema.json \
   --ref-config config/refs.json
 ```
 
 ## File Paths
 
-### Input File
+### Static Data Directory
 
-The input file should be a valid JSON file containing your static data. The structure should be organized by groups:
+The static data directory should contain versioned JSON files following the naming pattern `static_data_v{major}.{minor}.{patch}.json`. The script will automatically find and use the latest version. Example files:
+
+```
+data/static_data/
+├── static_data_v0.0.1.json
+├── static_data_v0.0.2.json
+├── static_data_v0.0.7.json
+└── static_data_v1.0.0.json  ← Latest version (will be used)
+```
+
+Each JSON file should contain your static data organized by groups:
 
 ```json
 {
@@ -189,15 +199,15 @@ Reference configuration file format:
 
 ### Relative Paths
 
-All file paths can be relative to the current working directory:
+All directory paths can be relative to the current working directory:
 
 ```bash
 # From project root
-node dist/schema-generator.js src/data/items.json
+node dist/schema-generator.js src/data/static_data/
 
 # From any subdirectory
 cd src/data
-node ../../dist/schema-generator.js items.json
+node ../../dist/schema-generator.js static_data/
 ```
 
 ### Absolute Paths
@@ -205,24 +215,25 @@ node ../../dist/schema-generator.js items.json
 You can also use absolute paths:
 
 ```bash
-node dist/schema-generator.js /full/path/to/data/items.json
+node dist/schema-generator.js /full/path/to/static_data/
 ```
 
 ### Path Examples
 
 ```bash
 # Different directory structures
-node dist/schema-generator.js ./data/items.json
-node dist/schema-generator.js ../data/items.json
-node dist/schema-generator.js ../../data/items.json
-node dist/schema-generator.js /Users/username/project/data/items.json
+node dist/schema-generator.js ./data/static_data/
+node dist/schema-generator.js ../data/static_data/
+node dist/schema-generator.js ../../data/static_data/
+node dist/schema-generator.js /Users/username/project/data/static_data/
 ```
 
 ## Error Handling
 
 The tool provides clear error messages for common issues:
 
-- **File not found**: `Error: Input file 'path/to/file.json' does not exist`
+- **Directory not found**: `Error: Static data path 'path/to/directory' does not exist`
+- **No versioned files**: `Error: No versioned static data files found in: path/to/directory`
 - **Invalid JSON**: `Error reading file path/to/file.json: Unexpected token...`
 - **Missing required options**: `Error: --output requires a file path`
 - **Invalid schema format**: `Error: Existing schema must contain "groups" object`
@@ -255,7 +266,7 @@ jobs:
       - name: Generate Schema
         run: |
           node dist/schema-generator.js \
-            data/static_data.json \
+            data/static_data/ \
             --output schemas/generated_schema.json \
             --existing schemas/base_schema.json \
             --ref-config config/refs.json
@@ -274,7 +285,7 @@ For local development, you can create a simple npm script in `package.json`:
 ```json
 {
   "scripts": {
-    "generate-schema": "node dist/schema-generator.js data/items.json --output schemas/items_schema.json",
+    "generate-schema": "node dist/schema-generator.js data/static_data/ --output schemas/latest_schema.json",
     "build-schema": "npx tsc src/schema-generator/schema-generator.ts --outDir dist --target es2020 --module commonjs --esModuleInterop --allowSyntheticDefaultImports"
   }
 }
