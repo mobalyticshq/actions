@@ -1,0 +1,71 @@
+{
+  "namespace": "@@@ TO BE FILLED MANUALLY @@@",
+  "typePrefix": "@@@ TO BE FILLED MANUALLY @@@",
+  "groups": {
+    "characteristics": {
+      "fields": {
+        "deprecated": { "type": "Boolean" },
+        "description": { "type": "String" },
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String" },
+        "type": { "type": "String" }
+      }
+    },
+    "sets": {
+      "fields": {
+        "deprecated": { "type": "Boolean" },
+        "description": { "type": "String" },
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String" }
+      }
+    },
+    "weapons": {
+      "fields": {
+        "damage": { "type": "String", "array": true },
+        "deprecated": { "type": "Boolean" },
+        "id": { "type": "String", "filter": true, "required": true },
+        "info": { "type": "Object", "objName": "info" },
+        "level": { "type": "Object", "objName": "level" },
+        "recommendationsRef": { "type": "Ref", "array": true, "refTo": "@@@ TO BE FILLED MANUALLY @@@" },
+        "setRef": { "type": "Ref", "refTo": "sets" },
+        "stats": { "type": "Object", "array": true, "objName": "stats" }
+      },
+      "objects": {
+        "info": {
+          "fields": {
+            "category": { "type": "String" },
+            "rarity": { "type": "String" },
+            "tier": { "type": "String" }
+          }
+        },
+        "level": {
+          "fields": {
+            "info": { "type": "Object", "objName": "levelInfo" },
+            "name": { "type": "String" },
+            "value": { "type": "String" }
+          }
+        },
+        "levelInfo": {
+          "fields": {
+            "category": { "type": "String" }
+          }
+        },
+        "stats": {
+          "fields": {
+            "attrs": { "type": "Object", "array": true, "objName": "statsAttrs" },
+            "characteristicsRef": { "type": "Ref", "array": true, "refTo": "characteristics" },
+            "name": { "type": "String" },
+            "value": { "type": "String" }
+          }
+        },
+        "statsAttrs": {
+          "fields": {
+            "name": { "type": "String" },
+            "probability": { "type": "String" },
+            "value": { "type": "String" }
+          }
+        }
+      }
+    }
+  }
+}

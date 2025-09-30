@@ -1,0 +1,134 @@
+{
+  "weapons": [
+    {
+      "id": "weapon1",
+      "deprecated": false,
+      "damage": [
+        "Physical",
+        null,
+        "Fire"
+      ],
+      "stats": [
+        {
+          "name": "Base Damage",
+          "value": "50-100",
+          "characteristicsRef": [
+            "chars1",
+            null,
+            "chars2"
+          ],
+          "attrs": [
+            {
+              "name": "Critical Chance",
+              "value": "5%",
+              "probability": "10%"
+            },
+            null,
+            {
+              "name": "Damage Chance",
+              "value": "5%",
+              "probability": "10%"
+            }
+          ]
+        },
+        null,
+        {
+          "name": "Extra Damage",
+          "characteristicsRef": [
+            "chars1"
+          ],
+          "attrs": []
+        }
+      ],
+      "setRef": "set1",
+      "recommendationsRef": [
+        "weapon1",
+        "weapon2"
+      ],
+      "level": {
+        "name": "level 1",
+        "value": "11",
+        "info": {
+          "category": "category 1"
+        }
+      },
+      "info": {
+        "rarity": "rare",
+        "tier": "high",
+        "category": "melee"
+      }
+    },
+    {
+      "id": "weapon2",
+      "deprecated": false,
+      "damage": [],
+      "stats": [
+        {
+          "name": "Base Damage",
+          "value": "10-14",
+          "attrs": [
+            {
+              "name": "Critical Chance",
+              "value": "5%",
+              "probability": "10%"
+            }
+          ]
+        }
+      ],
+      "setRef": "set1",
+      "recommendationsRef": [
+        "weapon1"
+      ],
+      "level": {
+        "name": "level 4",
+        "value": "4",
+        "info": {
+          "category": "category 2"
+        }
+      },
+      "info": {
+        "rarity": "common",
+        "tier": "medium",
+        "category": "ranged"
+      }
+    },
+    {
+      "id": "weapon3",
+      "deprecated": false,
+      "setRef": "set2",
+      "info": {
+        "rarity": "legendary",
+        "tier": "max",
+        "category": "magic"
+      }
+    }
+  ],
+  "characteristics": [
+    {
+      "id": "chars1",
+      "deprecated": false,
+      "name": "Strength",
+      "description": "Increases physical damage.",
+      "type": "Attribute"
+    },
+    {
+      "id": "chars2",
+      "deprecated": false,
+      "name": "Dex",
+      "description": "Increases dex power.",
+      "type": "Another"
+    }
+  ],
+  "sets": [
+    {
+      "id": "set1",
+      "deprecated": false,
+      "name": "Warrior's Set",
+      "description": "A set for warriors that boosts physical damage."
+    },
+    {
+      "deprecated": false,
+      "name": "Some Set"
+    }
+  ]
+}
