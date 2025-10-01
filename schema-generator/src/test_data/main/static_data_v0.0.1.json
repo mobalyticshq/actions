@@ -2,7 +2,7 @@
   "weapons": [
     {
       "id": "weapon1",
-      "name2": "Weapon 1",
+      "secondName": "Weapon 1",
       "deprecated": false,
       "damage": [
         "Physical",
@@ -52,16 +52,11 @@
         "info": {
           "category": "category 1"
         }
-      },
-      "info": {
-        "rarity": "rare",
-        "tier": "high",
-        "category": "melee"
       }
     },
     {
       "id": "weapon2",
-      "name2": "Weapon 2",
+      "secondName": "Weapon 2",
       "deprecated": false,
       "damage": [],
       "stats": [
@@ -87,23 +82,13 @@
         "info": {
           "category": "category 2"
         }
-      },
-      "info": {
-        "rarity": "common",
-        "tier": "medium",
-        "category": "ranged"
       }
     },
     {
       "id": "weapon3",
-      "name2": "Weapon 3",
+      "secondName": "Weapon 3",
       "deprecated": false,
-      "setRef": "set2",
-      "info": {
-        "rarity": "legendary",
-        "tier": "max",
-        "category": "magic"
-      }
+      "setRef": "set2"
     }
   ],
   "characteristics": [

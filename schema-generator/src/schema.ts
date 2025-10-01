@@ -6,6 +6,7 @@ export interface FieldConfig {
     required?: boolean;
     objName?: string;
     refTo?: string;
+    refFilters?: string[];
 }
 
 export interface ObjectConfig {

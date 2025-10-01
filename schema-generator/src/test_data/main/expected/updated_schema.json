@@ -35,8 +35,8 @@
         "id": { "type": "String", "filter": true, "required": true },
         "info": { "type": "Object", "objName": "info" },
         "level": { "type": "Object", "objName": "level" },
-        "name2": { "type": "String", "filter": true, "required": true },
-        "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons" },
+        "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons", "refFilters": ["secondName"] },
+        "secondName": { "type": "String", "filter": true, "required": true },
         "setRef": { "type": "Ref", "refTo": "sets" },
         "stats": { "type": "Object", "array": true, "objName": "stats" },
         "unusedField": { "type": "String", "array": true }
@@ -45,8 +45,13 @@
         "info": {
           "fields": {
             "category": { "type": "String" },
+            "details": { "type": "Object", "objName": "infoDetails" }
+          }
+        },
+        "infoDetails": {
+          "fields": {
             "rarity": { "type": "String" },
-            "tier": { "type": "String" }
+            "unused": { "type": "Ref", "refTo": "unusedGroup" }
           }
         },
         "level": {
@@ -66,6 +71,7 @@
             "attrs": { "type": "Object", "array": true, "objName": "statsAttrs" },
             "characteristicsRef": { "type": "Ref", "array": true, "refTo": "characteristics" },
             "name": { "type": "String" },
+            "unused": { "type": "String", "array": true },
             "value": { "type": "String" }
           }
         },
@@ -74,6 +80,11 @@
             "name": { "type": "String" },
             "probability": { "type": "String" },
             "value": { "type": "String" }
+          }
+        },
+        "unusedObject": {
+          "fields": {
+            "some": { "type": "String" }
           }
         }
       }

@@ -13,12 +13,10 @@
     },
     "weapons": {
       "fields": {
-        "damage": { "type": "String", "array": true },
-        "deprecated": { "type": "Boolean"},
         "id": { "type": "String", "filter": true, "required": true },
         "info": { "type": "Object", "objName": "info" },
-        "name2": { "type": "String", "filter": true, "required": true },
-        "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons" },
+        "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons", "refFilters": ["secondName"] },
+        "secondName": { "type": "String", "filter": true, "required": true },
         "stats": { "type": "Object", "array": true, "objName": "stats" },
         "unusedField": { "type": "String", "array": true }
       },
@@ -26,8 +24,23 @@
         "info": {
           "fields": {
             "category": { "type": "String" },
+            "details": { "type": "Object", "objName": "infoDetails" }
+          }
+        },
+        "infoDetails": {
+          "fields": {
             "rarity": { "type": "String" },
-            "tier": { "type": "String" }
+            "unused": { "type": "Ref", "refTo": "unusedGroup" }
+          }
+        },
+        "stats": {
+          "fields": {
+            "unused": { "type": "String", "array": true }
+          }
+        },
+        "unusedObject": {
+          "fields": {
+            "some": { "type": "String" }
           }
         }
       }

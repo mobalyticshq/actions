@@ -17,6 +17,9 @@ const writeFieldConfigInline = (fieldConfig: FieldConfig): string => {
     if (fieldConfig.refTo) {
         parts.push(`"refTo": "${fieldConfig.refTo}"`);
     }
+    if (fieldConfig.refFilters) {
+        parts.push(`"refFilters": ${JSON.stringify(fieldConfig.refFilters)}`);
+    }
     return `{ ${parts.join(', ')} }`;
 };
 

@@ -1129,6 +1129,10 @@ const mergeFieldConfig = (newFieldConfig, existingFieldConfig) => {
             merged.refTo = existingFieldConfig.refTo;
         }
     }
+    // Override refFilters from existing if present
+    if (existingFieldConfig.refFilters) {
+        merged.refFilters = existingFieldConfig.refFilters;
+    }
     // Override filter from existing if it's true
     if (existingFieldConfig.filter === true) {
         merged.filter = true;
@@ -1327,6 +1331,9 @@ const writeFieldConfigInline = (fieldConfig) => {
     }
     if (fieldConfig.refTo) {
         parts.push(`"refTo": "${fieldConfig.refTo}"`);
+    }
+    if (fieldConfig.refFilters) {
+        parts.push(`"refFilters": ${JSON.stringify(fieldConfig.refFilters)}`);
     }
     return `{ ${parts.join(', ')} }`;
 };

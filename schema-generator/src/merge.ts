@@ -10,6 +10,11 @@ export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfi
             merged.refTo = existingFieldConfig.refTo;
         }
     }
+
+    // Override refFilters from existing if present
+    if (existingFieldConfig.refFilters) {
+        merged.refFilters = existingFieldConfig.refFilters;
+    }
     
     // Override filter from existing if it's true
     if (existingFieldConfig.filter === true) {
