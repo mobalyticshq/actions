@@ -47,7 +47,7 @@ describe('processSchemaGeneration', () => {
     // Arrange
     const staticDataPath = path.join(__dirname, 'test_data', "main");
     const existingSchemaPath = path.join(__dirname, 'test_data', "main", 'existing_schema.json');
-    const expectedSchemaPath = path.join(__dirname, 'test_data', "main", 'expected', 'pruned_schema.json');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', "main", 'expected', 'refreshed_schema.json');
     
     const config: SchemaGenerationConfig = {
       staticDataPath,

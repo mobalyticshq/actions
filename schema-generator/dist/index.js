@@ -628,7 +628,7 @@ const detectGroupFields = (builder, fieldName, value) => {
     if (fieldName in builder.fields) {
         return;
     }
-    // Add required and filter for mandatory fields
+    // Set required and filter for mandatory fields
     if (schema_1.REQUIRED_FIELD_NAMES.includes(fieldName)) {
         result.config.required = true;
         result.config.filter = true;
@@ -1104,8 +1104,10 @@ Examples:
         process.exit(1);
     }
 };
-// Execute CLI when file is run directly
-runCLI();
+// Execute CLI when file is run directly (not when imported as a module)
+if (require.main === require.cache[eval('__filename')]) {
+    runCLI();
+}
 
 
 /***/ }),

@@ -154,7 +154,7 @@ const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: 
         return;
     }
     
-    // Add required and filter for mandatory fields
+    // Set required and filter for mandatory fields
     if (REQUIRED_FIELD_NAMES.includes(fieldName)) {
         result.config.required = true;
         result.config.filter = true;

@@ -163,5 +163,7 @@ Examples:
     }
 };
 
-// Execute CLI when file is run directly
-runCLI();
+// Execute CLI when file is run directly (not when imported as a module)
+if (require.main === module) {
+    runCLI();
+}
