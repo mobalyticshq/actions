@@ -3,16 +3,17 @@ import { Entity, StaticData } from '../types';
 //TODO: checking changes in pipeline, remove comments and unused code later
 function mergeGroup(
   mergedData: StaticData,
-  newGroup: Array<Entity>,
-  oldGroup: Array<Entity>,
+  newDataGroup: Array<Entity>,
+  oldDataGroup: Array<Entity>,
   group: string,
   deprecateLostData: boolean,
 ) {
   mergedData[group] = [];
+  const alreadyMergedIds = new Set<string>();
 
   //keep old values
-  oldGroup.forEach(oldIt => {
-    const match = newGroup.find(newIt => newIt.id == oldIt.id);
+  oldDataGroup.forEach(oldIt => {
+    const match = newDataGroup.find(newIt => newIt.id == oldIt.id);
     if (!match) {
       //deprecated - entity was removed from new data
       if (deprecateLostData) {
@@ -21,6 +22,14 @@ function mergeGroup(
     } else {
       // Entity exists in new data - will be added with deprecated: false below
       mergedData[group].push({ ...oldIt, ...match });
+      alreadyMergedIds.add(oldIt.id);
+    }
+  });
+
+  //add new entities with deprecated: false
+  newDataGroup.forEach(newIt => {
+    if (!alreadyMergedIds.has(newIt.id)) {
+      mergedData[group].push({ ...newIt, deprecated: false });
     }
   });
 
