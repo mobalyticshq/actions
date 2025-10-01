@@ -1,0 +1,104 @@
+{
+  "namespace": "@@@ TO BE FILLED MANUALLY @@@",
+  "typePrefix": "@@@ TO BE FILLED MANUALLY @@@",
+  "groups": {
+    "weapons": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "meta": { "type": "Object", "objName": "meta" }
+      },
+      "objects": {
+        "meta": {
+          "fields": {
+            "creator": { "type": "Object", "objName": "metaCreator" },
+            "history": { "type": "Object", "array": true, "objName": "metaHistory" }
+          }
+        },
+        "metaCreator": {
+          "fields": {
+            "contacts": { "type": "Object", "array": true, "objName": "metaCreatorContacts" },
+            "name": { "type": "String" },
+            "teamRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" }
+          }
+        },
+        "metaCreatorContacts": {
+          "fields": {
+            "extra": { "type": "Object", "objName": "metaCreatorContactsExtra" },
+            "type": { "type": "String" },
+            "value": { "type": "String" }
+          }
+        },
+        "metaCreatorContactsExtra": {
+          "fields": {
+            "channel": { "type": "Object", "objName": "metaCreatorContactsExtraChannel" },
+            "verified": { "type": "Boolean" }
+          }
+        },
+        "metaCreatorContactsExtraChannel": {
+          "fields": {
+            "groupRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" },
+            "name": { "type": "String" },
+            "tags": { "type": "Object", "array": true, "objName": "metaCreatorContactsExtraChannelTags" }
+          }
+        },
+        "metaCreatorContactsExtraChannelTags": {
+          "fields": {
+            "k": { "type": "String" },
+            "v": { "type": "String" }
+          }
+        },
+        "metaHistory": {
+          "fields": {
+            "changes": { "type": "Object", "array": true, "objName": "metaHistoryChanges" },
+            "version": { "type": "String" }
+          }
+        },
+        "metaHistoryChanges": {
+          "fields": {
+            "details": { "type": "Object", "objName": "metaHistoryChangesDetails" },
+            "type": { "type": "String" }
+          }
+        },
+        "metaHistoryChangesDetails": {
+          "fields": {
+            "damage": { "type": "String" },
+            "deep": { "type": "Object", "objName": "metaHistoryChangesDetailsDeep" },
+            "subDetails": { "type": "Object", "array": true, "objName": "metaHistoryChangesDetailsSubDetails" }
+          }
+        },
+        "metaHistoryChangesDetailsDeep": {
+          "fields": {
+            "a": { "type": "Object", "objName": "metaHistoryChangesDetailsDeepA" }
+          }
+        },
+        "metaHistoryChangesDetailsDeepA": {
+          "fields": {
+            "b": { "type": "Object", "objName": "metaHistoryChangesDetailsDeepAB" }
+          }
+        },
+        "metaHistoryChangesDetailsDeepAB": {
+          "fields": {
+            "c": { "type": "String" },
+            "ownerRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" }
+          }
+        },
+        "metaHistoryChangesDetailsSubDetails": {
+          "fields": {
+            "meta": { "type": "Object", "objName": "metaHistoryChangesDetailsSubDetailsMeta" },
+            "note": { "type": "String" }
+          }
+        },
+        "metaHistoryChangesDetailsSubDetailsMeta": {
+          "fields": {
+            "by": { "type": "Object", "objName": "metaHistoryChangesDetailsSubDetailsMetaBy" }
+          }
+        },
+        "metaHistoryChangesDetailsSubDetailsMetaBy": {
+          "fields": {
+            "name": { "type": "String" }
+          }
+        }
+      }
+    }
+  }
+}

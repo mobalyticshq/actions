@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
@@ -919,8 +920,89 @@ const processSchemaGeneration = (config) => {
     return processedSchema;
 };
 exports.processSchemaGeneration = processSchemaGeneration;
-// CLI interface
-const main = () => {
+
+
+/***/ }),
+
+/***/ 730:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+/**
+ * Schema Generator - Main entry point
+ *
+ * This file serves as the main entry point and re-exports all functionality
+ * from the refactored modules for backward compatibility.
+ * It also provides CLI functionality when executed directly.
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = exports.generateSchemaFromData = exports.serializeToJson = exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = exports.applyRefConfig = exports.REF_FIELD_NAME_SUFFIX = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
+const fs = __importStar(__nccwpck_require__(896));
+const path = __importStar(__nccwpck_require__(928));
+// Re-export types and schema operations from schema.ts
+var schema_1 = __nccwpck_require__(60);
+Object.defineProperty(exports, "FIELD_TYPES", ({ enumerable: true, get: function () { return schema_1.FIELD_TYPES; } }));
+Object.defineProperty(exports, "REQUIRED_FIELD_NAMES", ({ enumerable: true, get: function () { return schema_1.REQUIRED_FIELD_NAMES; } }));
+Object.defineProperty(exports, "MANUAL_FILL_PLACEHOLDER", ({ enumerable: true, get: function () { return schema_1.MANUAL_FILL_PLACEHOLDER; } }));
+Object.defineProperty(exports, "REFERENCE_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REFERENCE_SUFFIX; } }));
+Object.defineProperty(exports, "REF_FIELD_NAME_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REF_FIELD_NAME_SUFFIX; } }));
+Object.defineProperty(exports, "applyRefConfig", ({ enumerable: true, get: function () { return schema_1.applyRefConfig; } }));
+// Re-export merge functions from merge.ts
+var merge_1 = __nccwpck_require__(107);
+Object.defineProperty(exports, "mergeFieldConfig", ({ enumerable: true, get: function () { return merge_1.mergeFieldConfig; } }));
+Object.defineProperty(exports, "mergeFields", ({ enumerable: true, get: function () { return merge_1.mergeFields; } }));
+Object.defineProperty(exports, "mergeGroupObjects", ({ enumerable: true, get: function () { return merge_1.mergeGroupObjects; } }));
+Object.defineProperty(exports, "mergeWithExistingSchema", ({ enumerable: true, get: function () { return merge_1.mergeWithExistingSchema; } }));
+// Re-export serialization functions from serialization.ts
+var serialization_1 = __nccwpck_require__(55);
+Object.defineProperty(exports, "serializeToJson", ({ enumerable: true, get: function () { return serialization_1.serializeToJson; } }));
+// Re-export schema building functions from build.ts
+var build_1 = __nccwpck_require__(323);
+Object.defineProperty(exports, "generateSchemaFromData", ({ enumerable: true, get: function () { return build_1.generateSchemaFromData; } }));
+// Re-export generator functions from generator.ts
+var generator_1 = __nccwpck_require__(950);
+Object.defineProperty(exports, "readJsonFile", ({ enumerable: true, get: function () { return generator_1.readJsonFile; } }));
+Object.defineProperty(exports, "writeJsonFile", ({ enumerable: true, get: function () { return generator_1.writeJsonFile; } }));
+Object.defineProperty(exports, "parseVersionFromFilename", ({ enumerable: true, get: function () { return generator_1.parseVersionFromFilename; } }));
+Object.defineProperty(exports, "findLatestStaticDataFile", ({ enumerable: true, get: function () { return generator_1.findLatestStaticDataFile; } }));
+Object.defineProperty(exports, "processSchemaGeneration", ({ enumerable: true, get: function () { return generator_1.processSchemaGeneration; } }));
+const generator_2 = __nccwpck_require__(950);
+// CLI functionality
+const runCLI = () => {
     const args = process.argv.slice(2);
     if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
         console.log(`
@@ -1013,7 +1095,7 @@ Examples:
             refConfigPath: refConfigFile,
             ignoreDeleted: ignoreDeleted
         };
-        const result = (0, exports.processSchemaGeneration)(config);
+        const result = (0, generator_2.processSchemaGeneration)(config);
         console.log('Schema generation completed successfully!');
         console.log(`Output written to: ${outputFile}`);
     }
@@ -1022,8 +1104,8 @@ Examples:
         process.exit(1);
     }
 };
-// Run CLI if this file is executed directly
-if (false) {}
+// Execute CLI when file is run directly
+runCLI();
 
 
 /***/ }),
@@ -1375,55 +1457,12 @@ module.exports = require("path");
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-var exports = __webpack_exports__;
-
-/**
- * Schema Generator - Main entry point
- *
- * This file serves as the main entry point and re-exports all functionality
- * from the refactored modules for backward compatibility.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = exports.generateSchemaFromData = exports.serializeToJson = exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = exports.applyRefConfig = exports.REF_FIELD_NAME_SUFFIX = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
-// Re-export types and schema operations from schema.ts
-var schema_1 = __nccwpck_require__(60);
-Object.defineProperty(exports, "FIELD_TYPES", ({ enumerable: true, get: function () { return schema_1.FIELD_TYPES; } }));
-Object.defineProperty(exports, "REQUIRED_FIELD_NAMES", ({ enumerable: true, get: function () { return schema_1.REQUIRED_FIELD_NAMES; } }));
-Object.defineProperty(exports, "MANUAL_FILL_PLACEHOLDER", ({ enumerable: true, get: function () { return schema_1.MANUAL_FILL_PLACEHOLDER; } }));
-Object.defineProperty(exports, "REFERENCE_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REFERENCE_SUFFIX; } }));
-Object.defineProperty(exports, "REF_FIELD_NAME_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REF_FIELD_NAME_SUFFIX; } }));
-Object.defineProperty(exports, "applyRefConfig", ({ enumerable: true, get: function () { return schema_1.applyRefConfig; } }));
-// Re-export merge functions from merge.ts
-var merge_1 = __nccwpck_require__(107);
-Object.defineProperty(exports, "mergeFieldConfig", ({ enumerable: true, get: function () { return merge_1.mergeFieldConfig; } }));
-Object.defineProperty(exports, "mergeFields", ({ enumerable: true, get: function () { return merge_1.mergeFields; } }));
-Object.defineProperty(exports, "mergeGroupObjects", ({ enumerable: true, get: function () { return merge_1.mergeGroupObjects; } }));
-Object.defineProperty(exports, "mergeWithExistingSchema", ({ enumerable: true, get: function () { return merge_1.mergeWithExistingSchema; } }));
-// Re-export serialization functions from serialization.ts
-var serialization_1 = __nccwpck_require__(55);
-Object.defineProperty(exports, "serializeToJson", ({ enumerable: true, get: function () { return serialization_1.serializeToJson; } }));
-// Re-export schema building functions from build.ts
-var build_1 = __nccwpck_require__(323);
-Object.defineProperty(exports, "generateSchemaFromData", ({ enumerable: true, get: function () { return build_1.generateSchemaFromData; } }));
-// Re-export generator functions from generator.ts
-var generator_1 = __nccwpck_require__(950);
-Object.defineProperty(exports, "readJsonFile", ({ enumerable: true, get: function () { return generator_1.readJsonFile; } }));
-Object.defineProperty(exports, "writeJsonFile", ({ enumerable: true, get: function () { return generator_1.writeJsonFile; } }));
-Object.defineProperty(exports, "parseVersionFromFilename", ({ enumerable: true, get: function () { return generator_1.parseVersionFromFilename; } }));
-Object.defineProperty(exports, "findLatestStaticDataFile", ({ enumerable: true, get: function () { return generator_1.findLatestStaticDataFile; } }));
-Object.defineProperty(exports, "processSchemaGeneration", ({ enumerable: true, get: function () { return generator_1.processSchemaGeneration; } }));
-// Run CLI if this file is executed directly
-if (require.main === require.cache[eval('__filename')]) {
-    // Import and run the CLI
-    __nccwpck_require__(950);
-}
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(730);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;
