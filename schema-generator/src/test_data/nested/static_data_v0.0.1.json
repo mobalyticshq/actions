@@ -1,0 +1,68 @@
+{
+  "weapons": [
+    {
+      "id": "weapon1",
+      "meta": {
+        "creator": {
+          "name": "dev1",
+          "teamRef": "team1",
+          "contacts": [
+            {
+              "type": "email",
+              "value": "dev1@example.com",
+              "extra": {
+                "verified": true,
+                "channel": {
+                  "name": "support",
+                  "groupRef": "group1",
+                  "tags": [
+                    {
+                      "k": "vip",
+                      "v": "yes"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "discord",
+              "value": "dev1#0001"
+            }
+          ]
+        },
+        "history": [
+          {
+            "version": "v1",
+            "changes": [
+              {
+                "type": "buff",
+                "details": {
+                  "damage": "10",
+                  "subDetails": [
+                    {
+                      "note": "n1",
+                      "meta": {
+                        "by": {
+                          "name": "qa1"
+                        }
+                      }
+                    }
+                  ],
+                  "deep": {
+                    "a": {
+                      "b": {
+                        "c": "x",
+                        "ownerRef": "owner1"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+

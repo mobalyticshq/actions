@@ -1,0 +1,49 @@
+{
+  "namespace": "someGame.staticData",
+  "typePrefix": "SomeGame",
+  "gqlTypesOverrides": {
+    "entityObject": "SomeGameEntityObject"
+  },
+  "groups": {
+    "unusedGroup": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "unusedField": { "type": "String" }
+      }
+    },
+    "weapons": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "info": { "type": "Object", "objName": "info" },
+        "recommendationsRef": { "type": "Ref", "array": true, "refTo": "weapons", "refFilters": ["secondName"] },
+        "secondName": { "type": "String", "filter": true, "required": true },
+        "stats": { "type": "Object", "array": true, "objName": "stats" },
+        "unusedField": { "type": "String", "array": true }
+      },
+      "objects": {
+        "info": {
+          "fields": {
+            "category": { "type": "String" },
+            "details": { "type": "Object", "objName": "infoDetails" }
+          }
+        },
+        "infoDetails": {
+          "fields": {
+            "rarity": { "type": "String" },
+            "unused": { "type": "Ref", "refTo": "unusedGroup" }
+          }
+        },
+        "stats": {
+          "fields": {
+            "unused": { "type": "String", "array": true }
+          }
+        },
+        "unusedObject": {
+          "fields": {
+            "some": { "type": "String" }
+          }
+        }
+      }
+    }
+  }
+}
