@@ -14,17 +14,18 @@ function mergeGroup(
   oldGroup.forEach(oldIt => {
     const match = newGroup.find(newIt => newIt.id == oldIt.id);
     if (!match) {
-      //deprecated
+      //deprecated - entity was removed from new data
       if (deprecateLostData) {
         mergedData[group].push({ ...oldIt, deprecated: true });
       } else mergedData[group].push(oldIt);
     } else {
+      // Entity exists in new data - will be added with deprecated: false below
     }
   });
 
-  //add new entities
+  //add new entities with deprecated: false
   newGroup.forEach(newIt => {
-    mergedData[group].push(newIt);
+    mergedData[group].push({ ...newIt, deprecated: false });
   });
 }
 
@@ -68,11 +69,11 @@ export function mergeStaticData(newData: StaticData, oldData: StaticData, deprec
       }
     }
 
-    //add new groups
+    //add new groups - all entities in new groups are not deprecated
     for (const group of Object.keys(newData)) {
       if (oldData[group] === undefined) {
         // mergeReport.newGroups.add(group);
-        mergedData[group] = newData[group];
+        mergedData[group] = newData[group].map(entity => ({ ...entity, deprecated: false }));
       }
     }
   } catch (error) {
