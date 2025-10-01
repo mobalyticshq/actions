@@ -20,13 +20,10 @@ function mergeGroup(
       } else mergedData[group].push(oldIt);
     } else {
       // Entity exists in new data - will be added with deprecated: false below
+      mergedData[group].push({ ...oldIt, ...match });
     }
   });
 
-  //add new entities with deprecated: false
-  newGroup.forEach(newIt => {
-    mergedData[group].push({ ...newIt, deprecated: false });
-  });
 }
 
 export function isValidDataForMerge(data: StaticData) {

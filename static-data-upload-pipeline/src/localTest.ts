@@ -10,8 +10,8 @@ import { validateStaticData } from './steps/validate-static-data/validate-static
 import { isValidReport } from './utils/is-valid-report.utils';
 
 async function run() {
-  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2';
-  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2/schema.json';
+  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/borderlands-4/dev/static_data';
+  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/borderlands-4/dev/static_data/schema.json';
 
   const pattern = /static_data_v\d+.\d+.\d+.json/;
 
@@ -65,7 +65,7 @@ async function run() {
     staticData,
     oldData,
     config,
-    'https://cdn.mobalytics.gg/assets/the-bazaar',
+    'https://cdn.mobalytics.gg/assets/borderlands-4',
     schemaPath,
   );
 
