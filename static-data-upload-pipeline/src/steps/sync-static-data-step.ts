@@ -35,7 +35,8 @@ export async function syncStaticDataStep(
   console.log(`✍ Write static data file ${logColors.green}${versions[versions.length - 1]}${logColors.reset}`);
   console.log(JSON.stringify(overridedData['legendaryHeroes']?.[0] || overridedData['characters']?.[0] || {}, null, 2));
 
-  writeFileSync(versions[versions.length - 1], JSON.stringify(overridedData), 'utf8');
+  const finalData = { ...overridedData };
+  writeFileSync(versions[versions.length - 1], JSON.stringify(finalData), 'utf8');
   
   // Читаем файл обратно и показываем что записалось
   const writtenData = JSON.parse(readFileSync(versions[versions.length - 1], 'utf8'));
