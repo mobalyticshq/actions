@@ -33,6 +33,8 @@ export async function syncStaticDataStep(
   replaceAssets(overridedData, tmpAssetPrefix, prodAssetPrefix);
 
   console.log(`✍ Write static data file ${logColors.green}${versions[versions.length - 1]}${logColors.reset}`);
+  console.log(JSON.stringify(overridedData['legendaryHeroes']?.[0] || overridedData['characters']?.[0] || {}, null, 2));
+
   writeFileSync(versions[versions.length - 1], JSON.stringify(overridedData), 'utf8');
 
   try {

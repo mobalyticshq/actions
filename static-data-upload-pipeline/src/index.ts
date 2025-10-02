@@ -124,7 +124,6 @@ async function runPipeline({
 
     // Merge static data files step
     let { staticData, oldData } = await mergeStaticDataStep(slackManager, versions);
-    console.log(staticData['heroes'])
     console.log('');
 
     // Override static data by spreadsheets step
@@ -154,7 +153,6 @@ async function runPipeline({
     }
 
     console.log('');
-    console.log(JSON.stringify(overridedData['heroes']?.[0] || overridedData['characters']?.[0] || {}, null, 2));
     if (errors == 0) {
       await syncStaticDataStep(
         slackManager,
