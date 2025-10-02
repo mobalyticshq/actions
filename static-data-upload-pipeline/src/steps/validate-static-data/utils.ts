@@ -130,7 +130,6 @@ function validateEntityAgainstSchema(
 
     // Validate field type
     if (!validateFieldType(fieldValue, fieldSchema.type, fieldSchema.array)) {
-      console.log(`entity ${JSON.stringify(entity)}`);
       entityReport.errors[ReportMessages.invalidFieldType].add(fieldPath);
       continue;
     }

@@ -21,7 +21,7 @@ function mergeGroup(
       } else mergedData[group].push(oldIt);
     } else {
       // Entity exists in new data - will be added with deprecated: false below
-      mergedData[group].push({ ...oldIt, ...match });
+      mergedData[group].push({ ...oldIt, ...match, deprecated: false });
       alreadyMergedIds.add(oldIt.id);
     }
   });
