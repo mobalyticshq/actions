@@ -1,5 +1,5 @@
 // Helper function to validate string format (letters and digits only)
-import { Schema, SchemaField, SchemaGroup, SchemaObject, ValidationError } from './types';
+import { ApiSchema, SchemaField, SchemaGroup, SchemaObject, ValidationError } from './types';
 import { readFileSync } from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
@@ -21,7 +21,7 @@ function isValidNamespace(str: string): boolean {
 }
 
 // Function to download reference schema from GCS
-export async function downloadReferenceSchema(schemaPath: string): Promise<Schema | null> {
+export async function downloadReferenceSchema(schemaPath: string): Promise<ApiSchema | null> {
   try {
     const bucketName = process.env.GCP_BUCKET_NAME;
     if (!bucketName) {
@@ -40,7 +40,7 @@ export async function downloadReferenceSchema(schemaPath: string): Promise<Schem
 
     // Read downloaded file
     const referenceSchemaContent = readFileSync('/tmp/reference_schema.json', 'utf8');
-    const referenceSchema = JSON.parse(referenceSchemaContent) as Schema;
+    const referenceSchema = JSON.parse(referenceSchemaContent) as ApiSchema;
 
     console.log(`✅ Reference schema downloaded successfully`);
     return referenceSchema;
@@ -51,7 +51,7 @@ export async function downloadReferenceSchema(schemaPath: string): Promise<Schem
 }
 
 // Function to validate namespace and typePrefix
-function validateNamespaceAndTypePrefix(newSchema: Schema, referenceSchema: Schema): ValidationError[] {
+function validateNamespaceAndTypePrefix(newSchema: ApiSchema, referenceSchema: ApiSchema): ValidationError[] {
   const errors: ValidationError[] = [];
 
   if (newSchema.namespace !== referenceSchema.namespace) {
@@ -74,7 +74,7 @@ function validateNamespaceAndTypePrefix(newSchema: Schema, referenceSchema: Sche
 }
 
 // Function to validate groups
-function validateGroups(newSchema: Schema, referenceSchema: Schema): ValidationError[] {
+function validateGroups(newSchema: ApiSchema, referenceSchema: ApiSchema): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Check that all groups from reference schema are present in new schema
@@ -188,7 +188,7 @@ function validateObjects(newGroup: SchemaGroup, referenceGroup: SchemaGroup, gro
 }
 
 // Function to validate schema structure and format rules
-export function validateSchemaStructure(schema: Schema): ValidationError[] {
+export function validateSchemaStructure(schema: ApiSchema): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // 1. Validate namespace and typePrefix format
@@ -249,7 +249,7 @@ export function validateSchemaStructure(schema: Schema): ValidationError[] {
 }
 
 // Function to validate group structure
-export function validateGroupStructure(group: SchemaGroup, groupName: string, schema: Schema): ValidationError[] {
+export function validateGroupStructure(group: SchemaGroup, groupName: string, schema: ApiSchema): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Check if group has at least one field (id)
@@ -313,7 +313,7 @@ export function validateFieldStructure(
   fieldName: string,
   groupName: string,
   group: SchemaGroup,
-  schema: Schema,
+  schema: ApiSchema,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -387,7 +387,7 @@ export function validateObjectsStructure(
   objects: Record<string, SchemaObject>,
   groupName: string,
   group: SchemaGroup,
-  schema: Schema,
+  schema: ApiSchema,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -429,7 +429,7 @@ export function validateObjectStructure(
   objectName: string,
   groupName: string,
   group: SchemaGroup,
-  schema: Schema,
+  schema: ApiSchema,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -480,7 +480,7 @@ export function validateObjectFieldStructure(
   objectName: string,
   groupName: string,
   group: SchemaGroup,
-  schema: Schema,
+  schema: ApiSchema,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -541,7 +541,7 @@ export function validateObjectFieldStructure(
 }
 
 // Main validation function
-export function validateSchemaCompatibility(newSchema: Schema, referenceSchema: Schema): ValidationError[] {
+export function validateSchemaCompatibility(newSchema: ApiSchema, referenceSchema: ApiSchema): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // 1. Validate namespace and typePrefix

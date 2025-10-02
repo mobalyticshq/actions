@@ -5,21 +5,22 @@ import { readdirSync } from 'fs';
 import path from 'path';
 import { isValidReport } from '../../utils/is-valid-report.utils';
 import { validate } from './utils';
+import { ApiSchema } from '../schema-validation/types';
 
-export async function validateStaticData(
+export async function validateStaticDataStep(
   slackManager: SlackMessageManager,
   overridedData: StaticData,
   oldData: StaticData,
   config: StaticDataConfig,
   testsDir: string,
   tmpAssetPrefix: string,
-  schemaPath?: string,
+  apiSchema: ApiSchema | null,
 ) {
   logger.group('🔍 Validate final static data ');
   await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true, true);
 
   const reports = new Array<ValidationReport>();
-  const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix, schemaPath);
+  const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix, apiSchema);
   reports.push(commonReport);
   reports.push(...(await runValidationExtensions(testsDir, overridedData, oldData)));
 

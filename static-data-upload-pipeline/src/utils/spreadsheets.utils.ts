@@ -3,6 +3,7 @@ import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
 import { isImage, stringify, tryParse } from './common.utils';
+import { ApiSchema } from '../steps/schema-validation/types';
 
 const sheets = google.sheets('v4');
 
@@ -208,11 +209,13 @@ function getRange(enities: Array<{ [key: string]: any }>) {
   return { rows: enities.length + 1, columns: headerSet.size };
 }
 
-function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Array<Entity>) {
+function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Array<Entity>, apiSchema: ApiSchema | null, groupName: string) {
   const knownFields = new Set<string>();
   knownData?.forEach(ent => {
     for (const prop of Object.keys(ent)) {
-      knownFields.add(prop);
+      if (prop !== 'deprecated') {
+        knownFields.add(prop);
+      }
     }
   });
   // const idColumnIdx =rows&&rows.length>0? rows[0].findIndex(val=>val==='id'):-1;
@@ -223,7 +226,9 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
   const newFields = new Set<string>();
   mergedData.forEach(ent => {
     for (const prop of Object.keys(ent)) {
-      if (!knownFields.has(prop)) newFields.add(prop);
+      if (prop !== 'deprecated' && !knownFields.has(prop)) {
+        newFields.add(prop);
+      }
     }
   });
   header.push(...Array.from(newFields));
@@ -232,26 +237,63 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
   //add header
   resultRows.push(header);
 
+  // Helper function to get default value for missing field based on schema
+  const getDefaultValueForField = (fieldName: string): string => {
+    if (!apiSchema || !apiSchema.groups[groupName] || !apiSchema.groups[groupName].fields[fieldName]) {
+      return '';
+    }
+    
+    const field = apiSchema.groups[groupName].fields[fieldName];
+    
+    if (field.array) {
+      return '[]';
+    }
+    
+    if (field.type === 'Object') {
+      return 'null';
+    }
+
+    if (field.type === 'Boolean') {
+      return 'false';
+    }
+    
+    return '';
+  };
+
   knownData?.forEach(ent => {
+    if (ent.deprecated === true) {
+      return;
+    }
     const newRow = [];
     for (let i = 0; i < header.length; i++) {
+      const fieldName = header[i];
       const known = mergedData?.find(obj => obj.id == ent.id);
       // const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
-      if (known && known[header[i]]) {
-        newRow.push(stringify(known[header[i]]));
-      } else if (known) newRow.push('');
+      if (known && known[fieldName]) {
+        newRow.push(stringify(known[fieldName]));
+      } else if (known) {
+        newRow.push(getDefaultValueForField(fieldName));
+      }
     }
     resultRows.push(newRow);
   });
 
   mergedData?.forEach(ent => {
+    // Skip deprecated entities
+    if (ent.deprecated === true) {
+      return;
+    }
+    
     const newRow = [];
     for (let i = 0; i < header.length; i++) {
+      const fieldName = header[i];
       const known = knownData?.find(obj => obj.id == ent.id);
       const newEntity = mergedData?.find(obj => obj.id == ent.id);
-      if (!known && newEntity && newEntity[header[i]]) {
-        newRow.push(stringify(newEntity[header[i]]));
-      } else if (!known && newEntity) newRow.push('');
+      if (!known && newEntity && newEntity[fieldName]) {
+        newRow.push(stringify(newEntity[fieldName]));
+      } else if (!known && newEntity) {
+        newRow.push(getDefaultValueForField(fieldName));
+      }
     }
     resultRows.push(newRow);
   });
@@ -506,6 +548,7 @@ export async function updateSpreadsheets(
   mergedData: StaticData,
   jsonData: StaticData,
   oldSpreadsheetsData: { [key: string]: Array<Array<string>> },
+  apiSchema: ApiSchema | null,
 ) {
   if (process.env.GOOGLE_CLIENT_EMAIL) {
     console.log(`## Update spreadsheets ${spreadsheetId}`);
@@ -525,12 +568,21 @@ export async function updateSpreadsheets(
     console.log(`## Append data`);
     //fill spreadsheets with merged data
     for (const group of Object.keys(mergedData)) {
+      // Check if all entities in the group are deprecated
+      const allDeprecated = mergedData[group].length > 0 && mergedData[group].every(entity => entity.deprecated === true);
+      
+      if (allDeprecated) {
+        console.log(`## Group ${group} has all entities deprecated, will delete sheet`);
+        // Don't add this group to newSpreadsheetData, which will cause clearSheets to delete it
+        continue;
+      }
+
       //add new sheet if needed
       if (!oldSpreadsheetsData[group]) {
         await addSheet(spreadsheetId, auth, group);
       }
 
-      newSpreadsheetData[group] = entitiesToRawData(jsonData[group], mergedData[group]);
+      newSpreadsheetData[group] = entitiesToRawData(jsonData[group], mergedData[group], apiSchema, group);
 
       for (let i = 0; i < newSpreadsheetData[group].length; ++i)
         for (let j = 0; j < newSpreadsheetData[group][i].length; ++j)

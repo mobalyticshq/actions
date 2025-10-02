@@ -1,9 +1,9 @@
-import { Schema } from './types';
+import { ApiSchema } from './types';
 import { validateSchemaStructure } from './utils';
 
 describe('Schema Validation Integration Tests', () => {
   it('should validate a complete valid schema', () => {
-    const validSchema: Schema = {
+    const validSchema: ApiSchema = {
       namespace: 'poeStaticData',
       typePrefix: 'Poe',
       groups: {
@@ -30,7 +30,7 @@ describe('Schema Validation Integration Tests', () => {
   });
 
   it('should detect invalid namespace with hyphens', () => {
-    const invalidSchema: Schema = {
+    const invalidSchema: ApiSchema = {
       namespace: 'poe-static-data',
       typePrefix: 'Poe',
       groups: {
@@ -48,7 +48,7 @@ describe('Schema Validation Integration Tests', () => {
   });
 
   it('should detect invalid namespace starting with digit', () => {
-    const invalidSchema: Schema = {
+    const invalidSchema: ApiSchema = {
       namespace: '123poeData',
       typePrefix: 'Poe',
       groups: {
@@ -66,7 +66,7 @@ describe('Schema Validation Integration Tests', () => {
   });
 
   it('should accept valid namespace with underscores', () => {
-    const validSchema: Schema = {
+    const validSchema: ApiSchema = {
       namespace: '_poe_static_data',
       typePrefix: 'Poe',
       groups: {
@@ -83,7 +83,7 @@ describe('Schema Validation Integration Tests', () => {
   });
 
   it('should accept valid namespace with numbers', () => {
-    const validSchema: Schema = {
+    const validSchema: ApiSchema = {
       namespace: 'poeStaticData123',
       typePrefix: 'Poe',
       groups: {
@@ -100,7 +100,7 @@ describe('Schema Validation Integration Tests', () => {
   });
 
   it('should accept valid namespace with dots', () => {
-    const validSchema: Schema = {
+    const validSchema: ApiSchema = {
       namespace: 'poe.static.data',
       typePrefix: 'Poe',
       groups: {
@@ -117,7 +117,7 @@ describe('Schema Validation Integration Tests', () => {
   });
 
   it('should accept valid namespace with dots and underscores', () => {
-    const validSchema: Schema = {
+    const validSchema: ApiSchema = {
       namespace: 'poe.static_data.v2',
       typePrefix: 'Poe',
       groups: {

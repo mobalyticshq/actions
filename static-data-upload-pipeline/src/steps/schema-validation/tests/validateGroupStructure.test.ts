@@ -1,9 +1,9 @@
-import { Schema, SchemaGroup } from '../types';
+import { ApiSchema, SchemaGroup } from '../types';
 
 import { validateGroupStructure } from '../utils';
 
 describe('validateGroupStructure', () => {
-  const mockSchema: Schema = {
+  const mockSchema: ApiSchema = {
     namespace: 'poeStaticData',
     typePrefix: 'Poe',
     groups: {},

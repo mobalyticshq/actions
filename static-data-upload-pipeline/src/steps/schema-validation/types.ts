@@ -17,7 +17,7 @@ export interface SchemaGroup {
   objects?: Record<string, SchemaObject>;
 }
 
-export interface Schema {
+export interface ApiSchema {
   namespace: string;
   typePrefix: string;
   groups: Record<string, SchemaGroup>;

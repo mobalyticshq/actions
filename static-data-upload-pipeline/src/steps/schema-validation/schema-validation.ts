@@ -1,26 +1,19 @@
 import { SlackMessageManager } from '../../utils/slack-manager.utils';
 import { logger } from '../../utils/logger.utils';
-import { readFileSync } from 'fs';
-import { Schema } from './types';
+import { ApiSchema } from './types';
 import { downloadReferenceSchema, validateSchemaCompatibility, validateSchemaStructure } from './utils';
 
 export async function schemaValidationStep(
   slackManager: SlackMessageManager,
-  schemaPath: string,
+  apiSchema: ApiSchema,
   staticDataPath: string,
 ) {
   logger.group('📋 Validate schema.json');
   await slackManager.sendOrUpdate(`Validating schema.json...`, ':clipboard:', true);
 
   try {
-    // Read new schema
-    const schemaFilePath = schemaPath;
-    console.log(`ℹ️ Schema validation for: ${schemaFilePath}`);
-    const newSchemaContent = readFileSync(schemaFilePath, 'utf8');
-    const newSchema = JSON.parse(newSchemaContent) as Schema;
-
     // Always perform structure validation first
-    const structureErrors = validateSchemaStructure(newSchema);
+    const structureErrors = validateSchemaStructure(apiSchema);
 
     // Download reference schema from GCS
     const referenceSchema = await downloadReferenceSchema(staticDataPath);
@@ -73,7 +66,7 @@ export async function schemaValidationStep(
     }
 
     // Perform compatibility validation
-    const compatibilityErrors = validateSchemaCompatibility(newSchema, referenceSchema);
+    const compatibilityErrors = validateSchemaCompatibility(apiSchema, referenceSchema);
 
     // Combine all validation errors
     const validationErrors = [...structureErrors, ...compatibilityErrors];

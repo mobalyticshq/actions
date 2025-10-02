@@ -1,9 +1,8 @@
-import { Schema, SchemaObject } from '../schema-validation/types';
+import { ApiSchema, SchemaObject } from '../schema-validation/types';
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from '../../types';
-import { slugify } from '../../utils/common.utils';
+import { readSchema, slugify } from '../../utils/common.utils';
 import { logger } from '../../utils/logger.utils';
 import { processUrlsInChunks as processUrlsWithGCS } from '../../utils/assets-utils';
-import { existsSync, readFileSync } from 'fs';
 
 export enum ReportMessages {
   assetURLNotAvailable = 'Asset URL not available',
@@ -37,7 +36,6 @@ export enum ReportMessages {
   requiredFieldMissing = 'required field is missing',
   invalidFieldType = 'invalid field type',
   invalidRefTarget = 'invalid ref target',
-  schemaNotFound = 'schema file not found',
   groupNotInSchema = 'group not found in schema',
 }
 
@@ -50,22 +48,6 @@ function isCamelCase(str: string) {
 }
 
 const wait = (delay: number): Promise<void> => new Promise(resolve => setTimeout(resolve, delay));
-
-// Schema validation functions
-function readSchema(schemaPath: string): Schema | null {
-  try {
-    if (!existsSync(schemaPath)) {
-      console.log(`⚠️ Schema file not found at: ${schemaPath}`);
-      return null;
-    }
-
-    const schemaContent = readFileSync(schemaPath, 'utf8');
-    return JSON.parse(schemaContent) as Schema;
-  } catch (error) {
-    console.log(`❌ Error reading schema file: ${error}`);
-    return null;
-  }
-}
 
 function validateFieldType(value: any, fieldType: string, isArray: boolean = false): boolean {
   if (isArray) {
@@ -104,7 +86,7 @@ function validateRefTarget(refValue: any, refTo: string, data: StaticData): bool
 function validateEntityAgainstSchema(
   entity: Entity,
   groupName: string,
-  schema: Schema,
+  schema: ApiSchema,
   data: StaticData,
   entityReport: ValidationEntityReport,
 ) {
@@ -169,7 +151,7 @@ function validateObjectAgainstSchema(
   obj: any,
   objectSchema: SchemaObject,
   groupName: string,
-  schema: Schema,
+  schema: ApiSchema,
   data: StaticData,
   report: ValidationEntityReport,
   path: string,
@@ -404,7 +386,7 @@ export async function validate(
   oldData: StaticData,
   config: StaticDataConfig,
   tmpBucket: string,
-  schemaPath?: string,
+  apiSchema: ApiSchema | null,
 ) {
   const validationReport = {
     errors: {
@@ -415,15 +397,6 @@ export async function validate(
     byGroup: {} as { [key: string]: Array<ValidationEntityReport> },
   };
   const knownAssets = new Map<string, Array<{ report: ValidationEntityReport; path: string }>>();
-
-  // Read and validate schema if provided
-  let schema: Schema | null = null;
-  if (schemaPath) {
-    schema = readSchema(schemaPath);
-    if (!schema) {
-      validationReport.errors[ReportMessages.schemaNotFound] = new Set([schemaPath]);
-    }
-  }
 
   //groups are flat array Of entities
   for (const group of Object.keys(data)) {
@@ -566,8 +539,8 @@ export async function validate(
       await deepTests(ent, group, config, data, tmpBucket, knownAssets, entityReport);
 
       // Entity validation according to Schema
-      if (schema) {
-        validateEntityAgainstSchema(ent, group, schema, data, entityReport);
+      if (apiSchema) {
+        validateEntityAgainstSchema(ent, group, apiSchema, data, entityReport);
       }
 
       validationReport.byGroup[group].push(entityReport);

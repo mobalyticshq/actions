@@ -1,4 +1,4 @@
-import { Schema } from '../types';
+import { ApiSchema } from '../types';
 
 import { validateSchemaStructure } from '../utils';
 
@@ -9,7 +9,7 @@ describe('validateSchemaStructure', () => {
 
   describe('namespace validation', () => {
     it('should pass with valid namespace', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poe.staticData',
         typePrefix: 'Poe',
         groups: {
@@ -26,7 +26,7 @@ describe('validateSchemaStructure', () => {
     });
 
     it('should fail with invalid namespace containing special characters', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poe-static-data',
         typePrefix: 'Poe',
         groups: {
@@ -44,7 +44,7 @@ describe('validateSchemaStructure', () => {
     });
 
     it('should fail with empty namespace', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: '',
         typePrefix: 'Poe',
         groups: {
@@ -64,7 +64,7 @@ describe('validateSchemaStructure', () => {
 
   describe('typePrefix validation', () => {
     it('should pass with valid typePrefix', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poeStaticData',
         typePrefix: 'Poe',
         groups: {
@@ -81,7 +81,7 @@ describe('validateSchemaStructure', () => {
     });
 
     it('should fail with invalid typePrefix containing special characters', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poeStaticData',
         typePrefix: 'Poe-Type',
         groups: {
@@ -101,7 +101,7 @@ describe('validateSchemaStructure', () => {
 
   describe('groups validation', () => {
     it('should fail with empty groups', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poeStaticData',
         typePrefix: 'Poe',
         groups: {},
@@ -113,7 +113,7 @@ describe('validateSchemaStructure', () => {
     });
 
     it('should pass with unique group names', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poeStaticData',
         typePrefix: 'Poe',
         groups: {
@@ -135,7 +135,7 @@ describe('validateSchemaStructure', () => {
     });
 
     it('should fail with invalid group name containing special characters', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poeStaticData',
         typePrefix: 'Poe',
         groups: {
@@ -153,7 +153,7 @@ describe('validateSchemaStructure', () => {
     });
 
     it('should pass with valid groups', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poeStaticData',
         typePrefix: 'Poe',
         groups: {
@@ -177,7 +177,7 @@ describe('validateSchemaStructure', () => {
 
   describe('combined validation', () => {
     it('should return multiple errors for invalid schema', () => {
-      const schema: Schema = {
+      const schema: ApiSchema = {
         namespace: 'poe-static-data',
         typePrefix: 'Poe-Type',
         groups: {

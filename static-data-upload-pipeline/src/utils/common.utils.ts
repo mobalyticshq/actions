@@ -1,4 +1,6 @@
 import * as slugify_ from 'slugify';
+import { ApiSchema } from '../steps/schema-validation/types';
+import { existsSync, readFileSync } from 'fs';
 
 export const gameIconsMap: Record<string, string> = {
   'the-bazaar': ':bazaarr:',
@@ -111,4 +113,20 @@ export function tryParse(value: string) {
     return JSON.parse(value);
   } catch {}
   return value;
+}
+
+// Schema validation functions
+export function readSchema(schemaPath: string): ApiSchema | null {
+  try {
+    if (!existsSync(schemaPath)) {
+      console.log(`⚠️ Schema file not found at: ${schemaPath}`);
+      return null;
+    }
+
+    const schemaContent = readFileSync(schemaPath, 'utf8');
+    return JSON.parse(schemaContent) as ApiSchema;
+  } catch (error) {
+    console.log(`❌ Error reading schema file: ${error}`);
+    return null;
+  }
 }

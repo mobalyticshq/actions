@@ -3,29 +3,45 @@ import * as github from '@actions/github';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 import { StaticDataConfig } from '../types';
-import { gameIconsMap, gameNamesMap, initSlugify } from '../utils/common.utils';
+import { gameIconsMap, gameNamesMap, initSlugify, readSchema } from '../utils/common.utils';
 import { logColors, logger } from '../utils/logger.utils';
 import { SlackMessageManager } from '../utils/slack-manager.utils';
 import { mergeStaticDataStep } from '../steps/merge-static-data';
 import { overrideStaticData } from '../steps/override-static-data';
-import { validateStaticData } from '../steps/validate-static-data/validate-static-data';
+import { validateStaticDataStep } from '../steps/validate-static-data/validate-static-data-step';
 import { createReportStep } from '../steps/create-report';
 import { schemaValidationStep } from '../steps/schema-validation/schema-validation';
+import { ApiSchema } from '../steps/schema-validation/types';
 
+// Interface for runPipeline parameters
+interface RunPipelineArgs {
+  versions: Array<string>;
+  staticDataPath: string;
+  overrideSpreadsheetId: string;
+  reportSpreadsheetId: string;
+  tmpAssetFolder: string;
+  prodAssetFolder: string;
+  testsDir: string;
+  dryRun: boolean;
+  slackManager: SlackMessageManager;
+  apiSchema: ApiSchema | null;
+  skipSchemaValidation?: boolean;
+  rebuildApiFlag?: boolean;
+}
 initSlugify();
 
-async function runPipeline(
-  versions: Array<string>,
-  staticDataPath: string,
-  overrideSpreadsheetId: string,
-  reportSpreadsheetId: string,
-  tmpAssetFolder: string,
-  prodAssetFolder: string,
-  testsDir: string,
-  dryRun: Boolean,
-  slackManager: SlackMessageManager,
-  schemaPath: string,
-) {
+async function runPipeline({
+  versions,
+  staticDataPath,
+  overrideSpreadsheetId,
+  reportSpreadsheetId,
+  tmpAssetFolder,
+  prodAssetFolder,
+  testsDir,
+  dryRun,
+  slackManager,
+                             apiSchema
+}: RunPipelineArgs) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
   console.log(`ℹ️ Newest version is ${versions[versions.length - 1]}`);
@@ -61,8 +77,8 @@ async function runPipeline(
 
   try {
     // Schema validation step
-    if (schemaPath) {
-      const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
+    if (apiSchema) {
+      const schemaValidationResult = await schemaValidationStep(slackManager, apiSchema, staticDataPath);
       if (!schemaValidationResult.success) {
         throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
       }
@@ -104,13 +120,14 @@ async function runPipeline(
     console.log('');
 
     // Validate static data step
-    const { errors, warnings, infos, reports } = await validateStaticData(
+    const { errors, warnings, infos, reports } = await validateStaticDataStep(
       slackManager,
       overridedData,
       oldData,
       config,
       testsDir,
       tmpAssetPrefix,
+      apiSchema
     );
 
     // If errors or warnings or infos - create report
@@ -204,19 +221,30 @@ async function run() {
   if (sortedFiles.length > 0) {
     //newest version added
 
+    // Читаем schema.json файл из staticDataPath
+    const schemaPath = path.join(staticDataPath, 'schema.json');
+    let apiSchema: ApiSchema | null = null;
+
+    if (existsSync(schemaPath)) {
+      apiSchema = readSchema(schemaPath);
+      console.log(`ℹ️ Found schema.json at: ${schemaPath}`);
+    } else {
+      console.log(`⚠️ schema.json not found in ${staticDataPath}`);
+    }
+
     if (sortedFiles.length > 0) {
-      await runPipeline(
-        sortedFiles,
+      await runPipeline({
+        versions: sortedFiles,
         staticDataPath,
         overrideSpreadsheetId,
         reportSpreadsheetId,
         tmpAssetFolder,
         prodAssetFolder,
-        tests,
-        true,
+        testsDir: tests,
+        dryRun: true,
         slackManager,
-        staticDataPath,
-      );
+        apiSchema,
+      });
     }
   } else {
     console.log(`❌ There is no static data files in ${staticDataPath}`);

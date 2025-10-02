@@ -6,10 +6,11 @@ import { writeFileSync } from 'fs';
 import { updateSpreadsheets } from '../utils/spreadsheets.utils';
 import { promisify } from 'util';
 import { exec, spawn } from 'child_process';
+import { ApiSchema } from './schema-validation/types';
 
 const execAsync = promisify(exec);
 
-export async function syncStaticData(
+export async function syncStaticDataStep(
   slackManager: SlackMessageManager,
   versions: string[],
   overridedData: StaticData,
@@ -21,12 +22,9 @@ export async function syncStaticData(
   overrideSpreadsheetId: string,
   staticData: StaticData,
   gameConfig: string,
-  scheme: string,
+  apiSchemaPath: string,
+  apiSchema: ApiSchema | null,
 ): Promise<void> {
-  // if (dryRun) {
-  //   logger.group('✅ Static data is valid!');
-  //   return;
-  // }
   logger.group('✅ Static data is valid! Sync data 📦');
 
   console.log(
@@ -40,7 +38,7 @@ export async function syncStaticData(
   try {
     if (spreadsheetData) {
       console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);
-      await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData);
+      await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
       console.log(`✅ spreadsheet updated`);
       await slackManager.sendOrUpdate(
         `<https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}|Override spreadsheet  updated>`,
@@ -75,10 +73,10 @@ export async function syncStaticData(
     if (stderr) console.error('stderr:', stderr);
   }
   //upload scheme
-  if (scheme.length > 0) {
-    const dst = `gs://${process.env.GCP_BUCKET_NAME}/${scheme}`;
+  if (apiSchemaPath.length > 0) {
+    const dst = `gs://${process.env.GCP_BUCKET_NAME}/${apiSchemaPath}`;
     // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
-    const cmd = `gsutil cp ${scheme} ${dst}`;
+    const cmd = `gsutil cp ${apiSchemaPath} ${dst}`;
     console.log('static scheme sync cmd:\n', cmd);
     const { stdout, stderr } = await execAsync(cmd);
     console.log('stdout:', stdout);

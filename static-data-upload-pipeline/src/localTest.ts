@@ -3,15 +3,19 @@ import * as path from 'path';
 import { StaticData, StaticDataConfig, ValidationReport } from './types';
 import { logColors } from './utils/logger.utils';
 import { mergeStaticData } from './utils/merge.utils';
-import { mergeWithSpreadsheets } from './utils/spreadsheets.utils';
+import { mergeWithSpreadsheets, updateSpreadsheets } from './utils/spreadsheets.utils';
 
 import { validate } from './steps/validate-static-data/utils';
-import { validateStaticData } from './steps/validate-static-data/validate-static-data';
+import { validateStaticDataStep } from './steps/validate-static-data/validate-static-data-step';
 import { isValidReport } from './utils/is-valid-report.utils';
+import { readSchema } from './utils/common.utils';
 
 async function run() {
-  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/borderlands-4/dev/static_data';
-  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/borderlands-4/dev/static_data/schema.json';
+  const overrideSpreadsheetId = '1SQfWXTmhmdxXVF9cRbisk-ok7rtpbhT2T79aZ5zONmo';
+  const tmpBucket = 'https://cdn.mobalytics.gg/assets/the-bazaar';
+  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2';
+  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2/schema.json';
+  const apiSchema = readSchema(schemaPath);
 
   const pattern = /static_data_v\d+.\d+.\d+.json/;
 
@@ -57,16 +61,21 @@ async function run() {
     if (i == sortedFiles.length - 2) oldData = structuredClone(staticData);
   }
 
-  const { overridedData } = await mergeWithSpreadsheets('1I76ZyGFHA9JCr5lSMBK2zJaPpqZ1xb4F5M_wQxKAvSI', staticData);
+  const { overridedData, spreadsheetData } = await mergeWithSpreadsheets(overrideSpreadsheetId, staticData);
 
   const reports = new Array<ValidationReport>();
 
+  if(spreadsheetData) {
+    await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
+  }
+
+
   const commonReport = await validate(
-    staticData,
+    overridedData,
     oldData,
     config,
-    'https://cdn.mobalytics.gg/assets/borderlands-4',
-    schemaPath,
+    tmpBucket,
+    apiSchema,
   );
 
   reports.push(commonReport);

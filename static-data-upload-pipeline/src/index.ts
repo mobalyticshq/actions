@@ -2,36 +2,53 @@ import * as core from '@actions/core';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 import { StaticDataConfig } from './types';
-import { gameIconsMap, gameNamesMap, initSlugify } from './utils/common.utils';
+import { gameIconsMap, gameNamesMap, initSlugify, readSchema } from './utils/common.utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logColors, logger } from './utils/logger.utils';
 import { SlackMessageManager } from './utils/slack-manager.utils';
 import { mergeStaticDataStep } from './steps/merge-static-data';
 import { overrideStaticData } from './steps/override-static-data';
-import { validateStaticData } from './steps/validate-static-data/validate-static-data';
+import { validateStaticDataStep } from './steps/validate-static-data/validate-static-data-step';
 import { createReportStep } from './steps/create-report';
-import { syncStaticData } from './steps/sync-static-data';
+import { syncStaticDataStep } from './steps/sync-static-data-step';
 import { schemaValidationStep } from './steps/schema-validation/schema-validation';
+import { ApiSchema } from './steps/schema-validation/types';
+
+// Interface for runPipeline parameters
+interface RunPipelineArgs {
+  versions: Array<string>;
+  staticDataPath: string;
+  overrideSpreadsheetId: string;
+  reportSpreadsheetId: string;
+  tmpAssetFolder: string;
+  prodAssetFolder: string;
+  testsDir: string;
+  dryRun: boolean;
+  slackManager: SlackMessageManager;
+  apiSchema: ApiSchema | null;
+  skipSchemaValidation?: boolean;
+  rebuildApiFlag?: boolean;
+}
 
 const execAsync = promisify(exec);
 
 initSlugify();
 
-async function runPipeline(
-  versions: Array<string>,
-  staticDataPath: string,
-  overrideSpreadsheetId: string,
-  reportSpreadsheetId: string,
-  tmpAssetFolder: string,
-  prodAssetFolder: string,
-  testsDir: string,
-  dryRun: Boolean,
-  slackManager: SlackMessageManager,
-  schemaPath: string,
-  skipSchemaValidation: boolean = false,
-  rebuildApiFlag?: boolean,
-) {
+async function runPipeline({
+  versions,
+  staticDataPath,
+  overrideSpreadsheetId,
+  reportSpreadsheetId,
+  tmpAssetFolder,
+  prodAssetFolder,
+  testsDir,
+  dryRun,
+  slackManager,
+  apiSchema,
+  skipSchemaValidation = false,
+  rebuildApiFlag
+}: RunPipelineArgs) {
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
   console.log(`ℹ️ Newest version is ${versions[versions.length - 1]}`);
@@ -71,8 +88,8 @@ async function runPipeline(
     // If rebuildApiFlag is set, skip schema validation step for override schema in Bucket and rebuild API!!!!
     if (!skipSchemaValidation) {
       // Schema validation step
-      if (schemaPath) {
-        const schemaValidationResult = await schemaValidationStep(slackManager, schemaPath, staticDataPath);
+      if (apiSchema) {
+        const schemaValidationResult = await schemaValidationStep(slackManager, apiSchema, staticDataPath);
         if (!schemaValidationResult.success) {
           throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
         }
@@ -82,11 +99,11 @@ async function runPipeline(
 
     let configDir = path.dirname(versions[0]);
     let gameConfig = '';
-    let scheme = '';
+    let apiSchemaPath = '';
     let config = {} as StaticDataConfig;
 
     if (await existsSync(path.join(configDir, 'schema.json'))) {
-      scheme = path.join(configDir, 'schema.json');
+      apiSchemaPath = path.join(configDir, 'schema.json');
     }
 
     for (let i = 0; i < 3; ++i) {
@@ -118,14 +135,14 @@ async function runPipeline(
     console.log('');
 
     // Validate static data step
-    const { errors, warnings, infos, reports } = await validateStaticData(
+    const { errors, warnings, infos, reports } = await validateStaticDataStep(
       slackManager,
       overridedData,
       oldData,
       config,
       testsDir,
       tmpAssetPrefix,
-      schemaPath,
+      apiSchema,
     );
 
     // If errors or warnings or infos - create report
@@ -137,7 +154,7 @@ async function runPipeline(
 
     console.log('');
     if (errors == 0) {
-      await syncStaticData(
+      await syncStaticDataStep(
         slackManager,
         versions,
         overridedData,
@@ -149,7 +166,8 @@ async function runPipeline(
         overrideSpreadsheetId,
         staticData,
         gameConfig,
-        scheme,
+        apiSchemaPath,
+        apiSchema
       );
     }
   } catch (error) {
@@ -208,29 +226,29 @@ async function run() {
 
     // Читаем schema.json файл из staticDataPath
     const schemaPath = path.join(staticDataPath, 'schema.json');
-    let schemaFilePath = '';
+    let apiSchema: ApiSchema | null = null;
 
     if (existsSync(schemaPath)) {
-      schemaFilePath = schemaPath;
+      apiSchema = readSchema(schemaPath);
       console.log(`ℹ️ Found schema.json at: ${schemaPath}`);
     } else {
       console.log(`⚠️ schema.json not found in ${staticDataPath}`);
     }
 
     if (sortedFiles.length > 0) {
-      await runPipeline(
-        sortedFiles,
+      await runPipeline({
+        versions: sortedFiles,
         staticDataPath,
         overrideSpreadsheetId,
         reportSpreadsheetId,
         tmpAssetFolder,
         prodAssetFolder,
-        tests,
+        testsDir: tests,
         dryRun,
         slackManager,
-        schemaFilePath,
+        apiSchema,
         skipSchemaValidation,
-      );
+      });
     }
   } else {
     console.log(`❌ There is no static data files in ${staticDataPath}`);
