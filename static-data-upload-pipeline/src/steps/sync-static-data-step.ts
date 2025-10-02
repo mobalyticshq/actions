@@ -43,22 +43,6 @@ export async function syncStaticDataStep(
   console.log('📄 What was written to file:');
   console.log(JSON.stringify(writtenData['legendaryHeroes']?.[0] || writtenData['characters']?.[0] || {}, null, 2));
 
-  try {
-    if (spreadsheetData) {
-      console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);
-      await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
-      console.log(`✅ spreadsheet updated`);
-      await slackManager.sendOrUpdate(
-        `<https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}|Override spreadsheet  updated>`,
-        ':white_check_mark:',
-        true,
-      );
-    }
-  } catch (error) {
-    await slackManager.sendOrUpdate(`Unable to write override spreadsheet\n ${error}`, ':warning:', true);
-    console.log(`⚠️ Unable to write override spreadsheet: ${error}`);
-  }
-
   console.log('🔄 Sync static data file with bucket');
   //upload static data
   {
@@ -91,6 +75,22 @@ export async function syncStaticDataStep(
     if (stderr) console.error('stderr:', stderr);
   }
   console.log('✅ Statid databucket synced');
+
+  try {
+    if (spreadsheetData) {
+      console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);
+      await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
+      console.log(`✅ spreadsheet updated`);
+      await slackManager.sendOrUpdate(
+        `<https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}|Override spreadsheet  updated>`,
+        ':white_check_mark:',
+        true,
+      );
+    }
+  } catch (error) {
+    await slackManager.sendOrUpdate(`Unable to write override spreadsheet\n ${error}`, ':warning:', true);
+    console.log(`⚠️ Unable to write override spreadsheet: ${error}`);
+  }
 
   const cfClientID = process.env.CF_CLIENT_ID;
 
