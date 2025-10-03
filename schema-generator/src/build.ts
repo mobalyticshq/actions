@@ -24,11 +24,6 @@ interface ArrayTypeResult {
     valid: boolean;
 }
 
-interface FieldConfigResult {
-    config: FieldConfig;
-    valid: boolean;
-}
-
 interface ObjectConfigResult {
     config: ObjectConfig;
     valid: boolean;
@@ -51,17 +46,27 @@ const detectArrayType = (arr: any[]): ArrayTypeResult => {
     if (arr.length === 0) {
         return { type: FIELD_TYPES.STRING, valid: false };
     }
-    const firstItem = arr[0];
-    if (firstItem === null || firstItem === undefined) {
+    
+    // Find first non-null, non-undefined item
+    let firstValidItem = null;
+    for (const item of arr) {
+        if (item !== null && item !== undefined) {
+            firstValidItem = item;
+            break;
+        }
+    }
+    
+    if (firstValidItem === null) {
         return { type: FIELD_TYPES.STRING, valid: false };
     }
-    switch (typeof firstItem) {
+    
+    switch (typeof firstValidItem) {
         case 'boolean':
             return { type: FIELD_TYPES.BOOLEAN, valid: true };
         case 'string':
             return { type: FIELD_TYPES.STRING, valid: true };
         case 'object':
-            if (firstItem !== null && !Array.isArray(firstItem)) {
+            if (!Array.isArray(firstValidItem)) {
                 return { type: FIELD_TYPES.OBJECT, valid: true };
             }
             return { type: FIELD_TYPES.STRING, valid: false };
@@ -102,7 +107,7 @@ const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string, array: b
     return refGroup;
 };
 
-const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any): FieldConfigResult => {
+const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any): FieldConfig => {
     const fieldConfig: FieldConfig = { type: FIELD_TYPES.STRING };
    
     switch (typeof value) {
@@ -114,16 +119,19 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
             break;
         case 'object':
             if (value === null) {
-                return { config: fieldConfig, valid: false };
+                fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
+                return fieldConfig;
             }
             if (Array.isArray(value)) {
                 fieldConfig.array = true;
                 if (value.length === 0) {
-                    return { config: fieldConfig, valid: false };
+                    fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
+                    return fieldConfig;
                 }
                 const arrayTypeResult = detectArrayType(value);
                 if (!arrayTypeResult.valid) {
-                    return { config: fieldConfig, valid: false };
+                    fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
+                    return fieldConfig;
                 }
                 fieldConfig.type = arrayTypeResult.type;
                 if (arrayTypeResult.type === FIELD_TYPES.OBJECT) {
@@ -136,31 +144,40 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
             }
             break;
         default:
-            return { config: fieldConfig, valid: false };
+            fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
+            return fieldConfig;
     }
     if (fieldName.endsWith(REFERENCE_SUFFIX)) {
         fieldConfig.type = FIELD_TYPES.REF;
         fieldConfig.refTo = resolveRefTarget(builder, fieldName, fieldConfig.array || false);
     }
-    return { config: fieldConfig, valid: true };
+    return fieldConfig;
 };
 
 const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: any): void => {
-    const result = detectFieldConfig(builder, fieldName, value);
-    if (!result.valid) {
-        return;
-    }
-    if (fieldName in builder.fields) {
+    // Check if field already exists with a valid type (not placeholder)
+    const existingField = builder.fields[fieldName];
+    const hasValidType = existingField && existingField.type !== MANUAL_FILL_PLACEHOLDER;
+    
+    if (hasValidType) {
         return;
     }
     
-    // Set required and filter for mandatory fields
+    if (value === null || value === undefined) {
+        if (!existingField) {
+            builder.fields[fieldName] = {type: MANUAL_FILL_PLACEHOLDER};
+        }
+        return;
+    }
+    
+    const fieldConfig = detectFieldConfig(builder, fieldName, value);
+    
     if (REQUIRED_FIELD_NAMES.includes(fieldName)) {
-        result.config.required = true;
-        result.config.filter = true;
+        fieldConfig.required = true;
+        fieldConfig.filter = true;
     }
     
-    builder.fields[fieldName] = result.config;
+    builder.fields[fieldName] = fieldConfig;
 };
 
 const addDeprecatedField = (builder: GroupConfBuilder): void => {
@@ -175,16 +192,13 @@ const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string,
         if (value === null || value === undefined) {
             continue;
         }
-        const result = detectFieldConfig(builder, fieldName, value);
-        if (!result.valid) {
-            continue;
-        }
-        const detected = result.config;
-        if (detected.type === FIELD_TYPES.OBJECT) {
+        const fieldConfig = detectFieldConfig(builder, fieldName, value);
+        
+        if (fieldConfig.type === FIELD_TYPES.OBJECT) {
             const nestedObjectParentPath = buildObjectName(parentPath, objFieldName);
-            detected.objName = buildObjectName(nestedObjectParentPath, fieldName);
+            fieldConfig.objName = buildObjectName(nestedObjectParentPath, fieldName);
         }
-        objConfig.fields[fieldName] = detected;
+        objConfig.fields[fieldName] = fieldConfig;
     }
     return objConfig;
 };
@@ -209,9 +223,20 @@ const detectObjectConfig = (builder: GroupConfBuilder, fieldName: string, value:
         if (value.length === 0) {
             return { config: { fields: {} }, valid: false };
         }
-        if (typeof value[0] !== 'object' || value[0] === null || Array.isArray(value[0])) {
+        
+        // Find first non-null, non-undefined item to check type
+        let firstValidItem = null;
+        for (const item of value) {
+            if (item !== null && item !== undefined) {
+                firstValidItem = item;
+                break;
+            }
+        }
+        
+        if (!firstValidItem || typeof firstValidItem !== 'object' || Array.isArray(firstValidItem)) {
             return { config: { fields: {} }, valid: false };
         }
+        
         return {
             config: analyzeObjectStructureFromArray(builder, fieldName, value, parentPath),
             valid: true,
@@ -242,19 +267,26 @@ const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value:
         builder.objects[fullObjName] = result.config;
     }
     
+    // Recursively process nested objects within the current object's fields
     if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
             for (const item of value) {
                 if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
                     for (const [k, vv] of Object.entries(item)) {
-                        detectGroupObjects(builder, k, vv, fullObjName);
+                        // Skip null/undefined nested values
+                        if (vv !== null && vv !== undefined) {
+                            detectGroupObjects(builder, k, vv, fullObjName);
+                        }
                     }
                 }
             }
         }
         else {
             for (const [k, vv] of Object.entries(value)) {
-                detectGroupObjects(builder, k, vv, fullObjName);
+                // Skip null/undefined nested values
+                if (vv !== null && vv !== undefined) {
+                    detectGroupObjects(builder, k, vv, fullObjName);
+                }
             }
         }
     }
@@ -264,20 +296,22 @@ const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[]): boole
     if (groupEntries.length === 0) {
         return false;
     }
+    
     for (const gEntry of groupEntries) {
+        if (gEntry === null || gEntry === undefined || typeof gEntry !== 'object') {
+            continue;
+        }
+        
         if (Object.keys(gEntry).length === 0) {
             continue;
         }
 
-        addDeprecatedField(builder);
-
         for (const [fieldName, value] of Object.entries(gEntry)) {
-            if (value === null || value === undefined) {
-                continue;
-            }
             detectGroupFields(builder, fieldName, value);
             detectGroupObjects(builder, fieldName, value, '');
         }
+
+        addDeprecatedField(builder);
     }
     
     return true;

@@ -16,7 +16,17 @@
         "deprecated": { "type": "Boolean", "required": true },
         "description": { "type": "String" },
         "id": { "type": "String", "filter": true, "required": true },
-        "name": { "type": "String", "filter": true, "required": true }
+        "name": { "type": "String", "filter": true, "required": true },
+        "someObject": { "type": "Object", "objName": "someObject" },
+        "undefinedArrayField": { "type": "@@@ TO BE FILLED MANUALLY @@@", "array": true },
+        "undefinedField": { "type": "@@@ TO BE FILLED MANUALLY @@@" }
+      },
+      "objects": {
+        "someObject": {
+          "fields": {
+            "undefinedField": { "type": "@@@ TO BE FILLED MANUALLY @@@", "array": true }
+          }
+        }
       }
     },
     "weapons": {

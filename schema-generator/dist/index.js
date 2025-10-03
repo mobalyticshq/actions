@@ -532,17 +532,24 @@ const detectArrayType = (arr) => {
     if (arr.length === 0) {
         return { type: schema_1.FIELD_TYPES.STRING, valid: false };
     }
-    const firstItem = arr[0];
-    if (firstItem === null || firstItem === undefined) {
+    // Find first non-null, non-undefined item
+    let firstValidItem = null;
+    for (const item of arr) {
+        if (item !== null && item !== undefined) {
+            firstValidItem = item;
+            break;
+        }
+    }
+    if (firstValidItem === null) {
         return { type: schema_1.FIELD_TYPES.STRING, valid: false };
     }
-    switch (typeof firstItem) {
+    switch (typeof firstValidItem) {
         case 'boolean':
             return { type: schema_1.FIELD_TYPES.BOOLEAN, valid: true };
         case 'string':
             return { type: schema_1.FIELD_TYPES.STRING, valid: true };
         case 'object':
-            if (firstItem !== null && !Array.isArray(firstItem)) {
+            if (!Array.isArray(firstValidItem)) {
                 return { type: schema_1.FIELD_TYPES.OBJECT, valid: true };
             }
             return { type: schema_1.FIELD_TYPES.STRING, valid: false };
@@ -590,16 +597,19 @@ const detectFieldConfig = (builder, fieldName, value) => {
             break;
         case 'object':
             if (value === null) {
-                return { config: fieldConfig, valid: false };
+                fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
+                return fieldConfig;
             }
             if (Array.isArray(value)) {
                 fieldConfig.array = true;
                 if (value.length === 0) {
-                    return { config: fieldConfig, valid: false };
+                    fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
+                    return fieldConfig;
                 }
                 const arrayTypeResult = detectArrayType(value);
                 if (!arrayTypeResult.valid) {
-                    return { config: fieldConfig, valid: false };
+                    fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
+                    return fieldConfig;
                 }
                 fieldConfig.type = arrayTypeResult.type;
                 if (arrayTypeResult.type === schema_1.FIELD_TYPES.OBJECT) {
@@ -612,28 +622,34 @@ const detectFieldConfig = (builder, fieldName, value) => {
             }
             break;
         default:
-            return { config: fieldConfig, valid: false };
+            fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
+            return fieldConfig;
     }
     if (fieldName.endsWith(schema_1.REFERENCE_SUFFIX)) {
         fieldConfig.type = schema_1.FIELD_TYPES.REF;
         fieldConfig.refTo = resolveRefTarget(builder, fieldName, fieldConfig.array || false);
     }
-    return { config: fieldConfig, valid: true };
+    return fieldConfig;
 };
 const detectGroupFields = (builder, fieldName, value) => {
-    const result = detectFieldConfig(builder, fieldName, value);
-    if (!result.valid) {
+    // Check if field already exists with a valid type (not placeholder)
+    const existingField = builder.fields[fieldName];
+    const hasValidType = existingField && existingField.type !== schema_1.MANUAL_FILL_PLACEHOLDER;
+    if (hasValidType) {
         return;
     }
-    if (fieldName in builder.fields) {
+    if (value === null || value === undefined) {
+        if (!existingField) {
+            builder.fields[fieldName] = { type: schema_1.MANUAL_FILL_PLACEHOLDER };
+        }
         return;
     }
-    // Set required and filter for mandatory fields
+    const fieldConfig = detectFieldConfig(builder, fieldName, value);
     if (schema_1.REQUIRED_FIELD_NAMES.includes(fieldName)) {
-        result.config.required = true;
-        result.config.filter = true;
+        fieldConfig.required = true;
+        fieldConfig.filter = true;
     }
-    builder.fields[fieldName] = result.config;
+    builder.fields[fieldName] = fieldConfig;
 };
 const addDeprecatedField = (builder) => {
     builder.fields["deprecated"] = { type: schema_1.FIELD_TYPES.BOOLEAN, required: true };
@@ -646,16 +662,12 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
         if (value === null || value === undefined) {
             continue;
         }
-        const result = detectFieldConfig(builder, fieldName, value);
-        if (!result.valid) {
-            continue;
-        }
-        const detected = result.config;
-        if (detected.type === schema_1.FIELD_TYPES.OBJECT) {
+        const fieldConfig = detectFieldConfig(builder, fieldName, value);
+        if (fieldConfig.type === schema_1.FIELD_TYPES.OBJECT) {
             const nestedObjectParentPath = buildObjectName(parentPath, objFieldName);
-            detected.objName = buildObjectName(nestedObjectParentPath, fieldName);
+            fieldConfig.objName = buildObjectName(nestedObjectParentPath, fieldName);
         }
-        objConfig.fields[fieldName] = detected;
+        objConfig.fields[fieldName] = fieldConfig;
     }
     return objConfig;
 };
@@ -678,7 +690,15 @@ const detectObjectConfig = (builder, fieldName, value, parentPath) => {
         if (value.length === 0) {
             return { config: { fields: {} }, valid: false };
         }
-        if (typeof value[0] !== 'object' || value[0] === null || Array.isArray(value[0])) {
+        // Find first non-null, non-undefined item to check type
+        let firstValidItem = null;
+        for (const item of value) {
+            if (item !== null && item !== undefined) {
+                firstValidItem = item;
+                break;
+            }
+        }
+        if (!firstValidItem || typeof firstValidItem !== 'object' || Array.isArray(firstValidItem)) {
             return { config: { fields: {} }, valid: false };
         }
         return {
@@ -709,19 +729,26 @@ const detectGroupObjects = (builder, fieldName, value, parentPath) => {
     else {
         builder.objects[fullObjName] = result.config;
     }
+    // Recursively process nested objects within the current object's fields
     if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
             for (const item of value) {
                 if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
                     for (const [k, vv] of Object.entries(item)) {
-                        detectGroupObjects(builder, k, vv, fullObjName);
+                        // Skip null/undefined nested values
+                        if (vv !== null && vv !== undefined) {
+                            detectGroupObjects(builder, k, vv, fullObjName);
+                        }
                     }
                 }
             }
         }
         else {
             for (const [k, vv] of Object.entries(value)) {
-                detectGroupObjects(builder, k, vv, fullObjName);
+                // Skip null/undefined nested values
+                if (vv !== null && vv !== undefined) {
+                    detectGroupObjects(builder, k, vv, fullObjName);
+                }
             }
         }
     }
@@ -731,17 +758,17 @@ const buildGroupConfig = (builder, groupEntries) => {
         return false;
     }
     for (const gEntry of groupEntries) {
+        if (gEntry === null || gEntry === undefined || typeof gEntry !== 'object') {
+            continue;
+        }
         if (Object.keys(gEntry).length === 0) {
             continue;
         }
-        addDeprecatedField(builder);
         for (const [fieldName, value] of Object.entries(gEntry)) {
-            if (value === null || value === undefined) {
-                continue;
-            }
             detectGroupFields(builder, fieldName, value);
             detectGroupObjects(builder, fieldName, value, '');
         }
+        addDeprecatedField(builder);
     }
     return true;
 };
@@ -1125,8 +1152,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = void 0;
 const schema_1 = __nccwpck_require__(60);
 // Helper function to merge field configurations
-const mergeFieldConfig = (newFieldConfig, existingFieldConfig) => {
+const mergeFieldConfig = (newFieldConfig, existingFieldConfig, ignoreDeleted = false) => {
     const merged = { ...newFieldConfig };
+    // Override type from existing if new type is placeholder and existing has valid type
+    if (newFieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
+        if (existingFieldConfig.type && existingFieldConfig.type !== schema_1.MANUAL_FILL_PLACEHOLDER) {
+            merged.type = existingFieldConfig.type;
+        }
+    }
     // Override refTo from existing if present
     if (!newFieldConfig.refTo || newFieldConfig.refTo === schema_1.MANUAL_FILL_PLACEHOLDER) {
         if (existingFieldConfig.refTo && existingFieldConfig.refTo !== schema_1.MANUAL_FILL_PLACEHOLDER) {
@@ -1154,7 +1187,7 @@ const mergeFields = (newFields, existingFields, ignoreDeleted) => {
     Object.keys(newFields).forEach(fieldName => {
         if (existingFields[fieldName]) {
             // Field exists in both - merge configurations selectively
-            newFields[fieldName] = (0, exports.mergeFieldConfig)(newFields[fieldName], existingFields[fieldName]);
+            newFields[fieldName] = (0, exports.mergeFieldConfig)(newFields[fieldName], existingFields[fieldName], ignoreDeleted);
         }
     });
     // Then, add fields that only exist in existing schema (if not ignoring deleted)
