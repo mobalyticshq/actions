@@ -635,6 +635,9 @@ const detectGroupFields = (builder, fieldName, value) => {
     }
     builder.fields[fieldName] = result.config;
 };
+const addDeprecatedField = (builder) => {
+    builder.fields["deprecated"] = { type: schema_1.FIELD_TYPES.BOOLEAN, required: true };
+};
 const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
     const objConfig = {
         fields: {},
@@ -731,6 +734,7 @@ const buildGroupConfig = (builder, groupEntries) => {
         if (Object.keys(gEntry).length === 0) {
             continue;
         }
+        addDeprecatedField(builder);
         for (const [fieldName, value] of Object.entries(gEntry)) {
             if (value === null || value === undefined) {
                 continue;

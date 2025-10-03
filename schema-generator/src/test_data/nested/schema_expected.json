@@ -4,6 +4,7 @@
   "groups": {
     "weapons": {
       "fields": {
+        "deprecated": { "type": "Boolean", "required": true },
         "id": { "type": "String", "filter": true, "required": true },
         "meta": { "type": "Object", "objName": "meta" }
       },
