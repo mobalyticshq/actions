@@ -11,6 +11,20 @@
         "unusedField": { "type": "String" }
       }
     },
+    "sets": {
+      "fields": {
+        "undefinedArrayField": { "type": "String", "array": true },
+        "undefinedField": { "type": "String" },
+        "someObject": { "type": "Object", "objName": "someObject" }
+      },
+      "objects": {
+        "someObject": {
+          "fields": {
+            "undefinedField": { "type": "String", "array": true }
+          }
+        }
+      }
+    },
     "weapons": {
       "fields": {
         "id": { "type": "String", "filter": true, "required": true },

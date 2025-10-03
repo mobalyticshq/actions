@@ -1,8 +1,15 @@
 import { FieldConfig, ObjectConfig, GroupConfig, Schema, MANUAL_FILL_PLACEHOLDER } from './schema';
 
 // Helper function to merge field configurations
-export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfig: FieldConfig): FieldConfig => {
+export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfig: FieldConfig, ignoreDeleted: boolean = false): FieldConfig => {
     const merged = { ...newFieldConfig };
+    
+    // Override type from existing if new type is placeholder and existing has valid type
+    if (newFieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
+        if (existingFieldConfig.type && existingFieldConfig.type !== MANUAL_FILL_PLACEHOLDER) {
+            merged.type = existingFieldConfig.type;
+        }
+    }
     
     // Override refTo from existing if present
     if (!newFieldConfig.refTo || newFieldConfig.refTo === MANUAL_FILL_PLACEHOLDER) { 
@@ -41,7 +48,8 @@ export const mergeFields = (
             // Field exists in both - merge configurations selectively
             newFields[fieldName] = mergeFieldConfig(
                 newFields[fieldName],
-                existingFields[fieldName]
+                existingFields[fieldName],
+                ignoreDeleted
             );
         }
     });

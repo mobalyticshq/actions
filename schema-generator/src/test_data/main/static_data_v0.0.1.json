@@ -1,28 +1,60 @@
 {
   "weapons": [
+    null,
+    {
+      "id": "weapon3",
+      "secondName": "Weapon 3",
+      "deprecated": false,
+      "setRef": "set2"
+    },
+    {
+      "id": "weapon2",
+      "secondName": "Weapon 2",
+      "deprecated": false,
+      "damage": [],
+      "stats": [
+        null,
+        {
+          "attrs": [
+            {
+              "name": "Critical Chance"
+            }
+          ]
+        }
+      ],
+      "setRef": "set1",
+      "recommendationsRef": [
+        "weapon1"
+      ],
+      "level": {
+        "name": "level 4",
+        "info": {
+          "category": "category 2"
+        }
+      }
+    },
     {
       "id": "weapon1",
       "secondName": "Weapon 1",
       "deprecated": false,
       "damage": [
+        null,
         "Physical",
         null,
         "Fire"
       ],
       "stats": [
         {
-          "name": "Base Damage",
-          "value": "50-100",
           "characteristicsRef": [
+            null,
             "chars1",
             null,
             "chars2"
           ],
           "attrs": [
+            null,
             {
-              "name": "Critical Chance",
-              "value": "5%",
-              "probability": "10%"
+              "name": "Critical Chance"
             },
             null,
             {
@@ -35,6 +67,7 @@
         null,
         {
           "name": "Extra Damage",
+          "value": "50-100",
           "characteristicsRef": [
             "chars1"
           ],
@@ -43,6 +76,7 @@
       ],
       "setRef": "set1",
       "recommendationsRef": [
+        null,
         "weapon1",
         "weapon2"
       ],
@@ -53,51 +87,13 @@
           "category": "category 1"
         }
       }
-    },
-    {
-      "id": "weapon2",
-      "secondName": "Weapon 2",
-      "deprecated": false,
-      "damage": [],
-      "stats": [
-        {
-          "name": "Base Damage",
-          "value": "10-14",
-          "attrs": [
-            {
-              "name": "Critical Chance",
-              "value": "5%",
-              "probability": "10%"
-            }
-          ]
-        }
-      ],
-      "setRef": "set1",
-      "recommendationsRef": [
-        "weapon1"
-      ],
-      "level": {
-        "name": "level 4",
-        "value": "4",
-        "info": {
-          "category": "category 2"
-        }
-      }
-    },
-    {
-      "id": "weapon3",
-      "secondName": "Weapon 3",
-      "deprecated": false,
-      "setRef": "set2"
     }
   ],
   "characteristics": [
+    null,
     {
       "id": "chars1",
-      "deprecated": false,
-      "name": "Strength",
-      "description": "Increases physical damage.",
-      "type": "Attribute"
+      "deprecated": false
     },
     {
       "id": "chars2",
@@ -108,15 +104,21 @@
     }
   ],
   "sets": [
+    null,
     {
       "id": "set1",
-      "deprecated": false,
-      "name": "Warrior's Set",
-      "description": "A set for warriors that boosts physical damage."
+      "deprecated": false
     },
     {
+      "id": "set2",
       "deprecated": false,
-      "name": "Some Set"
+      "name": "Some Set",
+      "description": "A set for warriors that boosts physical damage.",
+      "undefinedField": null,
+      "undefinedArrayField": [],
+      "someObject": {
+        "undefinedField": []
+      }
     }
   ]
 }
