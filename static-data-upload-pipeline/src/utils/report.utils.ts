@@ -139,6 +139,52 @@ function prepareData(reports: ValidationReport[]) {
   // spreadsheetData[mainReportName] = new Array<Array<string>>();
   const coloredCells: { [key: string]: Array<ColoredCell> } = {};
 
+  // Collect all groupNotInSchema errors across all reports
+  const apiSchemaErrors = new Set<string>();
+  
+  for (const report of reports) {
+    // Check for groupNotInSchema errors in the main report errors
+    if (report.errors && report.errors[ReportMessages.groupNotInSchema]) {
+      report.errors[ReportMessages.groupNotInSchema].forEach(groupName => {
+        apiSchemaErrors.add(groupName);
+      });
+    }
+    
+    // Check for groupNotInSchema errors in entity reports
+    for (const group of Object.keys(report.byGroup)) {
+      for (const entReport of report.byGroup[group]) {
+        if (entReport.errors && entReport.errors[ReportMessages.groupNotInSchema]) {
+          entReport.errors[ReportMessages.groupNotInSchema].forEach(groupName => {
+            apiSchemaErrors.add(groupName);
+          });
+        }
+      }
+    }
+  }
+
+  // Create ApiSchema sheet if there are groupNotInSchema errors
+  if (apiSchemaErrors.size > 0) {
+    const apiSchemaSheetName = 'ApiSchema';
+    spreadsheetData[apiSchemaSheetName] = [
+      ['Group Name', 'Error Type', 'Description']
+    ];
+    
+    apiSchemaErrors.forEach(groupName => {
+      spreadsheetData[apiSchemaSheetName].push([
+        groupName,
+        'groupNotInSchema',
+        `Group '${groupName}' is not defined in the API schema`
+      ]);
+    });
+    
+    // Set color for ApiSchema sheet header
+    coloredCells[apiSchemaSheetName] = [
+      { row: 0, col: 0, r: 181 / 255, g: 49 / 255, b: 49 / 255 }, // Red for header
+      { row: 0, col: 1, r: 181 / 255, g: 49 / 255, b: 49 / 255 },
+      { row: 0, col: 2, r: 181 / 255, g: 49 / 255, b: 49 / 255 }
+    ];
+  }
+
   for (const report of reports) {
     //all report generators
     // if(report.errors && Object.keys(report.errors).length>0){
