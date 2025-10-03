@@ -163,6 +163,10 @@ const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: 
     builder.fields[fieldName] = result.config;
 };
 
+const addDeprecatedField = (builder: GroupConfBuilder): void => {
+    builder.fields["deprecated"] = { type: FIELD_TYPES.BOOLEAN, required: true };
+};
+
 const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string, obj: any, parentPath: string): ObjectConfig => {
     const objConfig: ObjectConfig = {
         fields: {},
@@ -264,6 +268,9 @@ const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[]): boole
         if (Object.keys(gEntry).length === 0) {
             continue;
         }
+
+        addDeprecatedField(builder);
+
         for (const [fieldName, value] of Object.entries(gEntry)) {
             if (value === null || value === undefined) {
                 continue;

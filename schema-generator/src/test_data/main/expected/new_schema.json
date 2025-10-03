@@ -4,7 +4,7 @@
   "groups": {
     "characteristics": {
       "fields": {
-        "deprecated": { "type": "Boolean" },
+        "deprecated": { "type": "Boolean", "required": true },
         "description": { "type": "String" },
         "id": { "type": "String", "filter": true, "required": true },
         "name": { "type": "String", "filter": true, "required": true },
@@ -13,7 +13,7 @@
     },
     "sets": {
       "fields": {
-        "deprecated": { "type": "Boolean" },
+        "deprecated": { "type": "Boolean", "required": true },
         "description": { "type": "String" },
         "id": { "type": "String", "filter": true, "required": true },
         "name": { "type": "String", "filter": true, "required": true }
@@ -22,7 +22,7 @@
     "weapons": {
       "fields": {
         "damage": { "type": "String", "array": true },
-        "deprecated": { "type": "Boolean" },
+        "deprecated": { "type": "Boolean", "required": true },
         "id": { "type": "String", "filter": true, "required": true },
         "level": { "type": "Object", "objName": "level" },
         "recommendationsRef": { "type": "Ref", "array": true, "refTo": "@@@ TO BE FILLED MANUALLY @@@" },
