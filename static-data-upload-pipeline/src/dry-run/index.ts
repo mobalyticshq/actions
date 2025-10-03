@@ -75,12 +75,21 @@ async function runPipeline({
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
 
+  let schemaValidationErrors: any[] = [];
+  
   try {
     // Schema validation step
     if (apiSchema) {
       const schemaValidationResult = await schemaValidationStep(slackManager, apiSchema, staticDataPath);
       if (!schemaValidationResult.success) {
-        throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
+        // If schema validation failed, create report with schema errors and stop execution
+        schemaValidationErrors = schemaValidationResult.errors || [];
+        console.log('');
+        
+        // Create report with schema validation errors
+        await createReportStep(slackManager, [], reportSpreadsheetId, 0, 0, 0, schemaValidationErrors);
+        
+        return
       }
       console.log('');
     }

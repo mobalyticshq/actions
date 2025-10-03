@@ -30,38 +30,20 @@ export async function schemaValidationStep(
 
         const errorCount = structureErrors.filter(e => e.type === 'error').length;
         const warningCount = structureErrors.filter(e => e.type === 'warning').length;
-
         console.log(`   Errors: ${errorCount}, Warnings: ${warningCount}`);
 
-        // Log all errors
-        for (const error of structureErrors) {
-          console.log(`   ${error.type.toUpperCase()}: ${error.message}`);
-          if (error.path) {
-            console.log(`     Path: ${error.path}`);
-          }
-        }
+        
 
-        // Send notification to Slack
-        const errorSummary = structureErrors
-          .slice(0, 5) // Show only first 5 errors
-          .map(e => `• ${e.message}`)
-          .join('\n');
+        
 
-        const moreErrors = structureErrors.length > 5 ? `\n... and ${structureErrors.length - 5} more errors` : '';
-
-        await slackManager.sendOrUpdate(
-          `Schema structure validation failed ❌\n\n${errorSummary}${moreErrors}`,
-          ':warning:',
-          true,
-        );
-
-        // If there are critical errors, stop execution
+        // If there are critical errors, return them instead of throwing
         if (errorCount > 0) {
-          throw new Error(`Schema structure validation failed with ${errorCount} errors`);
+          logger.endGroup();
+          return { success: false, errors: structureErrors };
         }
 
         logger.endGroup();
-        return { success: true };
+        return { success: true, errors: structureErrors };
       }
     }
 
@@ -84,7 +66,6 @@ export async function schemaValidationStep(
 
       const errorCount = validationErrors.filter(e => e.type === 'error').length;
       const warningCount = validationErrors.filter(e => e.type === 'warning').length;
-
       console.log(`   Errors: ${errorCount}, Warnings: ${warningCount}`);
 
       // Log all errors
@@ -95,24 +76,20 @@ export async function schemaValidationStep(
         }
       }
 
-      // Send notification to Slack
-      const errorSummary = validationErrors
-        .slice(0, 5) // Show only first 5 errors
-        .map(e => `• ${e.message}`)
-        .join('\n');
+      
+      
 
-      const moreErrors = validationErrors.length > 5 ? `\n... and ${validationErrors.length - 5} more errors` : '';
+      await slackManager.sendOrUpdate('Schema validation failed ❌\n', ':warning:', true);
 
-      await slackManager.sendOrUpdate(`Schema validation failed ❌\n\n${errorSummary}${moreErrors}`, ':warning:', true);
-
-      // If there are critical errors, stop execution
+      // If there are critical errors, return them instead of throwing
       if (errorCount > 0) {
-        throw new Error(`Schema validation failed with ${errorCount} errors`);
+        logger.endGroup();
+        return { success: false, errors: validationErrors };
       }
     }
 
     logger.endGroup();
-    return { success: true };
+    return { success: true, errors: validationErrors };
   } catch (error) {
     console.log(`❌ Schema validation error: ${error}`);
     await slackManager.sendOrUpdate(`Schema validation failed: ${error}`, ':warning:', true);

@@ -134,7 +134,7 @@ function appendRow(
   }
 }
 
-function prepareData(reports: ValidationReport[]) {
+function prepareData(reports: ValidationReport[], schemaValidationErrors: any[] = []) {
   const spreadsheetData: { [key: string]: Array<Array<string>> } = {};
   // spreadsheetData[mainReportName] = new Array<Array<string>>();
   const coloredCells: { [key: string]: Array<ColoredCell> } = {};
@@ -162,18 +162,28 @@ function prepareData(reports: ValidationReport[]) {
     }
   }
 
-  // Create ApiSchema sheet if there are groupNotInSchema errors
-  if (apiSchemaErrors.size > 0) {
+  // Create ApiSchema sheet if there are groupNotInSchema errors or schema validation errors
+  if (apiSchemaErrors.size > 0 || schemaValidationErrors.length > 0) {
     const apiSchemaSheetName = 'ApiSchema';
     spreadsheetData[apiSchemaSheetName] = [
-      ['Group Name', 'Error Type', 'Description']
+      ['Path/Group', 'Error Type', 'Description']
     ];
     
+    // Add groupNotInSchema errors
     apiSchemaErrors.forEach(groupName => {
       spreadsheetData[apiSchemaSheetName].push([
         groupName,
         'groupNotInSchema',
         `Group '${groupName}' is not defined in the API schema`
+      ]);
+    });
+    
+    // Add schema validation errors
+    schemaValidationErrors.forEach(error => {
+      spreadsheetData[apiSchemaSheetName].push([
+        error.path || 'schema',
+        error.type,
+        error.message
       ]);
     });
     
@@ -393,7 +403,7 @@ async function fillPages(
   }
 }
 
-export async function createReport(reports: ValidationReport[], spreadsheetId: string) {
+export async function createReport(reports: ValidationReport[], spreadsheetId: string, schemaValidationErrors: any[] = []) {
   try {
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -406,7 +416,7 @@ export async function createReport(reports: ValidationReport[], spreadsheetId: s
     // await prepareSheets(spreadsheetId,auth);
 
     console.log('## prepare data');
-    const { spreadsheetData, coloredCells } = prepareData(reports);
+    const { spreadsheetData, coloredCells } = prepareData(reports, schemaValidationErrors);
 
     console.log('## fill pages sheets');
     await fillPages(spreadsheetData, spreadsheetId, auth);

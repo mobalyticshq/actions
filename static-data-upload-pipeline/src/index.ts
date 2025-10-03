@@ -86,12 +86,20 @@ async function runPipeline({
 
   try {
     // If rebuildApiFlag is set, skip schema validation step for override schema in Bucket and rebuild API!!!!
+    let schemaValidationErrors: any[] = [];
     if (!skipSchemaValidation) {
       // Schema validation step
       if (apiSchema) {
         const schemaValidationResult = await schemaValidationStep(slackManager, apiSchema, staticDataPath);
         if (!schemaValidationResult.success) {
-          throw new Error(`Schema validation failed: ${schemaValidationResult.error}`);
+          // If schema validation failed, create report with schema errors and stop execution
+          schemaValidationErrors = schemaValidationResult.errors || [];
+          console.log('');
+          
+          // Create report with schema validation errors
+          await createReportStep(slackManager, [], reportSpreadsheetId, 0, 0, 0, schemaValidationErrors);
+          
+          return;
         }
         console.log('');
       }

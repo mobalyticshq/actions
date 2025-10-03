@@ -10,9 +10,10 @@ export async function createReportStep(
   errors: number,
   warnings: number,
   infos: number,
+  schemaValidationErrors: any[] = [],
 ) {
   logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
-  const reportDone = await createReport(reports, reportSpreadsheetId);
+  const reportDone = await createReport(reports, reportSpreadsheetId, schemaValidationErrors);
 
   let slackMsg = `Report: `;
   slackMsg += `❗ - errors:${errors}  `;
