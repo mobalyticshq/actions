@@ -31,17 +31,10 @@ export async function syncStaticDataStep(
     `✍ Update assets URLs! ${logColors.green}${tmpAssetPrefix}${logColors.reset} to ${logColors.green}${prodAssetPrefix}${logColors.reset}`,
   );
   replaceAssets(overridedData, tmpAssetPrefix, prodAssetPrefix);
-
   console.log(`✍ Write static data file ${logColors.green}${versions[versions.length - 1]}${logColors.reset}`);
-  console.log(JSON.stringify(overridedData['legendaryHeroes']?.[0] || overridedData['characters']?.[0] || {}, null, 2));
 
   const finalData = { ...overridedData };
   writeFileSync(versions[versions.length - 1], JSON.stringify(finalData), 'utf8');
-  
-  // Читаем файл обратно и показываем что записалось
-  const writtenData = JSON.parse(readFileSync(versions[versions.length - 1], 'utf8'));
-  console.log('📄 What was written to file:');
-  console.log(JSON.stringify(writtenData['legendaryHeroes']?.[0] || writtenData['characters']?.[0] || {}, null, 2));
 
   console.log('🔄 Sync static data file with bucket');
   //upload static data

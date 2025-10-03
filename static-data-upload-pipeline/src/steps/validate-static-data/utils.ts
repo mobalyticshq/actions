@@ -98,7 +98,7 @@ function validateEntityAgainstSchema(
 
   // Validate required fields
   for (const [fieldName, fieldSchema] of Object.entries(groupSchema.fields)) {
-    const fieldPath = fieldName;
+    const fieldPath = `${groupName}.${fieldName}`;
     const fieldValue = entity[fieldName];
 
     // Check required fields
@@ -157,7 +157,7 @@ function validateObjectAgainstSchema(
   path: string,
 ): void {
   for (const [fieldName, fieldSchema] of Object.entries(objectSchema.fields)) {
-    const fieldPath = `${path}.${fieldName}`;
+    const fieldPath = `${groupName}.${path}.${fieldName}`;
     const fieldValue = obj[fieldName];
 
     // Check required fields
