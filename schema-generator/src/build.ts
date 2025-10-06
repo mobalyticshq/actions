@@ -29,6 +29,14 @@ interface ObjectConfigResult {
     valid: boolean;
 }
 
+// Constants for excluded field names
+const EXCLUDED_FIELD_NAMES = ['gameId', 'gameID'] as const;
+
+// Helper function to check if a field should be excluded
+const isExcludedField = (fieldName: string): boolean => {
+    return EXCLUDED_FIELD_NAMES.includes(fieldName as any);
+};
+
 // Utility functions
 const capitalize = (s: string): string => {
     if (!s) return s;
@@ -155,6 +163,11 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
 };
 
 const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: any): void => {
+    // Exclude specified fields
+    if (isExcludedField(fieldName)) {
+        return;
+    }
+    
     // Check if field already exists with a valid type (not placeholder)
     const existingField = builder.fields[fieldName];
     const hasValidType = existingField && existingField.type !== MANUAL_FILL_PLACEHOLDER;
@@ -189,6 +202,11 @@ const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string,
         fields: {},
     };
     for (const [fieldName, value] of Object.entries(obj)) {
+        // Exclude specified fields
+        if (isExcludedField(fieldName)) {
+            continue;
+        }
+        
         if (value === null || value === undefined) {
             continue;
         }

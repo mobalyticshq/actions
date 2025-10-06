@@ -516,6 +516,12 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateSchemaFromData = void 0;
 const pluralize_1 = __importDefault(__nccwpck_require__(112));
 const schema_1 = __nccwpck_require__(60);
+// Constants for excluded field names
+const EXCLUDED_FIELD_NAMES = ['gameId', 'gameID'];
+// Helper function to check if a field should be excluded
+const isExcludedField = (fieldName) => {
+    return EXCLUDED_FIELD_NAMES.includes(fieldName);
+};
 // Utility functions
 const capitalize = (s) => {
     if (!s)
@@ -632,6 +638,10 @@ const detectFieldConfig = (builder, fieldName, value) => {
     return fieldConfig;
 };
 const detectGroupFields = (builder, fieldName, value) => {
+    // Exclude specified fields
+    if (isExcludedField(fieldName)) {
+        return;
+    }
     // Check if field already exists with a valid type (not placeholder)
     const existingField = builder.fields[fieldName];
     const hasValidType = existingField && existingField.type !== schema_1.MANUAL_FILL_PLACEHOLDER;
@@ -659,6 +669,10 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
         fields: {},
     };
     for (const [fieldName, value] of Object.entries(obj)) {
+        // Exclude specified fields
+        if (isExcludedField(fieldName)) {
+            continue;
+        }
         if (value === null || value === undefined) {
             continue;
         }

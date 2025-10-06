@@ -3,6 +3,7 @@
     null,
     {
       "id": "weapon3",
+      "gameId": "weapon3",
       "secondName": "Weapon 3",
       "deprecated": false,
       "setRef": "set2"
@@ -93,6 +94,7 @@
     null,
     {
       "id": "chars1",
+      "gameId": "chars1",
       "deprecated": false
     },
     {
@@ -107,6 +109,7 @@
     null,
     {
       "id": "set1",
+      "gameId": "set1",
       "deprecated": false
     },
     {
