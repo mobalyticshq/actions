@@ -26,7 +26,7 @@ interface RunPipelineArgs {
   testsDir: string;
   dryRun: boolean;
   slackManager: SlackMessageManager;
-  apiSchema: ApiSchema | null;
+  apiSchema: ApiSchema;
   skipSchemaValidation?: boolean;
   rebuildApiFlag?: boolean;
 }
@@ -229,38 +229,47 @@ async function run() {
     .sort()
     .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
 
-  if (sortedFiles.length > 0) {
-    //newest version added
+  // Читаем schema.json файл из staticDataPath
+  const schemaPath = path.join(staticDataPath, 'schema.json');
+  let apiSchema: ApiSchema | null = null;
 
-    // Читаем schema.json файл из staticDataPath
-    const schemaPath = path.join(staticDataPath, 'schema.json');
-    let apiSchema: ApiSchema | null = null;
-
-    if (existsSync(schemaPath)) {
-      apiSchema = readSchema(schemaPath);
-      console.log(`ℹ️ Found schema.json at: ${schemaPath}`);
-    } else {
-      console.log(`⚠️ schema.json not found in ${staticDataPath}`);
-    }
-
-    if (sortedFiles.length > 0) {
-      await runPipeline({
-        versions: sortedFiles,
-        staticDataPath,
-        overrideSpreadsheetId,
-        reportSpreadsheetId,
-        tmpAssetFolder,
-        prodAssetFolder,
-        testsDir: tests,
-        dryRun,
-        slackManager,
-        apiSchema,
-        skipSchemaValidation,
-      });
-    }
+  if (existsSync(schemaPath)) {
+    apiSchema = readSchema(schemaPath);
+    console.log(`ℹ️ Found schema.json at: ${schemaPath}`);
   } else {
-    console.log(`❌ There is no static data files in ${staticDataPath}`);
+    console.log(`⚠️ schema.json not found in ${staticDataPath}`);
   }
+
+  if (!apiSchema) {
+    await slackManager.sendOrUpdate(
+      `schema.json not found in ${staticDataPath}`,
+      ':x:',
+    );
+    return;
+  }
+
+  if (sortedFiles.length == 0) {
+    console.log(`❌ There is no static data files in ${staticDataPath}`);
+    await slackManager.sendOrUpdate(
+      `There is no static data files in ${staticDataPath}`,
+      ':x:',
+    );
+    return;
+  }
+
+  await runPipeline({
+    versions: sortedFiles,
+    staticDataPath,
+    overrideSpreadsheetId,
+    reportSpreadsheetId,
+    tmpAssetFolder,
+    prodAssetFolder,
+    testsDir: tests,
+    dryRun,
+    slackManager,
+    apiSchema,
+    skipSchemaValidation,
+  });
 }
 
 run();

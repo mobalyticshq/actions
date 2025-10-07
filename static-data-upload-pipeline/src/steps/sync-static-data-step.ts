@@ -23,7 +23,7 @@ export async function syncStaticDataStep(
   staticData: StaticData,
   gameConfig: string,
   apiSchemaPath: string,
-  apiSchema: ApiSchema | null,
+  apiSchema: ApiSchema,
 ): Promise<void> {
   logger.group('✅ Static data is valid! Sync data 📦');
 

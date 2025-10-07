@@ -14,7 +14,7 @@ export async function validateStaticDataStep(
   config: StaticDataConfig,
   testsDir: string,
   tmpAssetPrefix: string,
-  apiSchema: ApiSchema | null,
+  apiSchema: ApiSchema,
 ) {
   logger.group('🔍 Validate final static data ');
   await slackManager.sendOrUpdate(`Validating static data...`, ':mag:', true, true);

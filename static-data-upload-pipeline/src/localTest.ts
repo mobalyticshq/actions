@@ -9,6 +9,7 @@ import { validate } from './steps/validate-static-data/utils';
 import { validateStaticDataStep } from './steps/validate-static-data/validate-static-data-step';
 import { isValidReport } from './utils/is-valid-report.utils';
 import { readSchema } from './utils/common.utils';
+import { ApiSchema } from './steps/schema-validation/types';
 
 async function run() {
   const overrideSpreadsheetId = '1SQfWXTmhmdxXVF9cRbisk-ok7rtpbhT2T79aZ5zONmo';
@@ -65,9 +66,9 @@ async function run() {
 
   const reports = new Array<ValidationReport>();
 
-  if(spreadsheetData) {
-    await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
-  }
+  // if(spreadsheetData) {
+  //   await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
+  // }
 
 
   const commonReport = await validate(
@@ -75,7 +76,7 @@ async function run() {
     oldData,
     config,
     tmpBucket,
-    apiSchema,
+    apiSchema as ApiSchema,
   );
 
   reports.push(commonReport);

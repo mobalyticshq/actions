@@ -91,10 +91,6 @@ function validateEntityAgainstSchema(
   entityReport: ValidationEntityReport,
 ) {
   const groupSchema = schema.groups[groupName];
-  if (!groupSchema) {
-    entityReport.errors[ReportMessages.groupNotInSchema].add(groupName);
-    return;
-  }
 
   // Validate required fields
   for (const [fieldName, fieldSchema] of Object.entries(groupSchema.fields)) {
@@ -386,11 +382,12 @@ export async function validate(
   oldData: StaticData,
   config: StaticDataConfig,
   tmpBucket: string,
-  apiSchema: ApiSchema | null,
+  apiSchema: ApiSchema,
 ) {
   const validationReport = {
     errors: {
       unavailableURLs: new Set<string>(),
+      [ReportMessages.groupNotInSchema]: new Set<string>(),
     } as ValidationRecords,
     warnings: {} as ValidationRecords,
     infos: {} as ValidationRecords,
@@ -410,6 +407,14 @@ export async function validate(
     const knownIds = new Set();
     const knownSlugs = new Set();
     const knownGameIds = new Set();
+
+    const isAllEntitiesDeprecated = data[group].every(ent => ent.deprecated === true);
+
+    const groupInSchema = apiSchema.groups[group];
+    // Check if group exists in schema and skip validation if all entities are deprecated
+    if (!groupInSchema && !isAllEntitiesDeprecated) {
+      validationReport.errors[ReportMessages.groupNotInSchema].add(group);
+    }
 
     for (const ent of data[group]) {
       const entityReport = {
@@ -450,7 +455,6 @@ export async function validate(
           [ReportMessages.requiredFieldMissing]: new Set<string>(),
           [ReportMessages.invalidFieldType]: new Set<string>(),
           [ReportMessages.invalidRefTarget]: new Set<string>(),
-          [ReportMessages.groupNotInSchema]: new Set<string>(),
         },
       } as ValidationEntityReport;
       //entities has id
@@ -538,9 +542,14 @@ export async function validate(
       //rest tests
       await deepTests(ent, group, config, data, tmpBucket, knownAssets, entityReport);
 
-      // Entity validation according to Schema
-      if (apiSchema) {
-        validateEntityAgainstSchema(ent, group, apiSchema, data, entityReport);
+      // Validate entity against API schema if provided
+      if (apiSchema && groupInSchema) {
+
+        if (groupInSchema) {
+          // Validate entity against schema
+          validateEntityAgainstSchema(ent, group, apiSchema, data, entityReport);
+        }
+
       }
 
       validationReport.byGroup[group].push(entityReport);
