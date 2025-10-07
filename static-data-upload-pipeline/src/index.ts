@@ -26,7 +26,7 @@ interface RunPipelineArgs {
   testsDir: string;
   dryRun: boolean;
   slackManager: SlackMessageManager;
-  apiSchema: ApiSchema;
+  apiSchema: ApiSchema | null;
   skipSchemaValidation?: boolean;
   rebuildApiFlag?: boolean;
 }
@@ -49,6 +49,22 @@ async function runPipeline({
   skipSchemaValidation = false,
   rebuildApiFlag
 }: RunPipelineArgs) {
+  // Define environment from the path
+  const environment = staticDataPath.split('/')[1].toUpperCase();
+  // Define what game we are processing from the path
+  const gameSlug = staticDataPath.split('/')[0];
+  const gameName = gameNamesMap[gameSlug] || gameSlug;
+  const gameIcon = gameIconsMap[gameSlug] || '';
+
+  if (versions.length == 0) {
+    console.log(`❌ There is no static data files for ${gameName} ${gameIcon} ${environment} ${staticDataPath}`);
+    await slackManager.sendOrUpdate(
+      `There is no static data files for ${staticDataPath}`,
+      ':x:',
+    );
+    return;
+  }
+
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
 
   console.log(`ℹ️ Newest version is ${versions[versions.length - 1]}`);
@@ -60,8 +76,6 @@ async function runPipeline({
   const runId = process.env.GITHUB_RUN_ID;
 
   const actionsUrl = `https://github.com/${repo}/actions/runs/${runId}`;
-  const gameSlug = versions[versions.length - 1].split('/')[0];
-  const environment = versions[versions.length - 1].split('/')[1].toUpperCase();
   const version = versions[versions.length - 1].split('/').at(-1);
 
   // Reset Slack message manager for new pipeline run
@@ -69,16 +83,24 @@ async function runPipeline({
 
   if (!dryRun) {
     await slackManager.sendOrUpdate(
-      `RUN pipeline for ${version} ${gameNamesMap[gameSlug]} ${gameIconsMap[gameSlug]} ${environment}`,
+      `RUN pipeline for ${version} ${gameName} ${gameIcon} ${environment}`,
       ':rocket:',
     );
     await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
   } else {
     await slackManager.sendOrUpdate(
-      `DRY RUN pipeline for ${version} ${gameIconsMap[gameSlug]} ${environment}`,
+      `DRY RUN pipeline for ${version} ${gameName} ${gameIcon} ${environment}`,
       ':test_tube:',
     );
     await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
+  }
+
+  if (!apiSchema) {
+    await slackManager.sendOrUpdate(
+      `schema.json not found in ${staticDataPath}`,
+      ':x:',
+    );
+    return;
   }
 
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
@@ -238,23 +260,6 @@ async function run() {
     console.log(`ℹ️ Found schema.json at: ${schemaPath}`);
   } else {
     console.log(`⚠️ schema.json not found in ${staticDataPath}`);
-  }
-
-  if (!apiSchema) {
-    await slackManager.sendOrUpdate(
-      `schema.json not found in ${staticDataPath}`,
-      ':x:',
-    );
-    return;
-  }
-
-  if (sortedFiles.length == 0) {
-    console.log(`❌ There is no static data files in ${staticDataPath}`);
-    await slackManager.sendOrUpdate(
-      `There is no static data files in ${staticDataPath}`,
-      ':x:',
-    );
-    return;
   }
 
   await runPipeline({
