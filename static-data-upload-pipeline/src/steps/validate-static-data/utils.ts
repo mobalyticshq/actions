@@ -91,7 +91,6 @@ function validateEntityAgainstSchema(
   entityReport: ValidationEntityReport,
 ) {
   const groupSchema = schema.groups[groupName];
-  console.log(groupSchema);
 
   // Validate required fields
   for (const [fieldName, fieldSchema] of Object.entries(groupSchema.fields)) {
