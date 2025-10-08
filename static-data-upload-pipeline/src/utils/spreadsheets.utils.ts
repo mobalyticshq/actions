@@ -239,7 +239,9 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
 
   // Helper function to get default value for missing field based on schema
   const getDefaultValueForField = (fieldName: string): string => {
-    if (!apiSchema || !apiSchema.groups[groupName] || !apiSchema.groups[groupName].fields[fieldName]) {
+    if (!apiSchema) return '';
+
+    if (!apiSchema.groups[groupName] || !apiSchema.groups[groupName].fields[fieldName]) {
       return '';
     }
     
