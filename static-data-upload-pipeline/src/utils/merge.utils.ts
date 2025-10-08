@@ -79,7 +79,10 @@ export function mergeStaticData(newData: StaticData, oldData: StaticData, deprec
     for (const group of Object.keys(newData)) {
       if (oldData[group] === undefined) {
         // mergeReport.newGroups.add(group);
-        mergedData[group] = newData[group].map(entity => ({ ...entity, deprecated: false }));
+        if (newData[group]) {
+          mergedData[group] = newData[group].map(entity => ({ ...entity, deprecated: false }));
+        }
+
       }
     }
   } catch (error) {

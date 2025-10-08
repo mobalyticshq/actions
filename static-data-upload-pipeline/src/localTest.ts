@@ -12,10 +12,10 @@ import { readSchema } from './utils/common.utils';
 import { ApiSchema } from './steps/schema-validation/types';
 
 async function run() {
-  const overrideSpreadsheetId = '1SQfWXTmhmdxXVF9cRbisk-ok7rtpbhT2T79aZ5zONmo';
-  const tmpBucket = 'https://cdn.mobalytics.gg/assets/the-bazaar';
-  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2';
-  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2/schema.json';
+  const overrideSpreadsheetId = '1b3-LkaQBoKUdK5p15NW9BQZ-qxRJ4kSgBoozY0Ybmtc';
+  const tmpBucket = 'https://cdn.mobalytics.gg/assets/poe';
+  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/poe/stg/static_data';
+  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/poe/stg/static_data/schema.json';
   const apiSchema = readSchema(schemaPath);
 
   const pattern = /static_data_v\d+.\d+.\d+.json/;
