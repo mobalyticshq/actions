@@ -580,17 +580,19 @@ const createGroupConfBuilder = (source, groupName) => ({
     fields: {},
     objects: {},
 });
-const resolveRefTarget = (builder, fieldName, array) => {
-    let refGroup = fieldName.replace(new RegExp(schema_1.REF_FIELD_NAME_SUFFIX + '$'), '');
-    if (!array) {
-        if (pluralize_1.default.isSingular(refGroup)) {
-            refGroup = pluralize_1.default.plural(refGroup);
-        }
+const resolveRefTarget = (builder, fieldName) => {
+    let refGroupName = fieldName.replace(new RegExp(schema_1.REF_FIELD_NAME_SUFFIX + '$'), '');
+    let refGroupNamePlural = refGroupName;
+    if (pluralize_1.default.isSingular(refGroupNamePlural)) {
+        refGroupNamePlural = pluralize_1.default.plural(refGroupName);
     }
-    if (!(refGroup in builder.source)) {
-        return schema_1.MANUAL_FILL_PLACEHOLDER;
+    if (refGroupName in builder.source) {
+        return refGroupName;
     }
-    return refGroup;
+    if (refGroupNamePlural in builder.source) {
+        return refGroupNamePlural;
+    }
+    return schema_1.MANUAL_FILL_PLACEHOLDER;
 };
 const detectFieldConfig = (builder, fieldName, value) => {
     const fieldConfig = { type: schema_1.FIELD_TYPES.STRING };
@@ -633,7 +635,7 @@ const detectFieldConfig = (builder, fieldName, value) => {
     }
     if (fieldName.endsWith(schema_1.REFERENCE_SUFFIX)) {
         fieldConfig.type = schema_1.FIELD_TYPES.REF;
-        fieldConfig.refTo = resolveRefTarget(builder, fieldName, fieldConfig.array || false);
+        fieldConfig.refTo = resolveRefTarget(builder, fieldName);
     }
     return fieldConfig;
 };
@@ -1166,7 +1168,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = void 0;
 const schema_1 = __nccwpck_require__(60);
 // Helper function to merge field configurations
-const mergeFieldConfig = (newFieldConfig, existingFieldConfig, ignoreDeleted = false) => {
+const mergeFieldConfig = (newFieldConfig, existingFieldConfig, groupNames, ignoreDeleted = false) => {
     const merged = { ...newFieldConfig };
     // Override type from existing if new type is placeholder and existing has valid type
     if (newFieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
@@ -1177,7 +1179,9 @@ const mergeFieldConfig = (newFieldConfig, existingFieldConfig, ignoreDeleted = f
     // Override refTo from existing if present
     if (!newFieldConfig.refTo || newFieldConfig.refTo === schema_1.MANUAL_FILL_PLACEHOLDER) {
         if (existingFieldConfig.refTo && existingFieldConfig.refTo !== schema_1.MANUAL_FILL_PLACEHOLDER) {
-            merged.refTo = existingFieldConfig.refTo;
+            if (groupNames.includes(existingFieldConfig.refTo)) {
+                merged.refTo = existingFieldConfig.refTo;
+            }
         }
     }
     // Override refFilters from existing if present
@@ -1196,12 +1200,12 @@ const mergeFieldConfig = (newFieldConfig, existingFieldConfig, ignoreDeleted = f
 };
 exports.mergeFieldConfig = mergeFieldConfig;
 // Helper function to merge fields (works for both group fields and object fields)
-const mergeFields = (newFields, existingFields, ignoreDeleted) => {
+const mergeFields = (newFields, existingFields, groupNames, ignoreDeleted) => {
     // First, merge fields that exist in new schema
     Object.keys(newFields).forEach(fieldName => {
         if (existingFields[fieldName]) {
             // Field exists in both - merge configurations selectively
-            newFields[fieldName] = (0, exports.mergeFieldConfig)(newFields[fieldName], existingFields[fieldName], ignoreDeleted);
+            newFields[fieldName] = (0, exports.mergeFieldConfig)(newFields[fieldName], existingFields[fieldName], groupNames, ignoreDeleted);
         }
     });
     // Then, add fields that only exist in existing schema (if not ignoring deleted)
@@ -1216,14 +1220,14 @@ const mergeFields = (newFields, existingFields, ignoreDeleted) => {
 };
 exports.mergeFields = mergeFields;
 // Helper function to merge group objects
-const mergeGroupObjects = (newGroup, existingGroupObjects, ignoreDeleted) => {
+const mergeGroupObjects = (newGroup, existingGroupObjects, groupNames, ignoreDeleted) => {
     // First, merge objects that exist in new schema
     if (newGroup.objects) {
         Object.keys(newGroup.objects).forEach(objName => {
             const existingObj = existingGroupObjects[objName];
             if (existingObj?.fields) {
                 // Object exists in both - merge fields
-                (0, exports.mergeFields)(newGroup.objects[objName].fields, existingObj.fields, ignoreDeleted);
+                (0, exports.mergeFields)(newGroup.objects[objName].fields, existingObj.fields, groupNames, ignoreDeleted);
             }
         });
     }
@@ -1241,6 +1245,18 @@ const mergeGroupObjects = (newGroup, existingGroupObjects, ignoreDeleted) => {
     }
 };
 exports.mergeGroupObjects = mergeGroupObjects;
+const allGroupNames = (newSchema, existingSchema, ignoreDeleted) => {
+    const result = [];
+    Object.keys(newSchema.groups).forEach(groupName => {
+        result.push(groupName);
+    });
+    if (!ignoreDeleted) {
+        Object.keys(existingSchema.groups).forEach(groupName => {
+            result.push(groupName);
+        });
+    }
+    return result;
+};
 // Function to merge existing schema with new schema
 const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = false) => {
     if (!existingSchema || !existingSchema.groups) {
@@ -1258,6 +1274,7 @@ const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = fals
     if (existingSchema.gqlTypesOverrides) {
         result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
+    const groupNames = allGroupNames(newSchema, existingSchema, ignoreDeleted);
     // First, merge groups that exist in new schema
     Object.keys(result.groups).forEach(groupName => {
         const existingGroup = existingSchema.groups[groupName];
@@ -1265,11 +1282,11 @@ const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = fals
             const newGroup = result.groups[groupName];
             // Merge fields
             if (existingGroup.fields) {
-                (0, exports.mergeFields)(newGroup.fields, existingGroup.fields, ignoreDeleted);
+                (0, exports.mergeFields)(newGroup.fields, existingGroup.fields, groupNames, ignoreDeleted);
             }
             // Merge objects
             if (existingGroup.objects) {
-                (0, exports.mergeGroupObjects)(newGroup, existingGroup.objects, ignoreDeleted);
+                (0, exports.mergeGroupObjects)(newGroup, existingGroup.objects, groupNames, ignoreDeleted);
             }
         }
     });
@@ -1326,9 +1343,11 @@ const applyRefConfig = (schema, refConfig) => {
                 const field = group.fields[fieldName];
                 const fullPath = `${groupName}.${fieldName}`;
                 if (field.type === 'Ref' && field.refTo === exports.MANUAL_FILL_PLACEHOLDER) {
-                    if (refMap[fullPath]) {
-                        field.refTo = refMap[fullPath];
+                    const refTo = refMap[fullPath];
+                    if (!refTo || !result.groups[refTo]) {
+                        return;
                     }
+                    field.refTo = refTo;
                 }
             });
         }

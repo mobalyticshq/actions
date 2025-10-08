@@ -102,7 +102,7 @@ const createGroupConfBuilder = (source: any, groupName: string): GroupConfBuilde
     objects: {},
 });
 
-const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string, array: boolean): string => {
+const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string): string => {
     let refGroupName = fieldName.replace(new RegExp(REF_FIELD_NAME_SUFFIX + '$'), '');
     
     let refGroupNamePlural = refGroupName;
@@ -161,7 +161,7 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
     }
     if (fieldName.endsWith(REFERENCE_SUFFIX)) {
         fieldConfig.type = FIELD_TYPES.REF;
-        fieldConfig.refTo = resolveRefTarget(builder, fieldName, fieldConfig.array || false);
+        fieldConfig.refTo = resolveRefTarget(builder, fieldName);
     }
     return fieldConfig;
 };
