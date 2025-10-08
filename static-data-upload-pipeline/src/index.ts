@@ -28,7 +28,6 @@ interface RunPipelineArgs {
   slackManager: SlackMessageManager;
   apiSchema: ApiSchema | null;
   skipSchemaValidation?: boolean;
-  rebuildApiFlag?: boolean;
 }
 
 const execAsync = promisify(exec);
@@ -47,7 +46,6 @@ async function runPipeline({
   slackManager,
   apiSchema,
   skipSchemaValidation = false,
-  rebuildApiFlag
 }: RunPipelineArgs) {
   // Define environment from the path
   const environment = staticDataPath.split('/')[1].toUpperCase();
@@ -66,7 +64,6 @@ async function runPipeline({
   }
 
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
-
   console.log(`ℹ️ Newest version is ${versions[versions.length - 1]}`);
   console.log(`ℹ️ Oldest version is ${versions[0]}`);
   console.log(`ℹ️ Spreadsheest ID for override ${overrideSpreadsheetId} `);
@@ -95,13 +92,13 @@ async function runPipeline({
     await slackManager.sendOrUpdate(`<${actionsUrl}|View action Details>\n`, ':information_source:', true);
   }
 
-  if (!apiSchema) {
-    await slackManager.sendOrUpdate(
-      `schema.json not found in ${staticDataPath}`,
-      ':x:',
-    );
-    return;
-  }
+  // if (!apiSchema) {
+  //   await slackManager.sendOrUpdate(
+  //     `schema.json not found in ${staticDataPath}`,
+  //     ':x:',
+  //   );
+  //   return;
+  // }
 
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
@@ -172,7 +169,7 @@ async function runPipeline({
       config,
       testsDir,
       tmpAssetPrefix,
-      apiSchema,
+      apiSchema as ApiSchema,
     );
 
     // If errors or warnings or infos - create report
@@ -197,7 +194,7 @@ async function runPipeline({
         staticData,
         gameConfig,
         apiSchemaPath,
-        apiSchema
+        apiSchema as ApiSchema,
       );
     }
   } catch (error) {

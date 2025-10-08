@@ -76,9 +76,6 @@ export async function schemaValidationStep(
         }
       }
 
-      
-      
-
       await slackManager.sendOrUpdate('Schema validation failed ❌\n', ':warning:', true);
 
       // If there are critical errors, return them instead of throwing
