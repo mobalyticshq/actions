@@ -412,7 +412,7 @@ export async function validate(
 
     const groupInSchema = apiSchema?.groups[group];
     // Check if group exists in schema and skip validation if all entities are deprecated
-    if (!groupInSchema && !isAllEntitiesDeprecated) {
+    if (!groupInSchema && !isAllEntitiesDeprecated && apiSchema) {
       validationReport.errors[ReportMessages.groupNotInSchema].add(group);
     }
 
