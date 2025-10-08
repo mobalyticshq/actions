@@ -103,16 +103,20 @@ const createGroupConfBuilder = (source: any, groupName: string): GroupConfBuilde
 });
 
 const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string, array: boolean): string => {
-    let refGroup = fieldName.replace(new RegExp(REF_FIELD_NAME_SUFFIX + '$'), '');
-    if (!array) {
-        if (pluralize.isSingular(refGroup)) {
-            refGroup = pluralize.plural(refGroup);
-        }
+    let refGroupName = fieldName.replace(new RegExp(REF_FIELD_NAME_SUFFIX + '$'), '');
+    
+    let refGroupNamePlural = refGroupName;
+    if (pluralize.isSingular(refGroupNamePlural)) {
+        refGroupNamePlural = pluralize.plural(refGroupName);
     }
-    if (!(refGroup in builder.source)) {
-        return MANUAL_FILL_PLACEHOLDER;
+
+    if (refGroupName in builder.source) {
+        return refGroupName;
     }
-    return refGroup;
+    if (refGroupNamePlural in builder.source) {
+        return refGroupNamePlural;
+    }
+    return MANUAL_FILL_PLACEHOLDER;
 };
 
 const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any): FieldConfig => {

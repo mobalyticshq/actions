@@ -15,6 +15,7 @@
       "fields": {
         "undefinedArrayField": { "type": "String", "array": true },
         "undefinedField": { "type": "String" },
+        "someRef": { "type": "Ref", "refTo": "notExistingGroup" },
         "someObject": { "type": "Object", "objName": "someObject" }
       },
       "objects": {
