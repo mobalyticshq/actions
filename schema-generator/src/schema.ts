@@ -84,9 +84,12 @@ export const applyRefConfig = (schema: Schema, refConfig: RefConfig): Schema => 
                 const fullPath = `${groupName}.${fieldName}`;
                 
                 if (field.type === 'Ref' && field.refTo === MANUAL_FILL_PLACEHOLDER) {
-                    if (refMap[fullPath]) {
-                        field.refTo = refMap[fullPath];
+                    const refTo = refMap[fullPath];
+                    if (!refTo || !result.groups[refTo]) {
+                        return;
                     }
+ 
+                    field.refTo = refTo;
                 }
             });
         }

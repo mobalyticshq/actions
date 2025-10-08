@@ -110,7 +110,8 @@
     {
       "id": "set1",
       "gameId": "set1",
-      "deprecated": false
+      "deprecated": false,
+      "someRef": "notExistingEntity"
     },
     {
       "id": "set2",

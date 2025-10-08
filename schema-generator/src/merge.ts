@@ -1,7 +1,7 @@
 import { FieldConfig, ObjectConfig, GroupConfig, Schema, MANUAL_FILL_PLACEHOLDER } from './schema';
 
 // Helper function to merge field configurations
-export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfig: FieldConfig, ignoreDeleted: boolean = false): FieldConfig => {
+export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfig: FieldConfig, groupNames: string[], ignoreDeleted: boolean = false): FieldConfig => {
     const merged = { ...newFieldConfig };
     
     // Override type from existing if new type is placeholder and existing has valid type
@@ -14,7 +14,9 @@ export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfi
     // Override refTo from existing if present
     if (!newFieldConfig.refTo || newFieldConfig.refTo === MANUAL_FILL_PLACEHOLDER) { 
         if (existingFieldConfig.refTo && existingFieldConfig.refTo !== MANUAL_FILL_PLACEHOLDER) {
-            merged.refTo = existingFieldConfig.refTo;
+            if (groupNames.includes(existingFieldConfig.refTo)) {
+                merged.refTo = existingFieldConfig.refTo;
+            }
         }
     }
 
@@ -40,6 +42,7 @@ export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfi
 export const mergeFields = (
     newFields: Record<string, FieldConfig>,
     existingFields: Record<string, FieldConfig>,
+    groupNames: string[],
     ignoreDeleted: boolean
 ): void => {
     // First, merge fields that exist in new schema
@@ -49,6 +52,7 @@ export const mergeFields = (
             newFields[fieldName] = mergeFieldConfig(
                 newFields[fieldName],
                 existingFields[fieldName],
+                groupNames,
                 ignoreDeleted
             );
         }
@@ -69,6 +73,7 @@ export const mergeFields = (
 export const mergeGroupObjects = (
     newGroup: GroupConfig,
     existingGroupObjects: Record<string, ObjectConfig>,
+    groupNames: string[],
     ignoreDeleted: boolean
 ): void => {
     // First, merge objects that exist in new schema
@@ -77,7 +82,7 @@ export const mergeGroupObjects = (
             const existingObj = existingGroupObjects[objName];
             if (existingObj?.fields) {
                 // Object exists in both - merge fields
-                mergeFields(newGroup.objects![objName].fields, existingObj.fields, ignoreDeleted);
+                mergeFields(newGroup.objects![objName].fields, existingObj.fields, groupNames, ignoreDeleted);
             }
         });
     }
@@ -95,6 +100,20 @@ export const mergeGroupObjects = (
         });
     }
 };
+
+const allGroupNames = (newSchema: Schema, existingSchema: Schema, ignoreDeleted: boolean): string[] => {
+    const result: string[] = [];
+
+    Object.keys(newSchema.groups).forEach(groupName => {
+        result.push(groupName);
+    });
+    if (!ignoreDeleted) {
+        Object.keys(existingSchema.groups).forEach(groupName => {
+            result.push(groupName);
+        });
+    }
+    return result;
+}
 
 // Function to merge existing schema with new schema
 export const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schema, ignoreDeleted: boolean = false): Schema => {
@@ -116,7 +135,8 @@ export const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schem
     if (existingSchema.gqlTypesOverrides) {
         result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
-    
+
+    const groupNames: string[] = allGroupNames(newSchema, existingSchema, ignoreDeleted);
     // First, merge groups that exist in new schema
     Object.keys(result.groups).forEach(groupName => {
         const existingGroup = existingSchema.groups[groupName];
@@ -125,12 +145,12 @@ export const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schem
             
             // Merge fields
             if (existingGroup.fields) {
-                mergeFields(newGroup.fields, existingGroup.fields, ignoreDeleted);
+                mergeFields(newGroup.fields, existingGroup.fields, groupNames, ignoreDeleted);
             }
             
             // Merge objects
             if (existingGroup.objects) {
-                mergeGroupObjects(newGroup, existingGroup.objects, ignoreDeleted);
+                mergeGroupObjects(newGroup, existingGroup.objects, groupNames, ignoreDeleted);
             }
         }
     });
