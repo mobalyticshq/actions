@@ -149,8 +149,9 @@ export async function runPipeline({
     // ------------------ КУСОК ОТ КОТОРОГО НАДО ИЗБАВИТЬСЯ КОГДА ИЗБАВИМСЯ ОТ CONFIG.JSON ------------------
 
     let config: ExtractedRefs = {refs: []};
-    if (existsSync(path.join(staticDataPath, 'config.json'))) {
-      config = JSON.parse(readFileSync(staticDataPath, 'utf8'));
+    const pathToConfig = path.join(staticDataPath, 'config.json');
+    if (existsSync(pathToConfig)) {
+      config = JSON.parse(readFileSync(pathToConfig, 'utf8'));
     } else {
       config = apiSchema ? extractSchemaRefs(apiSchema) : {refs: []};
     }
