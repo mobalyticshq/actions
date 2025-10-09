@@ -9,8 +9,7 @@ export interface MessageLine {
 export class SlackMessageManagerV2 {
   private currentMessageId: string | null = null;
   private currentLines: MessageLine[] = [];
-  // private channel: string = process.env.SLACK_CHANNEL_ID || 'C0932450HEF';
-  private channel: string = process.env.SLACK_CHANNEL_ID || 'C09GRKW59EY';
+  private channel: string = process.env.SLACK_CHANNEL_ID || 'C0932450HEF';
 
   /**
    * Send a new message to Slack
