@@ -1,0 +1,189 @@
+import { logColors, logger } from '../utils/logger.utils';
+import { replaceAssets } from '../utils/merge.utils';
+import { StaticData } from '../types';
+import { writeFileSync } from 'fs';
+import { updateSpreadsheets } from '../utils/spreadsheets.utils';
+import { promisify } from 'util';
+import { exec, spawn } from 'child_process';
+import { ApiSchema } from './schema-validation/types';
+import { SlackMessageManagerV2 } from '../utils/slack-manager-v2.utils';
+
+const execAsync = promisify(exec);
+
+export async function syncStaticDataStep(
+  actionUrl: string,
+  slackManager: SlackMessageManagerV2,
+  versions: string[],
+  overridedData: StaticData,
+  spreadsheetData: { [p: string]: string[][] } | null,
+  tmpAssetFolder: string,
+  tmpAssetPrefix: string,
+  prodAssetFolder: string,
+  prodAssetPrefix: string,
+  overrideSpreadsheetId: string,
+  staticData: StaticData,
+  apiSchemaPath: string,
+  apiSchema: ApiSchema,
+): Promise<void> {
+
+  console.log(
+    `✍ Update assets URLs! ${logColors.green}${tmpAssetPrefix}${logColors.reset} to ${logColors.green}${prodAssetPrefix}${logColors.reset}`,
+  );
+  replaceAssets(overridedData, tmpAssetPrefix, prodAssetPrefix);
+  console.log(`✍ Write static data file ${logColors.green}${versions[versions.length - 1]}${logColors.reset}`);
+
+  const finalData = { ...overridedData };
+  writeFileSync(versions[versions.length - 1], JSON.stringify(finalData), 'utf8');
+
+  console.log('🔄 Sync static data file with bucket');
+  //upload static data
+  {
+    const dst = `gs://${process.env.GCP_BUCKET_NAME}/${versions[versions.length - 1]}`;
+    // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
+    const cmd = `gsutil cp ${versions[versions.length - 1]} ${dst}`;
+    console.log('static data sync cmd:\n', cmd);
+    const { stdout, stderr } = await execAsync(cmd);
+    console.log('stdout:', stdout);
+    if (stderr) console.error('stderr:', stderr);
+  }
+  //upload game config
+  // if (gameConfig.length > 0) {
+  //   const dst = `gs://${process.env.GCP_BUCKET_NAME}/${gameConfig}`;
+  //   // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
+  //   const cmd = `gsutil cp ${gameConfig} ${dst}`;
+  //   console.log('static game config sync cmd:\n', cmd);
+  //   const { stdout, stderr } = await execAsync(cmd);
+  //   console.log('stdout:', stdout);
+  //   if (stderr) console.error('stderr:', stderr);
+  // }
+  //upload scheme
+  if (apiSchemaPath.length > 0) {
+    const dst = `gs://${process.env.GCP_BUCKET_NAME}/${apiSchemaPath}`;
+    // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
+    const cmd = `gsutil cp ${apiSchemaPath} ${dst}`;
+    console.log('static scheme sync cmd:\n', cmd);
+    const { stdout, stderr } = await execAsync(cmd);
+    console.log('stdout:', stdout);
+    if (stderr) console.error('stderr:', stderr);
+  }
+  console.log('✅ Statid databucket synced');
+
+  try {
+    if (spreadsheetData) {
+      console.log(`📊 Update override spreadsheet https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}`);
+      await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
+      console.log(`✅ spreadsheet updated`);
+      await slackManager.appendNewLine({
+        id: 'override-spreadsheet-updated',
+        content: `<https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}|Override spreadsheet  updated>`,
+        emoji: ':white_check_mark:',
+        });
+    }
+  } catch (error) {
+    await slackManager.appendNewLine({
+      id: 'override-spreadsheet-error',
+      content: `Unable to write override spreadsheet. <${actionUrl}|See pipeline logs>`,
+      emoji: ':warning:',
+    })
+    console.log(`⚠️ Unable to write override spreadsheet: ${error}`);
+  }
+
+  const cfClientID = process.env.CF_CLIENT_ID;
+
+  await updateAssets(slackManager, tmpAssetFolder, prodAssetFolder, cfClientID);
+
+  await slackManager.appendNewLine({
+    id: 'static-data-uploaded',
+    content: `Static data uploaded <https://storage.cloud.google.com/${process.env.GCP_BUCKET_NAME}/${versions[versions.length - 1]}|Check the file>`,
+    emoji: ':+1:',
+  });
+  console.log('🔥 All done!!!');
+  logger.endGroup();
+}
+
+async function updateAssets(
+  slackManager: SlackMessageManagerV2,
+  tmpAssetFolder: string,
+  prodAssetFolder: string,
+  cfClientID?: string,
+) {
+  if (tmpAssetFolder == prodAssetFolder) {
+    console.log('🔄 Tmp bucket equal prod bucket, skip asset sync ');
+    return;
+  }
+  console.log('🔄 Sync tmp assets bucket with prod bucket');
+  const assetCmd = `gsutil -m rsync -r  -c  ${tmpAssetFolder} ${prodAssetFolder} `;
+  console.log(assetCmd);
+
+  const { copied } = await syncBuckets(tmpAssetFolder, prodAssetFolder);
+
+  if (copied.length > 0) {
+    if (cfClientID) {
+      console.log(`🔄 Reset cloudflare cache for ${copied.length} files`);
+
+      const chunks: string[][] = [];
+      const chunkSize = 100;
+      for (let i = 0; i < copied.length; i += chunkSize) {
+        chunks.push(copied.slice(i, i + chunkSize));
+      }
+      for (const chunk of chunks) {
+        const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfClientID}/purge_cache`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.CF_AUTH_TOKEN}`,
+          },
+          body: JSON.stringify({ files: chunk }),
+        });
+        if (response.status != 200) {
+          console.log('⚠️ Error during CF cache reset', { response });
+        }
+      }
+      console.log(`✅ Cloudflare reset`);
+    } else {
+      console.log('⚠️ CF_CLIENT_ID not defined - unable to reset CF cache');
+      await slackManager.appendNewLine({
+        id: 'no-cf-client-id',
+        content: `CF_CLIENT_ID not defined - unable to reset CF cache`,
+        emoji: ':warning:',
+      });
+    }
+  }
+}
+
+function syncBuckets(source: string, target: string): Promise<{ copied: Array<string> }> {
+  return new Promise((resolve, reject) => {
+    const prefix = `Copying ${source}`;
+    const proc = spawn('gsutil', ['-m', 'rsync', '-r', '-c', source, target]);
+
+    const copied = new Array<string>();
+
+    proc.stdout.on('data', (data: string) => {
+      const lines = data.toString().split('\n');
+      for (const line of lines) {
+        if (line.startsWith(prefix)) {
+          const match = line.replace(prefix, target).replace('gs://', 'https://');
+          if (match) copied.push(match.substring(0, match.indexOf('[Content-Type')).trim());
+        }
+      }
+    });
+
+    proc.stderr.on('data', data => {
+      const lines = data.toString().split('\n');
+      for (const line of lines) {
+        if (line.startsWith(prefix)) {
+          const match = line.replace(prefix, target).replace('gs://', 'https://');
+          match.substring(0, match.indexOf('[Content-Type')).trim();
+          if (match) copied.push(match.substring(0, match.indexOf('[Content-Type')).trim());
+        }
+      }
+    });
+
+    proc.on('close', code => {
+      if (code !== 0) {
+        return reject(new Error(`gsutil exit with ${code}`));
+      }
+      resolve({ copied });
+    });
+  });
+}

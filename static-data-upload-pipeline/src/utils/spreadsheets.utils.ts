@@ -3,7 +3,7 @@ import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
 import { isImage, stringify, tryParse } from './common.utils';
-import { ApiSchema } from '../steps/schema-validation/types';
+import { ApiSchema } from '../pipeline-steps/schema-validation/types';
 
 const sheets = google.sheets('v4');
 
