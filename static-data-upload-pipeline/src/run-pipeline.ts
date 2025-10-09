@@ -165,6 +165,7 @@ export async function runPipeline({
     // --------- Override static data by spreadsheets step --------
     logger.group('📊 Override static data by spreadsheets');
     let { overridedData, spreadsheetData, spreadsheetReport } = await overrideStaticData(
+      actionUrl,
       slackManager,
       overrideSpreadsheetId,
       staticData,
