@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';
 import { stringify } from './common.utils';
 
-import { ReportMessages } from '../steps/validate-static-data/utils';
+import { ReportMessages } from '../pipeline-steps/validate-static-data/utils';
 import { addSheet, clearSheets, setColor } from './spreadsheets.utils';
 
 const sheets = google.sheets('v4');

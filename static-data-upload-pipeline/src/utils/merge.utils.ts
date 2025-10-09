@@ -87,6 +87,7 @@ export function mergeStaticData(newData: StaticData, oldData: StaticData, deprec
     }
   } catch (error) {
     console.log(`Error during the merge ${error}`);
+    throw error;
   }
   return mergedData;
 }

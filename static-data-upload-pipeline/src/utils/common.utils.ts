@@ -1,5 +1,5 @@
 import * as slugify_ from 'slugify';
-import { ApiSchema } from '../steps/schema-validation/types';
+import { ApiSchema } from '../pipeline-steps/schema-validation/types';
 import { existsSync, readFileSync } from 'fs';
 
 export const gameIconsMap: Record<string, string> = {

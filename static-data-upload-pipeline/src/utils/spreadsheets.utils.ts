@@ -3,7 +3,8 @@ import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
 import { isImage, stringify, tryParse } from './common.utils';
-import { ApiSchema } from '../steps/schema-validation/types';
+import { ApiSchema } from '../pipeline-steps/schema-validation/types';
+import { SlackMessageManagerV2 } from './slack-manager-v2.utils';
 
 const sheets = google.sheets('v4');
 
@@ -641,7 +642,7 @@ export async function updateSpreadsheets(
   }
 }
 
-export async function mergeWithSpreadsheets(spreadsheetId: string, jsonData: StaticData) {
+export async function mergeWithSpreadsheets(actionUrl: string, slackManager: SlackMessageManagerV2, spreadsheetId: string, jsonData: StaticData) {
   const spreadsheetReport = {
     emptyPages: new Set<string>(),
     pagesWidthWrongOverrides: {} as { [key: string]: Set<string> },
@@ -671,10 +672,19 @@ export async function mergeWithSpreadsheets(spreadsheetId: string, jsonData: Sta
     //merge spreadsheet and jsonData, spreadsheet data is additional data
     const mergedData = mergeStaticData(processedData, jsonData, false);
 
+    slackManager.updateMessage('override-static-data', 'Override static data step completed', ':white_check_mark:');
     return { overridedData: mergedData, spreadsheetReport, spreadsheetData };
   } catch (error) {
     console.error('Spreadsheets access error :', error);
+    slackManager.updateMessage('override-static-data', 'Override static data by spreadsheets failed', ':x:');
+    await slackManager.appendNewLine({
+      id: 'override-static-data-error',
+      content: `Unable to access spreadsheets. <${actionUrl}|See pipeline logs>`,
+      emoji: ':warning:',
+    });
+
+    return { overridedData: jsonData, spreadsheetReport, spreadsheetData: null };
   }
 
-  return { overridedData: jsonData, spreadsheetReport, spreadsheetData: null };
+
 }
