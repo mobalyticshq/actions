@@ -33,6 +33,13 @@ export async function createReportStep(
     console.log('⚠️ Can`t create spreadsheetreport');
     await slackManager.appendNewLine({
         id: 'spreadsheet-report',
+        content: `${slackMsg}`,
+        emoji: ':receipt:',
+      }
+    );
+
+    await slackManager.appendNewLine({
+        id: 'spreadsheet-report-error',
         content: `Can't create mistakes report, something went wrong! Please contact any engineer. <${actionUrl}|See pipeline logs>`,
         emoji: ':mild-panic:',
     });
