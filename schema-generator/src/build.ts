@@ -180,14 +180,17 @@ const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: 
         return;
     }
     
+    // Skip null or undefined values - we can't detect their type
     if (value === null || value === undefined) {
-        if (!existingField) {
-            builder.fields[fieldName] = {type: MANUAL_FILL_PLACEHOLDER};
-        }
         return;
     }
     
     const fieldConfig = detectFieldConfig(builder, fieldName, value);
+    
+    // Skip fields with undetectable types (null, empty arrays, etc.)
+    if (fieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
+        return;
+    }
     
     if (REQUIRED_FIELD_NAMES.includes(fieldName)) {
         fieldConfig.required = true;
@@ -211,10 +214,17 @@ const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string,
             continue;
         }
         
+        // Skip null or undefined values - we can't detect their type
         if (value === null || value === undefined) {
             continue;
         }
+        
         const fieldConfig = detectFieldConfig(builder, fieldName, value);
+        
+        // Skip fields with undetectable types (null, empty arrays, etc.)
+        if (fieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
+            continue;
+        }
         
         if (fieldConfig.type === FIELD_TYPES.OBJECT) {
             const nestedObjectParentPath = buildObjectName(parentPath, objFieldName);
@@ -277,9 +287,10 @@ const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value:
         return;
     }
     const result = detectObjectConfig(builder, fieldName, value, parentPath);
-    if (!result.valid || Object.keys(result.config.fields).length === 0) {
+    if (!result.valid) {
         return;
     }
+    // Keep objects even if they have no fields - they can be filled manually later
     const fullObjName = buildObjectName(parentPath, fieldName);
     if (fullObjName in builder.objects) {
         const existing = builder.objects[fullObjName];

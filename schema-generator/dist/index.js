@@ -650,13 +650,15 @@ const detectGroupFields = (builder, fieldName, value) => {
     if (hasValidType) {
         return;
     }
+    // Skip null or undefined values - we can't detect their type
     if (value === null || value === undefined) {
-        if (!existingField) {
-            builder.fields[fieldName] = { type: schema_1.MANUAL_FILL_PLACEHOLDER };
-        }
         return;
     }
     const fieldConfig = detectFieldConfig(builder, fieldName, value);
+    // Skip fields with undetectable types (null, empty arrays, etc.)
+    if (fieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
+        return;
+    }
     if (schema_1.REQUIRED_FIELD_NAMES.includes(fieldName)) {
         fieldConfig.required = true;
         fieldConfig.filter = true;
@@ -675,10 +677,15 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
         if (isExcludedField(fieldName)) {
             continue;
         }
+        // Skip null or undefined values - we can't detect their type
         if (value === null || value === undefined) {
             continue;
         }
         const fieldConfig = detectFieldConfig(builder, fieldName, value);
+        // Skip fields with undetectable types (null, empty arrays, etc.)
+        if (fieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
+            continue;
+        }
         if (fieldConfig.type === schema_1.FIELD_TYPES.OBJECT) {
             const nestedObjectParentPath = buildObjectName(parentPath, objFieldName);
             fieldConfig.objName = buildObjectName(nestedObjectParentPath, fieldName);
@@ -734,9 +741,10 @@ const detectGroupObjects = (builder, fieldName, value, parentPath) => {
         return;
     }
     const result = detectObjectConfig(builder, fieldName, value, parentPath);
-    if (!result.valid || Object.keys(result.config.fields).length === 0) {
+    if (!result.valid) {
         return;
     }
+    // Keep objects even if they have no fields - they can be filled manually later
     const fullObjName = buildObjectName(parentPath, fieldName);
     if (fullObjName in builder.objects) {
         const existing = builder.objects[fullObjName];
