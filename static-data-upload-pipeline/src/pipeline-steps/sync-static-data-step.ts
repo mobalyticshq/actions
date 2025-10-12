@@ -23,7 +23,7 @@ export async function syncStaticDataStep(
   overrideSpreadsheetId: string,
   staticData: StaticData,
   apiSchemaPath: string,
-  apiSchema: ApiSchema,
+  apiSchema: ApiSchema | null,
 ): Promise<void> {
 
   console.log(
@@ -58,15 +58,24 @@ export async function syncStaticDataStep(
   // }
   //upload scheme
   if (apiSchemaPath.length > 0) {
-    const dst = `gs://${process.env.GCP_BUCKET_NAME}/${apiSchemaPath}`;
-    // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
-    const cmd = `gsutil cp ${apiSchemaPath} ${dst}`;
-    console.log('static scheme sync cmd:\n', cmd);
-    const { stdout, stderr } = await execAsync(cmd);
-    console.log('stdout:', stdout);
-    if (stderr) console.error('stderr:', stderr);
+    if(!apiSchema) {
+      console.log(`⚠️ Unable to sync schema.json file. schema.json file is not found`);
+      await slackManager.appendNewLine({
+        id: 'abscent-schema-error',
+        content: `Unable to sync schema.json file. schema.json file is not found`,
+        emoji: ':warning:',
+      });
+    } else {
+      const dst = `gs://${process.env.GCP_BUCKET_NAME}/${apiSchemaPath}`;
+      // const cmd = `gsutil -m rsync -r -d -c -x "README.md|.gitignore|.github|.git|gha-creds-.*\.json$" ${src} ${dst} `
+      const cmd = `gsutil cp ${apiSchemaPath} ${dst}`;
+      console.log('static scheme sync cmd:\n', cmd);
+      const { stdout, stderr } = await execAsync(cmd);
+      console.log('stdout:', stdout);
+      if (stderr) console.error('stderr:', stderr);
+    }
   }
-  console.log('✅ Statid databucket synced');
+  console.log('✅ Static data bucket synced');
 
   try {
     if (spreadsheetData) {

@@ -213,7 +213,7 @@ export async function runPipeline({
             overrideSpreadsheetId,
             staticData,
             apiSchemaPath,
-            apiSchema as ApiSchema,
+            apiSchema,
           );
         }
       }
