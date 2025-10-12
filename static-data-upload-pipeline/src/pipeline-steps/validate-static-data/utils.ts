@@ -15,7 +15,7 @@ export enum ReportMessages {
   duplicatedGameIds = 'gameId is not uniq',
   mismatchedSlugs = 'slug!=slugify(name)',
   notInCamelCase = 'not in camel case',
-  abscentConfigurationForRef = "can't find ref in config file",
+  abscentConfigurationForRef = "can't find ref in schema.json file",
   abscentGroupForRef = "can't find group for ref",
   invalidRef = 'wrong field type for ref',
   abscentIdInRef = "can't find entity in referenced group",
