@@ -536,6 +536,10 @@ async function setMetadata(
     }
   }
 
+  if(requests.length === 0) {
+    console.log('## No metadata to set. Probably you have an empty Static Data');
+  }
+
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     auth: auth,
