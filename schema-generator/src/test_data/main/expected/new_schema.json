@@ -18,14 +18,11 @@
         "id": { "type": "String", "filter": true, "required": true },
         "name": { "type": "String", "filter": true, "required": true },
         "someObject": { "type": "Object", "objName": "someObject" },
-        "someRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" },
-        "undefinedArrayField": { "type": "@@@ TO BE FILLED MANUALLY @@@", "array": true },
-        "undefinedField": { "type": "@@@ TO BE FILLED MANUALLY @@@" }
+        "someRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" }
       },
       "objects": {
         "someObject": {
           "fields": {
-            "undefinedField": { "type": "@@@ TO BE FILLED MANUALLY @@@", "array": true }
           }
         }
       }
