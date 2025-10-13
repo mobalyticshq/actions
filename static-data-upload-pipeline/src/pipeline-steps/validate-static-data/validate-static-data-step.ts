@@ -14,15 +14,16 @@ export async function validateStaticDataStep(
   testsDir: string,
   tmpAssetPrefix: string,
   apiSchema: ApiSchema | null,
+  isValidationBeforeOverride: boolean
 ) {
   await slackManager.appendNewLine({
-    id: 'validate-static-data',
-    content: `Validating static data...`,
+    id: `validate-static-data-${isValidationBeforeOverride ? 'before' : 'after'}-override`,
+    content: `Validating static data ${isValidationBeforeOverride ? 'before override by spreadsheet' : 'after override by spreadsheet'}...`,
     emoji: ':mag:',
   });
 
   const reports = new Array<ValidationReport>();
-  const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix, apiSchema);
+  const commonReport = await validate(overridedData, oldData, config, tmpAssetPrefix, apiSchema, isValidationBeforeOverride);
   reports.push(commonReport);
   reports.push(...(await runValidationExtensions(testsDir, overridedData, oldData)));
 

@@ -383,6 +383,7 @@ export async function validate(
   config: StaticDataConfig,
   tmpBucket: string,
   apiSchema: ApiSchema | null,
+  isValidationBeforeOverride: boolean
 ) {
   const validationReport = {
     errors: {
@@ -484,7 +485,7 @@ export async function validate(
           entityReport.errors[ReportMessages.justMsg].add(`wrong id, expected:${ent.gameId}`);
           entityReport.errors[ReportMessages.justColor].add(`${group}.id`);
         }
-      } else if (ent.name && ent.id) {
+      } else if (ent.name && ent.id && isValidationBeforeOverride) {
         if (slugify(ent.name) !== ent.id) {
           // entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
           entityReport.errors[ReportMessages.justMsg].add(`wrong id, expected:${slugify(ent.name)}`);

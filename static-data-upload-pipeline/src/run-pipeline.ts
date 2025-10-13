@@ -162,6 +162,20 @@ export async function runPipeline({
     let { staticData, oldData } = await mergeStaticDataStep(actionUrl, slackManager, versions);
     logger.endGroup();
 
+    // ----------- Validate static data before merge with Spreadshhet step -----------
+    logger.group('🔍 Validate merged static data');
+    const { errors: beforeOverrideErrors, warnings: beforeOverrideWarnings, infos: beforeOverrideInfos, reports: beforeOverrideReports } = await validateStaticDataStep(
+      slackManager,
+      staticData,
+      oldData,
+      config,
+      testsDir,
+      tmpAssetPrefix,
+      apiSchema,
+      true
+    );
+    logger.endGroup();
+
     // --------- Override static data by spreadsheets step --------
     logger.group('📊 Override static data by spreadsheets');
     let { overridedData, spreadsheetData, spreadsheetReport } = await overrideStaticData(
@@ -172,9 +186,9 @@ export async function runPipeline({
     );
     logger.endGroup();
 
-    // ----------- Validate static data step -----------
-    logger.group('🔍 Validate final static data ');
-    const { errors, warnings, infos, reports } = await validateStaticDataStep(
+    // ----------- Validate static data after merge with Spreadshhet step -----------
+    logger.group('🔍 Validate static data after override by spreadsheets');
+    const { errors: afterOverrideErrors, warnings: afterOverrideWarnings, infos: afterOverrideInfos, reports: afterOverrideReports } = await validateStaticDataStep(
       slackManager,
       overridedData,
       oldData,
@@ -182,8 +196,14 @@ export async function runPipeline({
       testsDir,
       tmpAssetPrefix,
       apiSchema,
+      false
     );
     logger.endGroup();
+
+    const errors = beforeOverrideErrors + afterOverrideErrors;
+    const warnings = beforeOverrideWarnings + afterOverrideWarnings;
+    const infos = beforeOverrideInfos + afterOverrideInfos;
+    const reports = [...beforeOverrideReports, ...afterOverrideReports];
 
     // If errors or warnings or infos - create report
     if (errors > 0 || warnings > 0 || infos > 0) {

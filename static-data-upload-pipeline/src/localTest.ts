@@ -84,6 +84,7 @@ async function run() {
     config,
     tmpBucket,
     apiSchema as ApiSchema,
+    false
   );
 
   reports.push(commonReport);
