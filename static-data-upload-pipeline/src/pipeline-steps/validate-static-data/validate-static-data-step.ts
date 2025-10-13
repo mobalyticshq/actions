@@ -36,7 +36,7 @@ export async function validateStaticDataStep(
   if (errors === 0) {
     console.log(`✅ Static data validation passed`);
     await slackManager.updateMessage(
-      'validate-static-data',
+      `validate-static-data-${isValidationBeforeOverride ? 'before' : 'after'}-override`,
       `Static data validation passed`,
       ':white_check_mark:',
     );
