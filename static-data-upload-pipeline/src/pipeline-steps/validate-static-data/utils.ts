@@ -382,7 +382,7 @@ export async function validate(
   oldData: StaticData,
   config: StaticDataConfig,
   tmpBucket: string,
-  apiSchema: ApiSchema,
+  apiSchema: ApiSchema | null,
 ) {
   const validationReport = {
     errors: {

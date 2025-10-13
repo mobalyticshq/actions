@@ -181,13 +181,13 @@ export async function runPipeline({
       config,
       testsDir,
       tmpAssetPrefix,
-      apiSchema as ApiSchema,
+      apiSchema,
     );
     logger.endGroup();
 
     // If errors or warnings or infos - create report
     if (errors > 0 || warnings > 0 || infos > 0) {
-      await createReportStep(actionUrl, slackManager, reports, reportSpreadsheetId, errors, warnings, infos);
+      await createReportStep(actionUrl, slackManager, reports, reportSpreadsheetId, errors, warnings, infos, []);
     } else {
       await slackManager.appendNewLine({
         id: 'no-issues',

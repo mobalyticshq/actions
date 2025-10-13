@@ -13,7 +13,7 @@ export async function validateStaticDataStep(
   config: StaticDataConfig,
   testsDir: string,
   tmpAssetPrefix: string,
-  apiSchema: ApiSchema,
+  apiSchema: ApiSchema | null,
 ) {
   await slackManager.appendNewLine({
     id: 'validate-static-data',
