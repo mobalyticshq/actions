@@ -210,7 +210,13 @@ function getRange(enities: Array<{ [key: string]: any }>) {
   return { rows: enities.length + 1, columns: headerSet.size };
 }
 
-function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Array<Entity>, apiSchema: ApiSchema | null, groupName: string) {
+function entitiesToRawData(
+  knownData: Array<Entity> | undefined, 
+  mergedData: Array<Entity>, 
+  apiSchema: ApiSchema | null, 
+  groupName: string,
+  oldSpreadsheetData?: Array<Array<string>>
+) {
   const knownFields = new Set<string>();
   knownData?.forEach(ent => {
     for (const prop of Object.keys(ent)) {
@@ -219,7 +225,6 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
       }
     }
   });
-  // const idColumnIdx =rows&&rows.length>0? rows[0].findIndex(val=>val==='id'):-1;
 
   const header = Array.from(knownFields);
 
@@ -233,6 +238,18 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
     }
   });
   header.push(...Array.from(newFields));
+
+  // Preserve existing columns from old spreadsheet (like *_override columns)
+  if (oldSpreadsheetData && oldSpreadsheetData.length > 0) {
+    const oldHeader = oldSpreadsheetData[0];
+    oldHeader.forEach(column => {
+      // Add columns that don't exist in current header
+      // This preserves manually added columns like name_override, description_override, etc.
+      if (!header.includes(column) && column !== 'deprecated') {
+        header.push(column);
+      }
+    });
+  }
 
   const resultRows = new Array<Array<string>>();
   //add header
@@ -263,6 +280,26 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
     return '';
   };
 
+  // Helper to get value from old spreadsheet data
+  const getOldSpreadsheetValue = (entityId: string, fieldName: string): string | null => {
+    if (!oldSpreadsheetData || oldSpreadsheetData.length < 2) return null;
+    
+    const oldHeader = oldSpreadsheetData[0];
+    const idColumnIdx = oldHeader.indexOf('id');
+    const fieldColumnIdx = oldHeader.indexOf(fieldName);
+    
+    if (idColumnIdx === -1 || fieldColumnIdx === -1) return null;
+    
+    // Find row by id
+    for (let i = 1; i < oldSpreadsheetData.length; i++) {
+      if (oldSpreadsheetData[i][idColumnIdx] === entityId) {
+        return oldSpreadsheetData[i][fieldColumnIdx] || null;
+      }
+    }
+    
+    return null;
+  };
+
   knownData?.forEach(ent => {
     if (ent.deprecated === true) {
       return;
@@ -271,11 +308,18 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
     for (let i = 0; i < header.length; i++) {
       const fieldName = header[i];
       const known = mergedData?.find(obj => obj.id == ent.id);
-      // const oldRow = rows?.find(row=>row[idColumnIdx] == ent.id);
+      
+      // Check if value exists in merged data
       if (known && known[fieldName]) {
         newRow.push(stringify(known[fieldName]));
-      } else if (known) {
-        newRow.push(getDefaultValueForField(fieldName));
+      } else {
+        // Try to get value from old spreadsheet (for preserved columns like *_override)
+        const oldValue = getOldSpreadsheetValue(ent.id as string, fieldName);
+        if (oldValue !== null) {
+          newRow.push(oldValue);
+        } else if (known) {
+          newRow.push(getDefaultValueForField(fieldName));
+        }
       }
     }
     resultRows.push(newRow);
@@ -292,10 +336,17 @@ function entitiesToRawData(knownData: Array<Entity> | undefined, mergedData: Arr
       const fieldName = header[i];
       const known = knownData?.find(obj => obj.id == ent.id);
       const newEntity = mergedData?.find(obj => obj.id == ent.id);
+      
       if (!known && newEntity && newEntity[fieldName]) {
         newRow.push(stringify(newEntity[fieldName]));
-      } else if (!known && newEntity) {
-        newRow.push(getDefaultValueForField(fieldName));
+      } else if (!known) {
+        // Try to get value from old spreadsheet (for preserved columns like *_override)
+        const oldValue = getOldSpreadsheetValue(ent.id as string, fieldName);
+        if (oldValue !== null) {
+          newRow.push(oldValue);
+        } else if (newEntity) {
+          newRow.push(getDefaultValueForField(fieldName));
+        }
       }
     }
     resultRows.push(newRow);
@@ -589,7 +640,7 @@ export async function updateSpreadsheets(
         await addSheet(spreadsheetId, auth, group);
       }
 
-      newSpreadsheetData[group] = entitiesToRawData(jsonData[group], mergedData[group], apiSchema, group);
+      newSpreadsheetData[group] = entitiesToRawData(jsonData[group], mergedData[group], apiSchema, group, oldSpreadsheetsData[group]);
 
       for (let i = 0; i < newSpreadsheetData[group].length; ++i)
         for (let j = 0; j < newSpreadsheetData[group][i].length; ++j)

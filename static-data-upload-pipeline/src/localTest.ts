@@ -73,10 +73,6 @@ async function run() {
 
   const reports = new Array<ValidationReport>();
 
-  // if(spreadsheetData) {
-  //   await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
-  // }
-
 
   const commonReport = await validate(
     overridedData,
@@ -86,6 +82,10 @@ async function run() {
     apiSchema as ApiSchema,
     false
   );
+
+  if(spreadsheetData) {
+    await updateSpreadsheets(overrideSpreadsheetId, overridedData, staticData, spreadsheetData, apiSchema);
+  }
 
   reports.push(commonReport);
 

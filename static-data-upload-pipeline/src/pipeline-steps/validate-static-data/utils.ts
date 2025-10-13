@@ -493,7 +493,7 @@ export async function validate(
         }
       }
 
-      //name && slug == slugify(name)
+      // name && slug == slugify(name)
       //   if(ent.gameId&& ent.slug){
       //      if(slugify(ent.gameId)!==ent.slug){
       //          entityReport.errors[ReportMessages.justMsg].add(`wrong slug, expected:${slugify(ent.name)}`);
