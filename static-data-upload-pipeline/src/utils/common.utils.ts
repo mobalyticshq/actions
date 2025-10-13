@@ -110,7 +110,12 @@ export function stringify(value: any) {
 
 export function tryParse(value: string) {
   try {
-    return JSON.parse(value);
+    const result = JSON.parse(value);
+    if (result && typeof result === 'number') {
+      return result.toString();
+    }
+
+    return result;
   } catch {}
   return value;
 }
