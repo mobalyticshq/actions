@@ -119,7 +119,7 @@ const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string): string 
     return MANUAL_FILL_PLACEHOLDER;
 };
 
-const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any): FieldConfig => {
+const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): FieldConfig => {
     const fieldConfig: FieldConfig = { type: FIELD_TYPES.STRING };
    
     switch (typeof value) {
@@ -147,12 +147,11 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
                 }
                 fieldConfig.type = arrayTypeResult.type;
                 if (arrayTypeResult.type === FIELD_TYPES.OBJECT) {
-                    fieldConfig.objName = fieldName;
+                    fieldConfig.objName = buildObjectName(parentPath, fieldName);
                 }
-            }
-            else {
+            } else {
                 fieldConfig.type = FIELD_TYPES.OBJECT;
-                fieldConfig.objName = fieldName;
+                fieldConfig.objName = buildObjectName(parentPath, fieldName);
             }
             break;
         default:
@@ -185,7 +184,7 @@ const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: 
         return;
     }
     
-    const fieldConfig = detectFieldConfig(builder, fieldName, value);
+    const fieldConfig = detectFieldConfig(builder, fieldName, value, '');
     
     // Skip fields with undetectable types (null, empty arrays, etc.)
     if (fieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
@@ -208,6 +207,8 @@ const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string,
     const objConfig: ObjectConfig = {
         fields: {},
     };
+    const currentObjectPath = buildObjectName(parentPath, objFieldName);
+    
     for (const [fieldName, value] of Object.entries(obj)) {
         // Exclude specified fields
         if (isExcludedField(fieldName)) {
@@ -219,17 +220,13 @@ const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string,
             continue;
         }
         
-        const fieldConfig = detectFieldConfig(builder, fieldName, value);
+        const fieldConfig = detectFieldConfig(builder, fieldName, value, currentObjectPath);
         
         // Skip fields with undetectable types (null, empty arrays, etc.)
         if (fieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
             continue;
         }
         
-        if (fieldConfig.type === FIELD_TYPES.OBJECT) {
-            const nestedObjectParentPath = buildObjectName(parentPath, objFieldName);
-            fieldConfig.objName = buildObjectName(nestedObjectParentPath, fieldName);
-        }
         objConfig.fields[fieldName] = fieldConfig;
     }
     return objConfig;
@@ -248,7 +245,7 @@ const analyzeObjectStructureFromArray = (builder: GroupConfBuilder, fieldName: s
 };
 
 const detectObjectConfig = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): ObjectConfigResult => {
-    if (typeof value !== 'object' || value === null) {
+    if (typeof value !== 'object' || value === null || value === undefined) {
         return { config: { fields: {} }, valid: false };
     }
     if (Array.isArray(value)) {
@@ -274,18 +271,18 @@ const detectObjectConfig = (builder: GroupConfBuilder, fieldName: string, value:
             valid: true,
         };
     }
-    else {
-        return {
-            config: analyzeObjectStructure(builder, fieldName, value, parentPath),
-            valid: true,
-        };
-    }
+
+    return {
+        config: analyzeObjectStructure(builder, fieldName, value, parentPath),
+        valid: true,
+    };
 };
 
 const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): void => {
-    if (value === null || value === undefined) {
+    if (typeof value !== 'object' || value === null || value === undefined) {
         return;
     }
+
     const result = detectObjectConfig(builder, fieldName, value, parentPath);
     if (!result.valid) {
         return;
@@ -295,34 +292,27 @@ const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value:
     if (fullObjName in builder.objects) {
         const existing = builder.objects[fullObjName];
         builder.objects[fullObjName] = mergeObjectConfigs(existing, result.config);
-    }
-    else {
+    } else {
         builder.objects[fullObjName] = result.config;
     }
-    
+
     // Recursively process nested objects within the current object's fields
-    if (typeof value === 'object' && value !== null) {
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-                    for (const [k, vv] of Object.entries(item)) {
-                        // Skip null/undefined nested values
-                        if (vv !== null && vv !== undefined) {
-                            detectGroupObjects(builder, k, vv, fullObjName);
-                        }
-                    }
-                }
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+                continue;
+            }
+            for (const [k, vv] of Object.entries(item)) {
+                detectGroupObjects(builder, k, vv, fullObjName);
             }
         }
-        else {
-            for (const [k, vv] of Object.entries(value)) {
-                // Skip null/undefined nested values
-                if (vv !== null && vv !== undefined) {
-                    detectGroupObjects(builder, k, vv, fullObjName);
-                }
-            }
-        }
+        return;
     }
+
+    for (const [k, vv] of Object.entries(value)) {
+        detectGroupObjects(builder, k, vv, fullObjName);
+    }
+    return;
 };
 
 const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[]): boolean => {

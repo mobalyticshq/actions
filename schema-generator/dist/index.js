@@ -594,7 +594,7 @@ const resolveRefTarget = (builder, fieldName) => {
     }
     return schema_1.MANUAL_FILL_PLACEHOLDER;
 };
-const detectFieldConfig = (builder, fieldName, value) => {
+const detectFieldConfig = (builder, fieldName, value, parentPath) => {
     const fieldConfig = { type: schema_1.FIELD_TYPES.STRING };
     switch (typeof value) {
         case 'boolean':
@@ -621,12 +621,12 @@ const detectFieldConfig = (builder, fieldName, value) => {
                 }
                 fieldConfig.type = arrayTypeResult.type;
                 if (arrayTypeResult.type === schema_1.FIELD_TYPES.OBJECT) {
-                    fieldConfig.objName = fieldName;
+                    fieldConfig.objName = buildObjectName(parentPath, fieldName);
                 }
             }
             else {
                 fieldConfig.type = schema_1.FIELD_TYPES.OBJECT;
-                fieldConfig.objName = fieldName;
+                fieldConfig.objName = buildObjectName(parentPath, fieldName);
             }
             break;
         default:
@@ -654,7 +654,7 @@ const detectGroupFields = (builder, fieldName, value) => {
     if (value === null || value === undefined) {
         return;
     }
-    const fieldConfig = detectFieldConfig(builder, fieldName, value);
+    const fieldConfig = detectFieldConfig(builder, fieldName, value, '');
     // Skip fields with undetectable types (null, empty arrays, etc.)
     if (fieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
         return;
@@ -672,6 +672,7 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
     const objConfig = {
         fields: {},
     };
+    const currentObjectPath = buildObjectName(parentPath, objFieldName);
     for (const [fieldName, value] of Object.entries(obj)) {
         // Exclude specified fields
         if (isExcludedField(fieldName)) {
@@ -681,14 +682,10 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
         if (value === null || value === undefined) {
             continue;
         }
-        const fieldConfig = detectFieldConfig(builder, fieldName, value);
+        const fieldConfig = detectFieldConfig(builder, fieldName, value, currentObjectPath);
         // Skip fields with undetectable types (null, empty arrays, etc.)
         if (fieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
             continue;
-        }
-        if (fieldConfig.type === schema_1.FIELD_TYPES.OBJECT) {
-            const nestedObjectParentPath = buildObjectName(parentPath, objFieldName);
-            fieldConfig.objName = buildObjectName(nestedObjectParentPath, fieldName);
         }
         objConfig.fields[fieldName] = fieldConfig;
     }
@@ -706,7 +703,7 @@ const analyzeObjectStructureFromArray = (builder, fieldName, arr, parentPath) =>
     return accumulated;
 };
 const detectObjectConfig = (builder, fieldName, value, parentPath) => {
-    if (typeof value !== 'object' || value === null) {
+    if (typeof value !== 'object' || value === null || value === undefined) {
         return { config: { fields: {} }, valid: false };
     }
     if (Array.isArray(value)) {
@@ -729,15 +726,13 @@ const detectObjectConfig = (builder, fieldName, value, parentPath) => {
             valid: true,
         };
     }
-    else {
-        return {
-            config: analyzeObjectStructure(builder, fieldName, value, parentPath),
-            valid: true,
-        };
-    }
+    return {
+        config: analyzeObjectStructure(builder, fieldName, value, parentPath),
+        valid: true,
+    };
 };
 const detectGroupObjects = (builder, fieldName, value, parentPath) => {
-    if (value === null || value === undefined) {
+    if (typeof value !== 'object' || value === null || value === undefined) {
         return;
     }
     const result = detectObjectConfig(builder, fieldName, value, parentPath);
@@ -754,28 +749,21 @@ const detectGroupObjects = (builder, fieldName, value, parentPath) => {
         builder.objects[fullObjName] = result.config;
     }
     // Recursively process nested objects within the current object's fields
-    if (typeof value === 'object' && value !== null) {
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-                    for (const [k, vv] of Object.entries(item)) {
-                        // Skip null/undefined nested values
-                        if (vv !== null && vv !== undefined) {
-                            detectGroupObjects(builder, k, vv, fullObjName);
-                        }
-                    }
-                }
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+                continue;
+            }
+            for (const [k, vv] of Object.entries(item)) {
+                detectGroupObjects(builder, k, vv, fullObjName);
             }
         }
-        else {
-            for (const [k, vv] of Object.entries(value)) {
-                // Skip null/undefined nested values
-                if (vv !== null && vv !== undefined) {
-                    detectGroupObjects(builder, k, vv, fullObjName);
-                }
-            }
-        }
+        return;
     }
+    for (const [k, vv] of Object.entries(value)) {
+        detectGroupObjects(builder, k, vv, fullObjName);
+    }
+    return;
 };
 const buildGroupConfig = (builder, groupEntries) => {
     if (groupEntries.length === 0) {
