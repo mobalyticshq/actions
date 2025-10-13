@@ -9,7 +9,17 @@ export interface MessageLine {
 export class SlackMessageManagerV2 {
   private currentMessageId: string | null = null;
   private currentLines: MessageLine[] = [];
-  private channel: string = process.env.SLACK_CHANNEL_ID || 'C0932450HEF';
+  protected channel: string;
+
+  constructor(channelId?: string) {
+    // channel initialize
+    if (channelId) {
+      this.channel = channelId;
+    } else {
+      // Default channel if not provided
+      this.channel = 'C0932450HEF';
+    }
+  }
 
   /**
    * Send a new message to Slack
@@ -28,7 +38,7 @@ export class SlackMessageManagerV2 {
 
     try {
       const messageText = this.formatLines(lines);
-      
+
       const payload = {
         channel: this.channel,
         text: messageText,
@@ -65,12 +75,7 @@ export class SlackMessageManagerV2 {
    * @param iconEmoji - Emoji to use as message icon
    * @returns true if successful, false otherwise
    */
-  async updateMessage(
-    lineId: string,
-    content: string,
-    emoji?: string,
-    iconEmoji = ':receipt:'
-  ): Promise<boolean> {
+  async updateMessage(lineId: string, content: string, emoji?: string, iconEmoji = ':receipt:'): Promise<boolean> {
     // Check if message exists
     if (!this.currentMessageId) {
       return false;
@@ -100,10 +105,7 @@ export class SlackMessageManagerV2 {
    * @param iconEmoji - Emoji to use as message icon
    * @returns true if successful, false otherwise
    */
-  async appendNewLine(
-    line: MessageLine,
-    iconEmoji = ':receipt:'
-  ): Promise<boolean> {
+  async appendNewLine(line: MessageLine, iconEmoji = ':receipt:'): Promise<boolean> {
     // Check if message exists
     if (!this.currentMessageId) {
       return false;
@@ -131,7 +133,7 @@ export class SlackMessageManagerV2 {
 
     try {
       const messageText = this.formatLines(this.currentLines);
-      
+
       const payload = {
         channel: this.channel,
         ts: this.currentMessageId,

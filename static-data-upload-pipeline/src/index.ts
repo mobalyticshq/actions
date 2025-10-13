@@ -14,10 +14,6 @@ const execAsync = promisify(exec);
 initSlugify();
 
 async function run() {
-  // Create Slack message manager for this run
-  // const slackManager = new SlackMessageManager();
-  const slackManager = new SlackMessageManagerV2();
-
   // Collectd data from action inputs
   const staticDataPath = core.getInput('static_data_path');
   const overrideSpreadsheetId = core.getInput('override_spreadsheet_id');
@@ -27,6 +23,11 @@ async function run() {
   const dryRun = core.getInput('dry_run')?.toLowerCase() === 'true';
   const skipSchemaValidation = core.getInput('skip_schema_validation')?.toLowerCase() === 'true';
   const tests = core.getInput('game_specific_tests');
+  const chanelId = core.getInput('slack_channel_id');
+
+  // Create Slack message manager for this run
+  // const slackManager = new SlackMessageManager();
+  const slackManager = new SlackMessageManagerV2(chanelId);
 
   logger.group(`🚀🚀 Run static data upload pipeline for ${staticDataPath} `);
 
