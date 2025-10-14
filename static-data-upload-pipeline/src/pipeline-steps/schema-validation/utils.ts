@@ -10,9 +10,9 @@ function isValidString(str: string): boolean {
   return /^[a-zA-Z0-9]+$/.test(str);
 }
 
-// Helper function to validate string format for objects (letters only)
-function isValidObjectString(str: string): boolean {
-  return /^[a-zA-Z]+$/.test(str);
+// Helper function to validate string format for objects (starts with letter, can contain letters and digits)
+function isValidFieldNameString(str: string): boolean {
+  return /^[a-zA-Z][a-zA-Z0-9]*$/.test(str);
 }
 
 // Helper function to validate namespace format (starts with letter or underscore, contains letters, digits, underscores, dots)
@@ -221,10 +221,10 @@ export function validateSchemaStructure(schema: ApiSchema): ValidationError[] {
   // Check for unique group names and valid format
   const uniqueGroupNames = new Set<string>();
   for (const groupName of groupNames) {
-    if (!isValidString(groupName)) {
+    if (!isValidFieldNameString(groupName)) {
       errors.push({
         type: 'error',
-        message: `Group name must contain only letters and digits, got: "${groupName}"`,
+        message: `Group name must must start with a letter and contain only letters and digits, got: "${groupName}"`,
         path: `groups.${groupName}`,
       });
     }
@@ -274,10 +274,10 @@ export function validateGroupStructure(group: SchemaGroup, groupName: string, sc
   // Check for unique field names and valid format
   const uniqueFieldNames = new Set<string>();
   for (const fieldName of fieldNames) {
-    if (!isValidString(fieldName)) {
+    if (!isValidFieldNameString(fieldName)) {
       errors.push({
         type: 'error',
-        message: `Field name must contain only letters and digits, got: "${fieldName}"`,
+        message: `Field name start with a letter and contain only letters and digits, got: "${fieldName}"`,
         path: `groups.${groupName}.fields.${fieldName}`,
       });
     }
@@ -396,10 +396,10 @@ export function validateObjectsStructure(
   const uniqueObjectNames = new Set<string>();
 
   for (const objectName of objectNames) {
-    if (!isValidObjectString(objectName)) {
+    if (!isValidFieldNameString(objectName)) {
       errors.push({
         type: 'error',
-        message: `Object name must contain only letters, got: "${objectName}"`,
+        message: `Object name must start with a letter and contain only letters and digits, got: "${objectName}"`,
         path: `groups.${groupName}.objects.${objectName}`,
       });
     }
@@ -446,10 +446,10 @@ export function validateObjectStructure(
   // Check for unique field names and valid format
   const uniqueFieldNames = new Set<string>();
   for (const fieldName of fieldNames) {
-    if (!isValidString(fieldName)) {
+    if (!isValidFieldNameString(fieldName)) {
       errors.push({
         type: 'error',
-        message: `Object field name must contain only letters and digits, got: "${fieldName}"`,
+        message: `Object field name must start with a letter and contain only letters and digits, got: "${fieldName}"`,
         path: `groups.${groupName}.objects.${objectName}.fields.${fieldName}`,
       });
     }
