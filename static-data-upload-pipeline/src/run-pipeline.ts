@@ -12,6 +12,7 @@ import { validateStaticDataStep } from './pipeline-steps/validate-static-data/va
 import { syncStaticDataStep } from './pipeline-steps/sync-static-data-step';
 import { MessageLine, SlackMessageManagerV2 } from './utils/slack-manager-v2.utils';
 import { ExtractedRefs, extractSchemaRefs } from './utils/schema-refs-extractor/schema-refs-extractor';
+import { deduplicateReports } from './utils/report-deduplication.utils';
 
 export interface RunPipelineArgs {
   versions: Array<string>;
@@ -203,7 +204,11 @@ export async function runPipeline({
     const errors = beforeOverrideErrors + afterOverrideErrors;
     const warnings = beforeOverrideWarnings + afterOverrideWarnings;
     const infos = beforeOverrideInfos + afterOverrideInfos;
-    const reports = [...beforeOverrideReports, ...afterOverrideReports];
+    
+    // Deduplicate reports - merge reports for the same entity ID
+    // This prevents duplicate errors/warnings/infos for entities that appear in both validations
+    const allReports = [...beforeOverrideReports, ...afterOverrideReports];
+    const reports = deduplicateReports(allReports);
 
     // If errors or warnings or infos - create report
     if (errors > 0 || warnings > 0 || infos > 0) {
