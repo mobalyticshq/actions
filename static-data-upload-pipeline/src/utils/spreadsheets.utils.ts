@@ -5,6 +5,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { isImage, stringify, tryParse } from './common.utils';
 import { ApiSchema } from '../pipeline-steps/schema-validation/types';
 import { SlackMessageManagerV2 } from './slack-manager-v2.utils';
+import { applySpreadsheetsDataV2 } from './spreadsheets-apply-v2.utils';
 
 const sheets = google.sheets('v4');
 
@@ -17,6 +18,7 @@ export type SpreadsheetReport = {
   duplicatedEntities: { [key: string]: Set<string> };
   pageWithAbscentId: Set<string>;
   pagesWidthUnprocessedCells: { [key: string]: Array<{ row: number; column: number }> };
+  pagesWithExistingFieldColumns?: { [key: string]: Set<string> };
 };
 
 function applySpreadsheetsData(
@@ -74,7 +76,7 @@ function applySpreadsheetsData(
       for (let j = 0; j < rawData[group][0].length; j++) {
         const field = rawData[group][0][j] as string;
         //add unknown field to entity only
-        if (field !== '' && !field.endsWith('_override') && field !== 'deprecated' && knownFields.has(field)) {
+        if (field !== '' && !field.endsWith('_override') && field !== 'deprecated' && !knownFields.has(field)) {
           if (j >= rawData[group][i].length) {
             obj[field] = '';
           } else if (rawData[group][i][j]) {
@@ -300,56 +302,100 @@ function entitiesToRawData(
     return null;
   };
 
-  knownData?.forEach(ent => {
-    if (ent.deprecated === true) {
-      return;
+  // Extract order from old spreadsheet data
+  const spreadsheetOrder: string[] = [];
+  if (oldSpreadsheetData && oldSpreadsheetData.length > 1) {
+    const oldHeader = oldSpreadsheetData[0];
+    const idColumnIdx = oldHeader.indexOf('id');
+    
+    if (idColumnIdx !== -1) {
+      for (let i = 1; i < oldSpreadsheetData.length; i++) {
+        const entityId = oldSpreadsheetData[i][idColumnIdx];
+        if (entityId && entityId !== '') {
+          spreadsheetOrder.push(String(entityId));
+        }
+      }
     }
+  }
+
+  // Build maps for quick lookup
+  const mergedDataMap = new Map<string, Entity>();
+  mergedData?.forEach(ent => {
+    if (ent.id) {
+      mergedDataMap.set(String(ent.id), ent);
+    }
+  });
+
+  const processedIds = new Set<string>();
+
+  // Helper to create row for entity
+  const createRow = (entityId: string): string[] | null => {
+    const ent = mergedDataMap.get(entityId);
+    if (!ent || ent.deprecated === true) {
+      return null;
+    }
+
     const newRow = [];
     for (let i = 0; i < header.length; i++) {
       const fieldName = header[i];
-      const known = mergedData?.find(obj => obj.id == ent.id);
       
-      // Check if value exists in merged data
-      if (known && known[fieldName]) {
-        newRow.push(stringify(known[fieldName]));
+      if (ent[fieldName] !== undefined && ent[fieldName] !== null) {
+        newRow.push(stringify(ent[fieldName]));
       } else {
-        // Try to get value from old spreadsheet (for preserved columns like *_override)
-        const oldValue = getOldSpreadsheetValue(ent.id as string, fieldName);
+        const oldValue = getOldSpreadsheetValue(entityId, fieldName);
         if (oldValue !== null) {
           newRow.push(oldValue);
-        } else if (known) {
+        } else {
           newRow.push(getDefaultValueForField(fieldName));
         }
       }
     }
-    resultRows.push(newRow);
-  });
+    return newRow;
+  };
 
-  mergedData?.forEach(ent => {
-    // Skip deprecated entities
-    if (ent.deprecated === true) {
+  // Step 1: Process entities in spreadsheet order (preserves table order)
+  for (const entityId of spreadsheetOrder) {
+    const row = createRow(entityId);
+    if (row) {
+      resultRows.push(row);
+      processedIds.add(entityId);
+    }
+  }
+
+  // Step 2: Add entities from knownData that weren't in spreadsheet (new from JSON)
+  knownData?.forEach(ent => {
+    if (ent.deprecated === true || !ent.id) {
       return;
     }
     
-    const newRow = [];
-    for (let i = 0; i < header.length; i++) {
-      const fieldName = header[i];
-      const known = knownData?.find(obj => obj.id == ent.id);
-      const newEntity = mergedData?.find(obj => obj.id == ent.id);
-      
-      if (!known && newEntity && newEntity[fieldName]) {
-        newRow.push(stringify(newEntity[fieldName]));
-      } else if (!known) {
-        // Try to get value from old spreadsheet (for preserved columns like *_override)
-        const oldValue = getOldSpreadsheetValue(ent.id as string, fieldName);
-        if (oldValue !== null) {
-          newRow.push(oldValue);
-        } else if (newEntity) {
-          newRow.push(getDefaultValueForField(fieldName));
-        }
-      }
+    const entityId = String(ent.id);
+    if (processedIds.has(entityId)) {
+      return;
     }
-    resultRows.push(newRow);
+
+    const row = createRow(entityId);
+    if (row) {
+      resultRows.push(row);
+      processedIds.add(entityId);
+    }
+  });
+
+  // Step 3: Add any remaining entities from mergedData (edge case)
+  mergedData?.forEach(ent => {
+    if (ent.deprecated === true || !ent.id) {
+      return;
+    }
+    
+    const entityId = String(ent.id);
+    if (processedIds.has(entityId)) {
+      return;
+    }
+
+    const row = createRow(entityId);
+    if (row) {
+      resultRows.push(row);
+      processedIds.add(entityId);
+    }
   });
 
   return resultRows;
@@ -722,7 +768,7 @@ export async function mergeWithSpreadsheets(actionUrl: string, slackManager: Sla
     const spreadsheetData = await getCurrentRawData(spreadsheetId, auth, spreadsheetReport);
     //parse and validate data
     console.log(`##Create enities from spreadsheet and override them`);
-    const processedData = applySpreadsheetsData(spreadsheetData, jsonData, spreadsheetReport);
+    const processedData = applySpreadsheetsDataV2(spreadsheetData, jsonData, spreadsheetReport);
     console.log(`##Merge JSON with spreadsheets`);
     //merge spreadsheet and jsonData, spreadsheet data is additional data
     const mergedData = mergeStaticData(processedData, jsonData, false);
