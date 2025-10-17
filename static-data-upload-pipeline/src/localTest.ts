@@ -11,12 +11,13 @@ import { isValidReport } from './utils/is-valid-report.utils';
 import { readSchema } from './utils/common.utils';
 import { ApiSchema } from './pipeline-steps/schema-validation/types';
 import { MessageLine, SlackMessageManagerV2 } from './utils/slack-manager-v2.utils';
+import { ExtractedRefs, extractSchemaRefs } from './utils/schema-refs-extractor/schema-refs-extractor';
 
 async function run() {
   const overrideSpreadsheetId = '1I76ZyGFHA9JCr5lSMBK2zJaPpqZ1xb4F5M_wQxKAvSI';
   const tmpBucket = 'https://cdn.mobalytics.gg/assets/the-bazaar';
-  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2';
-  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/the-bazaar/dev/static_data_v2/schema.json';
+  const dirName = '/Users/alexmittsel/WORK/ngf-configuration/poe/prod/static_data';
+  const schemaPath = '/Users/alexmittsel/WORK/ngf-configuration/poe/prod/static_data/schema.json';
   const apiSchema = readSchema(schemaPath);
 
   const pattern = /static_data_v\d+.\d+.\d+.json/;
@@ -40,23 +41,13 @@ async function run() {
 
   console.log(`[Override Spreadsheet](https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}/edit)`);
 
-  let configDir = path.dirname(sortedFiles[0]);
-  let gameConfig = '';
-  let config = {} as StaticDataConfig;
 
-  for (let i = 0; i < 3; ++i) {
-    if (await existsSync(path.join(configDir, 'config.json'))) {
-      gameConfig = path.join(configDir, 'config.json');
-      break;
-    }
-    configDir = path.join(configDir, '../');
-  }
-
-  if (gameConfig.length == 0) {
-    console.log(`❌ Can't find game config for ${sortedFiles[0]}`);
+  let config: ExtractedRefs = {refs: []};
+  const pathToConfig = path.join(dirName, 'config.json');
+  if (existsSync(pathToConfig)) {
+    config = JSON.parse(readFileSync(pathToConfig, 'utf8'));
   } else {
-    console.log(`ℹ️ Game config  ${gameConfig}`);
-    config = JSON.parse(readFileSync(gameConfig, 'utf8'));
+    config = apiSchema ? extractSchemaRefs(apiSchema) : {refs: []};
   }
 
   let staticData = {} as StaticData,
@@ -75,7 +66,7 @@ async function run() {
 
 
   const commonReport = await validate(
-    overridedData,
+    staticData,
     oldData,
     config,
     tmpBucket,
