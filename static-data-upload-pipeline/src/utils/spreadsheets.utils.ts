@@ -148,8 +148,11 @@ async function getCurrentRawData(spreadsheetId: string, auth: GoogleAuth, spread
         if (header && header.values) {
           const resultHeader = new Array<string>();
           for (const cell of header.values) {
-            if (!cell || !cell.userEnteredValue || !cell.userEnteredValue.stringValue) break;
-            resultHeader.push(cell.userEnteredValue.stringValue);
+            if (cell && cell.userEnteredValue && cell.userEnteredValue.stringValue) {
+              resultHeader.push(cell.userEnteredValue.stringValue);
+            } else {
+              resultHeader.push("");
+            };
           }
 
           rawData[sheet.properties?.title].push(resultHeader);

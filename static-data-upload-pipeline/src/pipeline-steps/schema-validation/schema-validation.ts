@@ -32,6 +32,13 @@ export async function schemaValidationStep(
         // Perform compatibility validation
         compatibilityErrors = validateSchemaCompatibility(apiSchema, referenceSchema);
       }
+    } else {
+      await slackManager.appendNewLine({
+        id: 'schema-validation-bc-skipped',
+        content: `BREAKING CHANGES Label was detected: Backward compatibility validation is skipped`,
+        emoji: ':warning:',
+      });
+      console.log(`ℹ️ Skipping backward compatibility validation`);
     }
 
     // Combine all validation errors

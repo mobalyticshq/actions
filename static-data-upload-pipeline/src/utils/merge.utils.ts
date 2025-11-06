@@ -47,7 +47,9 @@ export function isValidDataForMerge(data: StaticData) {
   }
   for (const group of Object.keys(data)) {
     for (const ent of data[group]) {
-      if (data[group].filter(e => e.id == ent.id).length > 1) return false;
+      if (data[group].filter(e => e.id == ent.id).length > 1) {
+        return false;
+      }
     }
   }
   return true;

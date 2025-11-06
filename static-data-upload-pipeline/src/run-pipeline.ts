@@ -14,6 +14,7 @@ import { MessageLine, SlackMessageManagerV2 } from './utils/slack-manager-v2.uti
 import { ExtractedRefs, extractSchemaRefs } from './utils/schema-refs-extractor/schema-refs-extractor';
 import { deduplicateReports } from './utils/report-deduplication.utils';
 import { isValidReport } from './utils/is-valid-report.utils';
+import { StaticData } from './types';
 
 export interface RunPipelineArgs {
   versions: Array<string>;
@@ -43,7 +44,7 @@ export async function runPipeline({
   apiSchema,
   apiSchemaPath,
   skipSchemaValidation = false,
-}: RunPipelineArgs) {
+}: RunPipelineArgs): Promise<StaticData | null | undefined> {
   // Define environment (dev/stg/prod) from the staticDataPatn
   const environment = staticDataPath.split('/')[1].toUpperCase();
   // Define what game we are processing from the path
@@ -65,7 +66,7 @@ export async function runPipeline({
       },
     ];
     await slackManager.sendMessage(message);
-    return;
+    return null;
   }
 
   logger.group(`🚀 Run pipeline for:\n ${logColors.green}${versions}${logColors.reset}`);
@@ -143,7 +144,7 @@ export async function runPipeline({
           0,
           schemaValidationResult.errors ?? [],
         );
-        return;
+        return null;
       }
       logger.endGroup();
     }
@@ -161,7 +162,7 @@ export async function runPipeline({
 
     // -------- Merge static data files step --------
     logger.group(`:merge: Merge static data files `);
-    let { staticData, oldData } = await mergeStaticDataStep(actionUrl, slackManager, versions);
+    let { staticData, oldData, success } = await mergeStaticDataStep(actionUrl, slackManager, versions);
     logger.endGroup();
 
     // ----------- Validate static data before merge with Spreadshhet step -----------
@@ -241,6 +242,8 @@ export async function runPipeline({
         }
       }
     }
+
+    return overridedData;
 
   } catch (error) {
     console.log(`⚠️ Error during pipeline ${error}`);
