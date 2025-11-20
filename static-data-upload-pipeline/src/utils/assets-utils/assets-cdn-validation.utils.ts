@@ -3,15 +3,6 @@ import { ValidationEntityReport } from '../../types';
 
 import { ReportMessages } from '../../pipeline-steps/validate-static-data/utils';
 
-interface GCSValidationOptions {
-  bucketName: string;
-  prefix?: string; // Directory prefix to filter files (e.g., "assets/poe-1/images/")
-  credentials?: {
-    client_email: string;
-    private_key: string;
-  };
-}
-
 // Process URLs using GCS validation (single API call + synchronous validation)
 export async function processUrlsInChunks(
   entries: [string, { report: ValidationEntityReport; path: string }[]][],
@@ -20,30 +11,19 @@ export async function processUrlsInChunks(
 ): Promise<void> {
   console.log(`🔄 Processing ${entries.length} URLs using GCS validation...`);
 
-  const prefix = new URL(tmpBucket).pathname; // Extract prefix from tmpBucket URL
-  const gcsOptions: GCSValidationOptions = {
-    bucketName: process.env.GCP_ASSETS_BUCKET_NAME || 'cdn.mobalytics.gg', // Default to mobalytics CDN bucket
-    prefix: prefix.slice(1) || 'assets/example-game', // Default to example-game images directory
-    credentials:
-      process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY
-        ? {
-            client_email: process.env.GOOGLE_CLIENT_EMAIL,
-            private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-          }
-        : undefined,
-  };
+  // Name of the bucket where we look for assets, default to mobalytics CDN bucket
+  const bucketName = process.env.GCP_ASSETS_BUCKET_NAME || 'cdn.mobalytics.gg';
+  // Extract prefix from tmpBucket URL
+  const prefix = new URL(tmpBucket).pathname.slice(1) || 'assets/example-game';
 
-  // Initialize GCS client
-  const storage = new Storage({
-    credentials: gcsOptions.credentials,
-  });
-
-  const bucket = storage.bucket(gcsOptions.bucketName);
+  // Initialize GCS client, credentials should come from the standard user auth
+  const storage = new Storage();
+  const bucket = storage.bucket(bucketName);
 
   // Get all existing files from GCS bucket (single API call with prefix filter)
-  console.log(`🔍 Fetching file list from GCS bucket: ${gcsOptions.bucketName} with prefix: ${gcsOptions.prefix}`);
-  const existingFiles = await getAllFilesInBucket(bucket, gcsOptions.prefix);
-  console.log(`📁 Found ${existingFiles.size} files in GCS bucket with prefix ${gcsOptions.prefix}`);
+  console.log(`🔍 Fetching file list from GCS bucket: ${bucketName} with prefix: ${prefix}`);
+  const existingFiles = await getAllFilesInBucket(bucket, prefix);
+  console.log(`📁 Found ${existingFiles.size} files in GCS bucket with prefix ${prefix}`);
 
   // Process all URLs synchronously
   console.log(`⚡ Validating ${entries.length} URLs synchronously...`);
