@@ -1,0 +1,13 @@
+name: 'Build Static Data Query Pipeline'
+description: 'GitHub Action for building and processing static data queries'
+author: 'Stanislav'
+
+inputs:
+  token:
+    required: true
+    default: ${{ github.token }}
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+
