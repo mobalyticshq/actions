@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import * as github from '@actions/github';
+import { buildStaticDataQuery } from './build-static-data-query';
 
 /**
  * Main function for the GitHub Action
@@ -29,25 +29,6 @@ export async function run(): Promise<void> {
       core.setFailed('An unknown error occurred');
     }
   }
-}
-
-/**
- * Mock function to build static data query
- */
-export async function buildStaticDataQuery(
-  workingDirectory: string,
-  configPath: string
-): Promise<{ data: string; status: string }> {
-  // Simulate some async work
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  // Mock implementation
-  const result = {
-    data: `Processed data from ${workingDirectory} with config ${configPath}`,
-    status: 'success',
-  };
-
-  return result;
 }
 
 // Run the action if this file is executed directly
