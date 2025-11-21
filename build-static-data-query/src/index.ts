@@ -10,7 +10,7 @@ export async function run(): Promise<void> {
     const workingDirectory = core.getInput('working-directory');
     const configPath = core.getInput('config-path');
 
-    core.info(`Starting build static data query pipeline...`);
+    core.info(`Starting build static data query...`);
     core.info(`Working directory: ${workingDirectory}`);
     core.info(`Config path: ${configPath}`);
 

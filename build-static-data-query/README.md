@@ -1,4 +1,4 @@
-# Build Static Data Query Pipeline
+# Build Static Data Query
 
 GitHub Action for building and processing static data queries.
 
@@ -6,7 +6,7 @@ GitHub Action for building and processing static data queries.
 
 ```yaml
 - name: Build Static Data Query
-  uses: ./build-static-data-query-pipeline
+  uses: ./build-static-data-query
   with:
     token: ${{ secrets.ACTION_ACCESS_TOKEN }}
 ```
