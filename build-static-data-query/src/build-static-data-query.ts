@@ -2,15 +2,14 @@
  * Mock function to build static data query
  */
 export async function buildStaticDataQuery(
-  workingDirectory: string,
-  configPath: string
+  game: string
 ): Promise<{ data: string; status: string }> {
   // Simulate some async work
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   // Mock implementation
   const result = {
-    data: `Processed data from ${workingDirectory} with config ${configPath}`,
+    data: `Processed data for game ${game}`,
     status: 'success',
   };
 

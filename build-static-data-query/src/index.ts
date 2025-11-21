@@ -7,15 +7,13 @@ import { buildStaticDataQuery } from './build-static-data-query';
 export async function run(): Promise<void> {
   try {
     // Get inputs
-    const workingDirectory = core.getInput('working-directory');
-    const configPath = core.getInput('config-path');
+    const game = core.getInput('game');
 
     core.info(`Starting build static data query...`);
-    core.info(`Working directory: ${workingDirectory}`);
-    core.info(`Config path: ${configPath}`);
+    core.info(`Game: ${game}`);
 
     // Mock functionality
-    const result = await buildStaticDataQuery(workingDirectory, configPath);
+    const result = await buildStaticDataQuery(game);
 
     // Set outputs
     core.setOutput('result', result.data);

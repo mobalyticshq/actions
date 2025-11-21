@@ -3,9 +3,9 @@ description: 'GitHub Action for building and processing static data queries'
 author: 'Stanislav'
 
 inputs:
-  token:
+  game:
+    description: 'The slug of the current game'
     required: true
-    default: ${{ github.token }}
 
 runs:
   using: 'node20'
