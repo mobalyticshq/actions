@@ -3,12 +3,13 @@ import { getCleanedSchemaByGame } from './utils/cleanSchemaByGame.js';
 
 const config: CodegenConfig = {
   generates: {
-    './src/api/graphql/schema.graphql': {
+    './dist/api/graphql/schema.graphql': {
       schema: {
         // todo Stas - remove hardcode
         ['./codegen/temp/schema.graphql']: {
           loader: getCleanedSchemaByGame({
             includedScopes: ['riftbound'],
+            staticDataFieldName: 'staticData',
           }),
         },
       },

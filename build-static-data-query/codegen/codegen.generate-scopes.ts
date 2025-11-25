@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { buildSchema, GraphQLObjectType } from 'graphql';
+import { buildSchema, GraphQLObjectType, GraphQLNamedType, isObjectType } from 'graphql';
 
 const SCHEMA_PATH = path.join(__dirname, 'temp', 'schema.graphql');
 const OUTPUT_PATH = path.join(__dirname, 'temp', 'scopes.js');
@@ -38,8 +38,38 @@ function generateScopes() {
       subscriptionNamespaces.push(...Object.keys(fields).sort());
     }
 
+    // Extract game-specific fields if GAME_FIELD env variable is provided
+    let targetGameQueryFields: string[] = [];
+    const gameField = process.env.GAME_FIELD;
+
+    if (gameField && queryType) {
+      const fields = queryType.getFields();
+      const gameFieldObj = fields[gameField];
+
+      if (gameFieldObj) {
+        // Get the type of this field (unwrap NonNull and List wrappers)
+        let fieldType = gameFieldObj.type;
+
+        // Unwrap NonNull and List types to get to the named type
+        while ('ofType' in fieldType && fieldType.ofType) {
+          fieldType = fieldType.ofType;
+        }
+
+        // Check if it's an object type and get its fields
+        if (isObjectType(fieldType)) {
+          const gameTypeFields = fieldType.getFields();
+          targetGameQueryFields = Object.keys(gameTypeFields).sort();
+          console.log(`✅ Extracted ${targetGameQueryFields.length} fields from ${gameField} type`);
+        } else {
+          console.warn(`⚠️  Field '${gameField}' is not an object type`);
+        }
+      } else {
+        console.warn(`⚠️  Field '${gameField}' not found in Query type`);
+      }
+    }
+
     // Generate the output file content
-    const output = `// Top level nodes available in graphql api
+    let output = `// Top level nodes available in graphql api
 export const QueryNamespaces = [
 ${queryNamespaces.map(name => `  '${name}',`).join('\n')}
 ];
@@ -53,6 +83,15 @@ ${subscriptionNamespaces.map(name => `  '${name}',`).join('\n')}
 ];
 `;
 
+    // Add TargetGameQueryFields if we have game-specific fields
+    if (targetGameQueryFields.length > 0) {
+      output += `
+export const TargetGameQueryFields = [
+${targetGameQueryFields.map(name => `  '${name}',`).join('\n')}
+];
+`;
+    }
+
     // Write to output file
     fs.writeFileSync(OUTPUT_PATH, output, 'utf-8');
 
@@ -60,6 +99,9 @@ ${subscriptionNamespaces.map(name => `  '${name}',`).join('\n')}
     console.log(`   Query fields: ${queryNamespaces.length}`);
     console.log(`   Mutation fields: ${mutationNamespaces.length}`);
     console.log(`   Subscription fields: ${subscriptionNamespaces.length}`);
+    if (targetGameQueryFields.length > 0) {
+      console.log(`   Target game (${gameField}) fields: ${targetGameQueryFields.length}`);
+    }
   } catch (error) {
     console.error('❌ Error generating scopes:', error);
     process.exit(1);
