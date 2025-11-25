@@ -6,8 +6,14 @@ inputs:
   game:
     description: 'The slug of the current game'
     required: true
+  graphql-endpoint:
+    description: 'GraphQL endpoint URL'
+    required: true
+  static-data-field-name:
+    description: 'Name of the static data field in schema'
+    required: false
+    default: 'staticData'
 
 runs:
   using: 'node20'
   main: 'dist/index.js'
-

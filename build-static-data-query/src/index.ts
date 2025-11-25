@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { downloadSchema } from './steps/download-schema';
 import { generateScopes } from './steps/generate-scopes';
+import { cleanSchema } from './steps/clean-schema';
 
 /**
  * Main function for the GitHub Action
@@ -10,6 +11,7 @@ export async function run(): Promise<void> {
     // Get inputs
     const game = core.getInput('game', { required: true });
     const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
+    const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
@@ -26,6 +28,16 @@ export async function run(): Promise<void> {
       gameField: game,
     });
     core.info(`✓ Scopes generated: ${scopesPath}`);
+    core.endGroup();
+
+    // Step 3: Clean schema
+    core.startGroup('🧹 Step 3: Cleaning schema');
+    const cleanedSchemaPath = await cleanSchema({
+      schemaPath: downloadedSchemaPath,
+      gameField: game,
+      staticDataFieldName,
+    });
+    core.info(`✓ Schema cleaned: ${cleanedSchemaPath}`);
     core.endGroup();
 
     core.info(`✓ Pipeline completed successfully`);
