@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { buildStaticDataQuery } from './build-static-data-query';
+import { downloadSchema } from './steps/download-schema';
 
 /**
  * Main function for the GitHub Action
@@ -7,17 +7,16 @@ import { buildStaticDataQuery } from './build-static-data-query';
 export async function run(): Promise<void> {
   try {
     // Get inputs
-    const game = core.getInput('game');
+    const game = core.getInput('game', { required: true });
+    const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
 
-    core.info(`Starting build static data query...`);
-    core.info(`Game: ${game}`);
+    core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
-    // Mock functionality
-    const result = await buildStaticDataQuery(game);
-
-    // Set outputs
-    core.setOutput('result', result.data);
-    core.setOutput('status', result.status);
+    // Step 1: Download GraphQL schema
+    core.startGroup('📥 Step 1: Downloading GraphQL schema');
+    const downloadedSchemaPath = await downloadSchema({ endpoint: graphqlEndpoint });
+    core.info(`✓ Schema downloaded to: ${downloadedSchemaPath}`);
+    core.endGroup();
 
     core.info(`✓ Pipeline completed successfully`);
   } catch (error) {
@@ -33,4 +32,3 @@ export async function run(): Promise<void> {
 if (require.main === module) {
   run();
 }
-
