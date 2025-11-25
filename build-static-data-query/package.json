@@ -4,8 +4,6 @@
   "description": "GitHub Action for building and processing static data queries",
   "main": "dist/index.js",
   "scripts": {
-    "gql:generate-scopes": "GAME_FIELD=riftbound npx tsx codegen/codegen.generate-scopes.ts",
-    "gql:download": "rimraf ./src/**/*schema.graphql && graphql-codegen -c codegen/codegen.download.ts && graphql-codegen -c codegen/codegen.clean.ts",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
