@@ -60,11 +60,9 @@ export async function cleanSchema(options: CleanSchemaOptions): Promise<string> 
     // Execute the code generation
     core.info('Running schema cleanup...');
     try {
-      await generate(config, true);
+      await generate(config as any, true);
     } catch (error) {
-      core.setFailed(
-        `Failed to clean schema: ${error instanceof Error ? error.message : String(error)}`
-      );
+      core.setFailed(`Failed to clean schema: ${error instanceof Error ? error.message : String(error)}`);
       process.exit(1);
     }
 
@@ -77,10 +75,7 @@ export async function cleanSchema(options: CleanSchemaOptions): Promise<string> 
     core.info(`✓ Schema successfully cleaned and saved to: ${absoluteOutputPath}`);
     return absoluteOutputPath;
   } catch (error) {
-    core.setFailed(
-      `Unexpected error in cleanSchema: ${error instanceof Error ? error.message : String(error)}`
-    );
+    core.setFailed(`Unexpected error in cleanSchema: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 }
-
