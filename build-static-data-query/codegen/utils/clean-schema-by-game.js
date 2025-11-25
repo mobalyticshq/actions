@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { buildClientSchema, buildSchema, introspectionFromSchema } from 'graphql';
 import { Microfiber } from 'microfiber';
-import { MutationNamespaces, QueryNamespaces, SubscriptionNamespaces, TargetGameQueryFields, TargetGameQueryTypeName } from '../../../../dist/generated/scopes';
-import { pruneSchema } from '../../../../graphql-tools/prune';
+import { MutationNamespaces, QueryNamespaces, SubscriptionNamespaces, TargetGameQueryFields, TargetGameQueryTypeName } from '../../dist/generated/scopes';
+import { pruneSchema } from './graphql-tools/prune';
 
 export const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, options = {} }) => {
   const queriesToRemove = QueryNamespaces.filter(queryName => !includedScopes.includes(queryName));

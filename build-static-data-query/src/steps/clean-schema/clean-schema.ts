@@ -1,5 +1,5 @@
 import { generate } from '@graphql-codegen/cli';
-import { getCleanedSchemaByGame } from './utils/clean-schema-by-game.js';
+import { getCleanedSchemaByGame } from '../../../codegen/utils/clean-schema-by-game.js';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as core from '@actions/core';

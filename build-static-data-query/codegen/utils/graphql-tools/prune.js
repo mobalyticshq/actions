@@ -13,7 +13,7 @@ import { mapSchema } from './mapSchema.js';
 import { getImplementingTypes } from './get-implementing-types';
 import { getRootTypes } from './rootTypes.js';
 
-import { CommonNgfInterfacesPrefix } from '../src/steps/clean-schema/utils/constants';
+import { CommonNgfInterfacesPrefix } from '../constants';
 /**
  * Prunes the provided schema, removing unused and empty types
  * @param schema The schema to prune
