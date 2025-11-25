@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import { downloadSchema } from './steps/download-schema';
-import { generateScopes } from './steps/generate-scopes';
-import { cleanSchema } from './steps/clean-schema';
+import { generateScopes } from './steps/2-generate-scopes';
+import { cleanSchema } from './steps/3-clean-schema';
 
 /**
  * Main function for the GitHub Action
