@@ -12,7 +12,8 @@ import { MapperKind } from './Interfaces.js';
 import { mapSchema } from './mapSchema.js';
 import { getImplementingTypes } from './get-implementing-types';
 import { getRootTypes } from './rootTypes.js';
-import { CommonNgfInterfacesPrefix } from '../scopes';
+
+import { CommonNgfInterfacesPrefix } from '../constants';
 /**
  * Prunes the provided schema, removing unused and empty types
  * @param schema The schema to prune

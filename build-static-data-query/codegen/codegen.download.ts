@@ -2,8 +2,7 @@ import { type CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
   generates: {
-    // todo Stas - remove hardcode
-    './codegen/temp/riftbound.schema.graphql': {
+    './codegen/temp/schema.graphql': {
       schema: [
         {
           // todo Stas - remove hardcode
