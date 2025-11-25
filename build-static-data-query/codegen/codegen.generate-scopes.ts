@@ -40,6 +40,7 @@ function generateScopes() {
 
     // Extract game-specific fields if GAME_FIELD env variable is provided
     let targetGameQueryFields: string[] = [];
+    let targetGameQueryTypeName: string | undefined;
     const gameField = process.env.GAME_FIELD;
 
     if (gameField && queryType) {
@@ -59,7 +60,10 @@ function generateScopes() {
         if (isObjectType(fieldType)) {
           const gameTypeFields = fieldType.getFields();
           targetGameQueryFields = Object.keys(gameTypeFields).sort();
-          console.log(`✅ Extracted ${targetGameQueryFields.length} fields from ${gameField} type`);
+          targetGameQueryTypeName = fieldType.name;
+          console.log(
+            `✅ Extracted ${targetGameQueryFields.length} fields from ${gameField} type (${targetGameQueryTypeName})`,
+          );
         } else {
           console.warn(`⚠️  Field '${gameField}' is not an object type`);
         }
@@ -83,12 +87,14 @@ ${subscriptionNamespaces.map(name => `  '${name}',`).join('\n')}
 ];
 `;
 
-    // Add TargetGameQueryFields if we have game-specific fields
+    // Add TargetGameQueryFields and TargetGameQueryTypeName if we have game-specific fields
     if (targetGameQueryFields.length > 0) {
       output += `
 export const TargetGameQueryFields = [
 ${targetGameQueryFields.map(name => `  '${name}',`).join('\n')}
 ];
+
+export const TargetGameQueryTypeName = '${targetGameQueryTypeName}';
 `;
     }
 
@@ -101,6 +107,7 @@ ${targetGameQueryFields.map(name => `  '${name}',`).join('\n')}
     console.log(`   Subscription fields: ${subscriptionNamespaces.length}`);
     if (targetGameQueryFields.length > 0) {
       console.log(`   Target game (${gameField}) fields: ${targetGameQueryFields.length}`);
+      console.log(`   Target game type name: ${targetGameQueryTypeName}`);
     }
   } catch (error) {
     console.error('❌ Error generating scopes:', error);
