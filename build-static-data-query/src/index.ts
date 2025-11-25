@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import { downloadSchema } from './steps/download-schema';
+import { generateScopes } from './steps/generate-scopes';
 
 /**
  * Main function for the GitHub Action
@@ -16,6 +17,15 @@ export async function run(): Promise<void> {
     core.startGroup('📥 Step 1: Downloading GraphQL schema');
     const downloadedSchemaPath = await downloadSchema({ endpoint: graphqlEndpoint });
     core.info(`✓ Schema downloaded to: ${downloadedSchemaPath}`);
+    core.endGroup();
+
+    // Step 2: Generate scopes
+    core.startGroup('🔧 Step 2: Generating scopes');
+    const scopesPath = generateScopes({
+      schemaPath: downloadedSchemaPath,
+      gameField: game,
+    });
+    core.info(`✓ Scopes generated: ${scopesPath}`);
     core.endGroup();
 
     core.info(`✓ Pipeline completed successfully`);

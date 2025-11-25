@@ -8,7 +8,7 @@ export interface DownloadSchemaOptions {
   endpoint: string;
 }
 
-const outputPath = 'dist/temp/schema.graphql';
+const outputPath = 'dist/generated/schema.graphql';
 const headers = {
   'xmoba-no-cache': '1',
 };
