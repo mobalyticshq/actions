@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { execWithTimeout, TimeoutError } from '../../utils/exec.utils';
+import { spawnWithTimeout, TimeoutError } from '../../utils/exec.utils';
 
 export interface GenerateFragmentsOptions {
   timeoutMs: number;
@@ -11,14 +11,13 @@ export async function generateFragments(options: GenerateFragmentsOptions): Prom
 
     // Проверка наличия cursor-cli
     try {
-      await execWithTimeout({ command: 'which cursor-agent', timeoutMs });
-      console.log('cursor-agent is installed');
+      await spawnWithTimeout({ command: 'which cursor-agent', args: [], timeoutMs });
+      core.info('cursor-agent is installed');
     } catch {
-      console.log('Installing cursor-cli...');
       core.info('Installing cursor-cli...');
-      await execWithTimeout({ command: 'curl -fsSL https://cursor.com/install | bash', timeoutMs });
+      await spawnWithTimeout({ command: 'curl -fsSL https://cursor.com/install | bash', args: [], timeoutMs });
       core.addPath(`${process.env.HOME}/.cursor/bin`);
-      console.log('Installation completed');
+      core.info('Installation completed');
     }
 
     // Get CURSOR_API_KEY from environment (GitHub Actions secrets)
@@ -28,39 +27,29 @@ export async function generateFragments(options: GenerateFragmentsOptions): Prom
       process.exit(1);
     }
 
-    const command =
-      'cursor-agent -p --force --model=sonnet-4.5 --output-format text \\"Implement instructions in the file build-static-data-query/src/steps/4-generate-fragments/generate-fragments.md\\"';
-    // const command = 'cursor-agent';
-    // const args = [
-    //   '-p',
-    //   '--force',
-    //   '--model=sonnet-4.5',
-    //   '--output-format',
-    //   'text',
-    //   'Implement instructions in the file build-static-data-query/src/steps/4-generate-fragments/generate-fragments.md',
-    // ];
+    const command = 'cursor-agent';
+    const args = [
+      '-p',
+      '--force',
+      '--model=sonnet-4.5',
+      '--output-format',
+      'text',
+      '"Implement instructions in the file build-static-data-query/src/steps/4-generate-fragments/generate-fragments.md"',
+    ];
 
     core.info(`Executing cursor-agent with timeout: ${timeoutMs}ms`);
 
     // Execute command with timeout
     try {
-      const result = await execWithTimeout({
+      await spawnWithTimeout({
         command,
+        args,
         timeoutMs,
         env: {
           ...process.env,
           CURSOR_API_KEY: cursorApiKey,
         },
       });
-
-      if (typeof result === 'string') {
-        core.info(`Command completed: ${result}`);
-      } else {
-        core.info(`Command stdout: ${result.stdout.toString()}`);
-        if (result.stderr) {
-          core.info(`Command stderr: ${result.stderr.toString()}`);
-        }
-      }
 
       core.info(`✓ Fragments generation completed successfully`);
       return;
