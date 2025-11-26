@@ -3,17 +3,16 @@ import * as core from '@actions/core';
 
 export const TimeoutError = 'TIMEOUT_ERROR' as const;
 
-
 interface SpawnWithTimeoutInActionArgs {
-  command: string,
-  args: string[],
-  timeoutMs: number,
-  env?: NodeJS.ProcessEnv,
+  command: string;
+  args: string[];
+  timeoutMs: number;
+  env?: NodeJS.ProcessEnv;
   extraConditionPromise?: Promise<string>;
 }
 
 function makeSpawnPromise(input: Omit<SpawnWithTimeoutInActionArgs, 'extraConditionPromise'>): Promise<string> {
-  const { command, args, timeoutMs, env, extraConditionPromise } = input;
+  const { command, args, timeoutMs, env } = input;
 
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -52,7 +51,7 @@ function makeSpawnPromise(input: Omit<SpawnWithTimeoutInActionArgs, 'extraCondit
     child.on('close', (code, signal) => {
       clearTimeout(timeout);
       if (code === 0) {
-        resolve({ stdout, stderr });
+        resolve('Command completed successfully');
       } else if (signal === 'SIGTERM') {
         reject(new Error(TimeoutError));
       } else {
@@ -67,11 +66,9 @@ function makeSpawnPromise(input: Omit<SpawnWithTimeoutInActionArgs, 'extraCondit
   });
 }
 
-export function spawnWithTimeout(
-  input: SpawnWithTimeoutInActionArgs
-): Promise<string> {
-  const { command, args,timeoutMs,env, extraConditionPromise } = input;
-  const spawnPromise = makeSpawnPromise(input);
+export function spawnWithTimeout(input: SpawnWithTimeoutInActionArgs): Promise<string> {
+  const { extraConditionPromise, ...restInput } = input;
+  const spawnPromise = makeSpawnPromise(restInput);
 
   if (extraConditionPromise) {
     return Promise.race([spawnPromise, extraConditionPromise]);
