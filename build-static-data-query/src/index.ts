@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { downloadSchema } from './steps/download-schema';
+import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
 
