@@ -1,5 +1,6 @@
 import { exec, spawn } from 'child_process';
 import * as core from '@actions/core';
+import { exec as execInAction } from '@actions/exec';
 
 const execAsync = (
   command: string,
@@ -35,6 +36,40 @@ export function execWithTimeout(args: ExecWithTimeoutArgs): Promise<ExecPromiseR
   const extraPromises = extraConditionPromise ? [extraConditionPromise] : [];
   return Promise.race([
     execAsync(command, { env }),
+    new Promise<string>((_, reject) => setTimeout(() => reject(new Error(TimeoutError)), timeoutMs)),
+    ...extraPromises,
+  ]);
+}
+
+interface ExecWithTimeoutInActionArgs {
+  command: string;
+  args?: string[];
+  timeoutMs: number;
+  env?: { [key: string]: string };
+  extraConditionPromise?: Promise<string>;
+}
+
+export function execWithTimeoutInAction(input: ExecWithTimeoutInActionArgs): Promise<number | string> {
+  const { command, args, timeoutMs, env, extraConditionPromise } = input;
+  const extraPromises = extraConditionPromise ? [extraConditionPromise] : [];
+
+  const listeners = {
+    stdout: (data: Buffer) => {
+      console.log('stdout: ', data.toString());
+    },
+    stderr: (data: Buffer) => {
+      console.log('stderr: ', data.toString());
+    },
+    stdline: (data: string) => {
+      console.log('stdline: ', data);
+    },
+    errline: (data: string) => {
+      console.log('errline: ', data);
+    },
+  };
+
+  return Promise.race([
+    execInAction(command, args, { env, listeners, cwd: process.cwd() }),
     new Promise<string>((_, reject) => setTimeout(() => reject(new Error(TimeoutError)), timeoutMs)),
     ...extraPromises,
   ]);
