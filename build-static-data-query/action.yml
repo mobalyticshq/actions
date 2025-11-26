@@ -13,6 +13,10 @@ inputs:
     description: 'Name of the static data field in schema'
     required: false
     default: 'staticData'
+  timeout:
+    description: 'Timeout for cursor-agent execution in milliseconds'
+    required: false
+    default: '600000'
 
 runs:
   using: 'node20'

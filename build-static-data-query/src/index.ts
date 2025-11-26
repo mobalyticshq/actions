@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
+import { generateFragments } from './steps/4-generate-fragments';
 
 /**
  * Main function for the GitHub Action
@@ -12,6 +13,7 @@ export async function run(): Promise<void> {
     const game = core.getInput('game', { required: true });
     const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
     const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
+    const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
@@ -38,6 +40,14 @@ export async function run(): Promise<void> {
       staticDataFieldName,
     });
     core.info(`✓ Schema cleaned: ${cleanedSchemaPath}`);
+    core.endGroup();
+
+    // Step 4: Generate fragments
+    core.startGroup('🔨 Step 4: Generating fragments');
+    await generateFragments({
+      timeoutMs,
+    });
+    core.info(`✓ Fragments generation completed`);
     core.endGroup();
 
     core.info(`✓ Pipeline completed successfully`);

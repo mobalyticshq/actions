@@ -35,6 +35,7 @@
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^6.0.1",
+    "@apollo/client": "^4.0.9",
     "graphql": "^16.12.0"
   }
 }

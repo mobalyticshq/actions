@@ -1,7 +1,20 @@
-import { promisify } from 'util';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
+import * as core from '@actions/core';
 
-const execAsync = promisify(exec);
+const execAsync = (
+  command: string,
+  options: { env?: NodeJS.ProcessEnv | undefined },
+): Promise<ExecPromiseResult | string> => {
+  return new Promise((resolve, reject) => {
+    exec(command, options, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+};
 
 interface ExecWithTimeoutArgs {
   command: string;
@@ -11,13 +24,13 @@ interface ExecWithTimeoutArgs {
 }
 
 interface ExecPromiseResult {
-  stdout: string | Buffer<ArrayBuffer>;
-  stderr: string | Buffer<ArrayBuffer>;
+  stdout: string | Buffer;
+  stderr: string | Buffer;
 }
 
-const TimeoutError = 'TIMEOUT_ERROR' as const;
+export const TimeoutError = 'TIMEOUT_ERROR' as const;
 
-async function execWithTimeout(args: ExecWithTimeoutArgs): Promise<ExecPromiseResult | string> {
+export function execWithTimeout(args: ExecWithTimeoutArgs): Promise<ExecPromiseResult | string> {
   const { command, timeoutMs, env, extraConditionPromise } = args;
   const extraPromises = extraConditionPromise ? [extraConditionPromise] : [];
   return Promise.race([
@@ -25,4 +38,64 @@ async function execWithTimeout(args: ExecWithTimeoutArgs): Promise<ExecPromiseRe
     new Promise<string>((_, reject) => setTimeout(() => reject(new Error(TimeoutError)), timeoutMs)),
     ...extraPromises,
   ]);
+}
+
+export function execWithTimeout2(
+  command: string,
+  args: string[],
+  timeoutMs: number,
+  env?: NodeJS.ProcessEnv,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      env: { ...process.env, ...env },
+      shell: true,
+      stdio: 'pipe',
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', data => {
+      stdout += data.toString();
+      // Можно логировать в реальном времени
+      core.info(data.toString());
+      console.log(data.toString());
+    });
+
+    child.stderr.on('data', data => {
+      stderr += data.toString();
+      core.warning(data.toString());
+      console.error(data.toString());
+    });
+
+    const timeout = setTimeout(() => {
+      core.warning(`Command timeout reached (${timeoutMs}ms), killing process...`);
+      child.kill('SIGTERM');
+
+      // Даем процессу время на корректное завершение
+      setTimeout(() => {
+        if (!child.killed) {
+          child.kill('SIGKILL');
+        }
+      }, 5000);
+
+      reject(new Error(`Command timed out after ${Math.round(timeoutMs / 1000)} seconds`));
+    }, timeoutMs);
+    child.on('close', (code, signal) => {
+      clearTimeout(timeout);
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else if (signal === 'SIGTERM') {
+        reject(new Error(`Process was terminated due to timeout`));
+      } else {
+        reject(new Error(`Process exited with code ${code}. stderr: ${stderr}`));
+      }
+    });
+
+    child.on('error', error => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+  });
 }
