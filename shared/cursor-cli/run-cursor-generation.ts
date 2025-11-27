@@ -11,6 +11,8 @@ export async function runCursorGeneration(input: RunCursorGenerationInput): Prom
   try {
     const { timeoutMs, model = 'sonnet-4.5', prompt } = input;
 
+    core.info(`Cursor-agent generation starts with prompt: ${prompt}`);
+
     try {
       await spawnWithTimeout({ command: 'which cursor-agent', args: [], timeoutMs });
       core.info('cursor-agent is installed');
