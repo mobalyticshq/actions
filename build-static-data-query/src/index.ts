@@ -3,6 +3,7 @@ import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
 import { generateFragments } from './steps/4-generate-fragments';
+import { generateGqlTypes } from './steps/6-generate-gql-types';
 
 /**
  * Main function for the GitHub Action
@@ -56,6 +57,12 @@ export async function run(): Promise<void> {
       timeoutMs,
     });
     core.info(`✓ Query generation completed`);
+    core.endGroup();
+
+    // Step 6: Generate GraphQL types
+    core.startGroup('📝 Step 6: Generating GraphQL types');
+    await generateGqlTypes();
+    core.info(`✓ GraphQL types generation completed`);
     core.endGroup();
 
     core.info(`✓ Pipeline completed successfully`);
