@@ -21,8 +21,9 @@ To locate the repository root: look for the directory containing `build-static-d
 ## Task
 
 1. Analyze the **[Game]StaticDataQuery** type in the GraphQL schema.
-   - This type contains multiple GraphQL nodes.
-   - Each node has a data field.
+   - This type contains *groups* node.
+   - Node *groups* contains multiple nested nodes.
+   - Each nested node has a data field.
    - The data field contains an array of entities.
 
 2. For **each entity type** found inside the data fields:
