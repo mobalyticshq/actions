@@ -4,7 +4,7 @@
   "description": "GitHub Action for building and processing static data queries",
   "main": "dist/build-static-data-query/index.js",
   "scripts": {
-    "full-test": "npm run step-1-test && npm run step-2-test && npm run step-3-test && npm run step-4-test && npm run step-5-test && step-5.5-test && npm run step-6-test",
+    "full-test": "npm run step-1-test && npm run step-2-test && npm run step-3-test && npm run step-4-test && npm run step-5-test && npm run step-5.5-test && npm run step-6-test",
     "step-1-test": "tsx src/steps/1-download-schema/example.ts",
     "step-2-test": "tsx src/steps/2-generate-scopes/example.ts",
     "step-3-test": "tsx src/steps/3-clean-schema/example.ts",
@@ -46,6 +46,7 @@
     "@actions/github": "^6.0.1",
     "@apollo/client": "^4.0.9",
     "@babel/core": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
     "@google-cloud/storage": "^7.17.1",
     "babel-plugin-graphql-tag": "^3.3.0",
     "graphql": "^16.12.0"

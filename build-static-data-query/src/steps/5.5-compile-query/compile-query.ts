@@ -53,9 +53,16 @@ export async function compileQuery(): Promise<void> {
         return;
       }
 
-      // Write compiled code back to file
-      fs.writeFileSync(filePath, compiledCode, 'utf-8');
-      core.info(`✓ Compiled: ${path.relative(process.cwd(), filePath)}`);
+      // Create compiled file path with -compiled postfix
+      const parsedPath = path.parse(filePath);
+      const compiledFilePath = path.join(
+        parsedPath.dir,
+        `${parsedPath.name.replace('.gql', '-compiled.gql')}${parsedPath.ext}`,
+      );
+
+      // Write compiled code to new file
+      fs.writeFileSync(compiledFilePath, compiledCode, 'utf-8');
+      core.info(`✓ Compiled: ${path.relative(process.cwd(), compiledFilePath)}`);
     } catch (error) {
       const relativePath = path.relative(process.cwd(), filePath);
       core.setFailed(`Failed to compile ${relativePath}: ${error instanceof Error ? error.message : String(error)}`);
