@@ -30,9 +30,6 @@ To locate the repository root: look for the directory containing `build-static-d
    - Generate a **GraphQL fragment**.
    - The fragment must include **all possible fields** defined in the schema for that entity type, including all the nested fields recursively.
 
-3. As the very last step — after you complete all tasks and finish all validations — create an empty text file named done.txt inside the following directory:
-   - **Folder**: build-static-data-query/build/gql/fragments
-   - Make sure this file is created only after everything else has been successfully completed.
 ---
 
 ## File Naming Convention

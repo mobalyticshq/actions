@@ -33,9 +33,6 @@ To locate the repository root: look for the directory containing `build-static-d
    - Query only data field, ignore all other fields in the type.
    - For data fields use fragments from the folder - `build-static-data-query/build/gql/fragments`
    - Additionally, you need to query `dataVersion` field of the *metadata* node in the [Game]StaticDataQuery type. This node should have the "meta: metadata" and "version: dataVersion" aliases. You must **always** request the following part as a **separate node**, not combined with game data queries. Refer to example in the file - build-static-data-query/src/examples/gql-query.example.gql.ts 
-3. As the very last step — after you complete all tasks and finish all validations — create an empty text file named done.txt inside the following directory:
-   - **Folder**: build-static-data-query/build/gql/query
-   - Make sure this file is created only after everything else has been successfully completed.
 
 ---
 
