@@ -5,6 +5,7 @@ import { cleanSchema } from './steps/3-clean-schema';
 import { generateFragments } from './steps/4-generate-fragments';
 import { generateGqlTypes } from './steps/6-generate-gql-types';
 import { uploadBuild } from './steps/7-upload-build';
+import { compileQuery } from './steps/5.5-compile-query';
 
 /**
  * Main function for the GitHub Action
@@ -60,6 +61,12 @@ export async function run(): Promise<void> {
       timeoutMs,
     });
     core.info(`✓ Query generation completed`);
+    core.endGroup();
+
+    // Step 5.5: Compile query
+    core.startGroup('🔨 Step 5.5: Compiling query');
+    await compileQuery();
+    core.info(`✓ Query Compiling completed`);
     core.endGroup();
 
     // Step 6: Generate GraphQL types

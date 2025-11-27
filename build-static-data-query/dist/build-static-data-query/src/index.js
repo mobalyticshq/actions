@@ -41,6 +41,7 @@ const _3_clean_schema_1 = require("./steps/3-clean-schema");
 const _4_generate_fragments_1 = require("./steps/4-generate-fragments");
 const _6_generate_gql_types_1 = require("./steps/6-generate-gql-types");
 const _7_upload_build_1 = require("./steps/7-upload-build");
+const _5_5_compile_query_1 = require("./steps/5.5-compile-query");
 /**
  * Main function for the GitHub Action
  */
@@ -89,6 +90,11 @@ async function run() {
             timeoutMs,
         });
         core.info(`✓ Query generation completed`);
+        core.endGroup();
+        // Step 5.5: Compile query
+        core.startGroup('🔨 Step 5.5: Compiling query');
+        await (0, _5_5_compile_query_1.compileQuery)();
+        core.info(`✓ Query Compiling completed`);
         core.endGroup();
         // Step 6: Generate GraphQL types
         core.startGroup('📝 Step 6: Generating GraphQL types');
