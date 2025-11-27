@@ -59,7 +59,7 @@ export const makeDirConfig = (args: MakeDirConfigArgs): { [outputPath: string]: 
     preset: 'near-operation-file',
     presetConfig: {
       extension: '.generated.ts',
-      folder: '__generated',
+      folder: 'gql-types',
       baseTypesPath: `./types.ts`,
     },
     plugins: [
@@ -106,8 +106,8 @@ export const makeDirConfig = (args: MakeDirConfigArgs): { [outputPath: string]: 
 const config: Types.Config = {
   generates: {
     ...makeDirConfig({
-      typesFilePath: './build/gql/types/types.ts',
-      typesDirPath: './build/gql/types',
+      typesFilePath: './build/gql/gql-types/types.ts',
+      typesDirPath: './build/gql/gql-types',
       schemaFilePath: './_generated/cleaned-schema.graphql',
       documents: ['./build/gql/**/*.gql.ts'],
       skipTypeName: false,

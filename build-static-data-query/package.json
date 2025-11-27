@@ -14,7 +14,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "clean": "rm -rf dist",
-    "gql:types:generate": "rimraf ./src/**/build/gql/types/ && yarn graphql-codegen -c codegen/codegen.ts"
+    "gql:types:generate": "rimraf ./build/**/gql-types && yarn graphql-codegen -c codegen/codegen.ts"
   },
   "keywords": [
     "github-action",
