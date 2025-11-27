@@ -17,6 +17,12 @@ inputs:
     description: 'Timeout for cursor-agent execution in milliseconds'
     required: false
     default: '600000'
+  gcs-bucket-name:
+    description: 'Google Cloud Storage bucket name for uploading build files'
+    required: true
+  gcs-project-id:
+    description: 'Google Cloud Project id'
+    required: true
 
 runs:
   using: 'node20'

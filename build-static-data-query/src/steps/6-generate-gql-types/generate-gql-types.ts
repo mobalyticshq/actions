@@ -12,18 +12,20 @@ export async function generateGqlTypes(): Promise<void> {
     // Step 1: Clean up old gql-types directories
     const buildDir = path.resolve(process.cwd(), 'build');
     const gqlTypesPattern = path.join(buildDir, '**/gql-types');
-    
+
     try {
       await rimraf(gqlTypesPattern);
       core.info('Cleaned up old gql-types directories');
     } catch (error) {
       // If cleanup fails, log but continue - directories might not exist yet
-      core.warning(`Could not clean up old gql-types directories: ${error instanceof Error ? error.message : String(error)}`);
+      core.warning(
+        `Could not clean up old gql-types directories: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
 
     // Step 2: Construct the codegen configuration
     core.info('Constructing codegen configuration...');
-    
+
     const scalars = {
       NgfDateTime: 'string',
       Diablo4DateTime: 'string',
@@ -141,4 +143,3 @@ export async function generateGqlTypes(): Promise<void> {
     process.exit(1);
   }
 }
-

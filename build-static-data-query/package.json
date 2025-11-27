@@ -4,13 +4,14 @@
   "description": "GitHub Action for building and processing static data queries",
   "main": "dist/build-static-data-query/index.js",
   "scripts": {
-    "full-test": "npm run step-1-test && npm run step-2-test && npm run step-3-test && npm run step-4-test && npm run step-5-test && npm run step-6-test",
+    "full-test": "npm run step-1-test && npm run step-2-test && npm run step-3-test && npm run step-4-test && npm run step-5-test && npm run step-6-test && npm run step-7-test",
     "step-1-test": "tsx src/steps/1-download-schema/example.ts",
     "step-2-test": "tsx src/steps/2-generate-scopes/example.ts",
     "step-3-test": "tsx src/steps/3-clean-schema/example.ts",
     "step-4-test": "CURSOR_API_KEY=key_66ff748a68f6b4bd0261a30b358cae58063b0ba7cc8d8d835de6a9868ead05c7 tsx src/steps/4-generate-fragments/example.ts",
     "step-5-test": "CURSOR_API_KEY=key_66ff748a68f6b4bd0261a30b358cae58063b0ba7cc8d8d835de6a9868ead05c7 tsx src/steps/5-generate-query/example.ts",
     "step-6-test": "tsx src/steps/6-generate-gql-types/example.ts",
+    "step-7-test": "tsx src/steps/7-upload-build/example.ts",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -43,6 +44,7 @@
     "@actions/core": "^1.10.0",
     "@actions/github": "^6.0.1",
     "@apollo/client": "^4.0.9",
+    "@google-cloud/storage": "^7.17.1",
     "graphql": "^16.12.0"
   }
 }

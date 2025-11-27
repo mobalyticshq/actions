@@ -4,6 +4,7 @@ import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
 import { generateFragments } from './steps/4-generate-fragments';
 import { generateGqlTypes } from './steps/6-generate-gql-types';
+import { uploadBuild } from './steps/7-upload-build';
 
 /**
  * Main function for the GitHub Action
@@ -15,6 +16,8 @@ export async function run(): Promise<void> {
     const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
     const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
     const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
+    const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
+    const gcsProjectId = core.getInput('gcs-project-id', { required: true });
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
@@ -63,6 +66,15 @@ export async function run(): Promise<void> {
     core.startGroup('📝 Step 6: Generating GraphQL types');
     await generateGqlTypes();
     core.info(`✓ GraphQL types generation completed`);
+    core.endGroup();
+
+    // Step 7: Upload build to GCS
+    core.startGroup('☁️ Step 7: Uploading build to GCS');
+    await uploadBuild({
+      bucketName: gcsBucketName,
+      gcsProjectId: gcsProjectId,
+    });
+    core.info(`✓ Build upload completed`);
     core.endGroup();
 
     core.info(`✓ Pipeline completed successfully`);

@@ -39,6 +39,8 @@ const _1_download_schema_1 = require("./steps/1-download-schema");
 const _2_generate_scopes_1 = require("./steps/2-generate-scopes");
 const _3_clean_schema_1 = require("./steps/3-clean-schema");
 const _4_generate_fragments_1 = require("./steps/4-generate-fragments");
+const _6_generate_gql_types_1 = require("./steps/6-generate-gql-types");
+const _7_upload_build_1 = require("./steps/7-upload-build");
 /**
  * Main function for the GitHub Action
  */
@@ -49,6 +51,8 @@ async function run() {
         const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
         const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
         const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
+        const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
+        const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
         // Step 1: Download GraphQL schema
         core.startGroup('📥 Step 1: Downloading GraphQL schema');
@@ -85,6 +89,19 @@ async function run() {
             timeoutMs,
         });
         core.info(`✓ Query generation completed`);
+        core.endGroup();
+        // Step 6: Generate GraphQL types
+        core.startGroup('📝 Step 6: Generating GraphQL types');
+        await (0, _6_generate_gql_types_1.generateGqlTypes)();
+        core.info(`✓ GraphQL types generation completed`);
+        core.endGroup();
+        // Step 7: Upload build to GCS
+        core.startGroup('☁️ Step 7: Uploading build to GCS');
+        await (0, _7_upload_build_1.uploadBuild)({
+            bucketName: gcsBucketName,
+            gcsProjectId: gcsProjectId,
+        });
+        core.info(`✓ Build upload completed`);
         core.endGroup();
         core.info(`✓ Pipeline completed successfully`);
     }
