@@ -21,12 +21,9 @@ function makeSpawnPromise(input: Omit<SpawnWithTimeoutInActionArgs, 'extraCondit
       stdio: 'inherit',
     });
 
-    let stdout = '';
     let stderr = '';
 
     child.stdout?.on('data', data => {
-      stdout += data.toString();
-      // Можно логировать в реальном времени
       core.info(data.toString());
     });
 

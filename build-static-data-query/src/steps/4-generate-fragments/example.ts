@@ -4,7 +4,7 @@ async function main() {
   console.log('Starting fragments generation...');
 
   await generateFragments({
-    timeoutMs: 600000, // 10 minutes
+    timeoutMs: 240000, // 4 minutes
   });
 
   console.log('Fragments generation completed');
