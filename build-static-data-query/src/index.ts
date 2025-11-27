@@ -50,6 +50,14 @@ export async function run(): Promise<void> {
     core.info(`✓ Fragments generation completed`);
     core.endGroup();
 
+    // Step 5: Generate query
+    core.startGroup('🔨 Step 5: Generating query');
+    await generateFragments({
+      timeoutMs,
+    });
+    core.info(`✓ Query generation completed`);
+    core.endGroup();
+
     core.info(`✓ Pipeline completed successfully`);
   } catch (error) {
     if (error instanceof Error) {

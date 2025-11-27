@@ -5,15 +5,17 @@ export const SomeGameStaticDataQueryGql = gql`
   query SomeGameStaticDataQuery {
     game: someGame {
       staticData {
-        weapons(filter: { page: { all: true } }) {
-          data {
-            ...SomeGameStaticDataWeaponsFragment
+        groups {
+          weapons(filter: { page: { all: true } }) {
+            data {
+              ...SomeGameStaticDataWeaponsFragment
+            }
           }
         }
       }
       staticData {
-        meta: weapons {
-          version
+        meta: metadata {
+          version: dataVersion
         }
       }
     }
