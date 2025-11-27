@@ -1,5 +1,11 @@
 Implement this prompt
 
+## Paths
+
+**All paths are relative to the repository root directory** (the directory that contains the `build-static-data-query/` subdirectory).
+
+To locate the repository root: look for the directory containing `build-static-data-query/package.json` and `build-static-data-query/action.yml`.
+
 ## Input
 
 - **File**: build-static-data-query/_generated/cleaned-schema.graphql
