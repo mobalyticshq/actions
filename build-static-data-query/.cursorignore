@@ -1,0 +1,6 @@
+node_modules/
+codegen/
+dist/
+eslint.config.js
+tsconfig.json
+tsconfig.build.json

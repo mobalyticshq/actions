@@ -8,7 +8,7 @@ export interface GenerateScopesOptions {
   gameField: string;
 }
 
-const OUTPUT_PATH = 'dist/generated/scopes.ts';
+const OUTPUT_PATH = '_generated/scopes.ts';
 
 export function generateScopes(options: GenerateScopesOptions): string {
   try {

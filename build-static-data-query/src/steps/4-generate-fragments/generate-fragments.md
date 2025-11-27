@@ -2,7 +2,7 @@ Implement this prompt
 
 ## Input
 
-- **File**: build-static-data-query/dist/generated/cleaned-schema.graphql
+- **File**: build-static-data-query/_generated/cleaned-schema.graphql
 - **Content**: GraphQL schema
 
 ## Output

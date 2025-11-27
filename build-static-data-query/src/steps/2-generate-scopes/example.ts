@@ -4,7 +4,7 @@ function main() {
   console.log('Starting scopes generation...');
 
   const scopesPath = generateScopes({
-    schemaPath: 'dist/generated/schema.graphql',
+    schemaPath: '_generated/schema.graphql',
     gameField: 'riftbound',
   });
 

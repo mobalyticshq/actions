@@ -10,7 +10,7 @@ export interface CleanSchemaOptions {
   staticDataFieldName: string;
 }
 
-const OUTPUT_PATH = 'dist/generated/cleaned-schema.graphql';
+const OUTPUT_PATH = '_generated/cleaned-schema.graphql';
 
 export async function cleanSchema(options: CleanSchemaOptions): Promise<string> {
   try {

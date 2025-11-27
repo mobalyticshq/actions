@@ -4,7 +4,7 @@ async function main() {
   console.log('Starting schema cleanup...');
 
   const cleanedPath = await cleanSchema({
-    schemaPath: 'dist/generated/schema.graphql',
+    schemaPath: '_generated/schema.graphql',
     gameField: 'riftbound',
     staticDataFieldName: 'staticData',
   });
@@ -13,4 +13,3 @@ async function main() {
 }
 
 main();
-
