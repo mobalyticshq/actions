@@ -4,7 +4,8 @@
   "description": "GitHub Action for building and processing static data queries",
   "main": "dist/build-static-data-query/index.js",
   "scripts": {
-    "full-test": "npm run step-1-test && npm run step-2-test && npm run step-3-test && npm run step-4-test && npm run step-5-test && npm run step-5.5-test && npm run step-6-test",
+    "full-test": "npm run step-0-test && npm run step-1-test && npm run step-2-test && npm run step-3-test && npm run step-4-test && npm run step-5-test && npm run step-5.5-test && npm run step-6-test && npm run step-7-test",
+    "step-0-test": "tsx src/steps/0-check-schema-version/example.ts",
     "step-1-test": "tsx src/steps/1-download-schema/example.ts",
     "step-2-test": "tsx src/steps/2-generate-scopes/example.ts",
     "step-3-test": "tsx src/steps/3-clean-schema/example.ts",

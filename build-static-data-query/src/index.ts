@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import { checkSchemaVersion } from './steps/0-check-schema-version';
 import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
@@ -22,6 +23,23 @@ export async function run(): Promise<void> {
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
+
+    // Step 0: Check schema version
+    core.startGroup('🔍 Step 0: Checking schema version');
+    const schemaVersionCheck = await checkSchemaVersion({
+      graphqlEndpoint,
+      bucketName: gcsBucketName,
+      gcsProjectId,
+      env: dynamicModulesEnv,
+      game,
+    });
+    core.endGroup();
+
+    // If schema versions match, skip the pipeline
+    if (!schemaVersionCheck.shouldContinue) {
+      core.info(`✓ Schema version has not changed (${schemaVersionCheck.currentSchemaVersion}). Pipeline skipped.`);
+      return;
+    }
 
     // Step 1: Download GraphQL schema
     core.startGroup('📥 Step 1: Downloading GraphQL schema');
