@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import { Storage } from '@google-cloud/storage';
 import { checkSchemaVersion } from './steps/0-check-schema-version';
 import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
@@ -24,12 +25,15 @@ export async function run(): Promise<void> {
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
+    // Initialize Storage and Bucket
+    const storage = new Storage({ projectId: gcsProjectId });
+    const bucket = storage.bucket(gcsBucketName);
+
     // Step 0: Check schema version
     core.startGroup('🔍 Step 0: Checking schema version');
     const schemaVersionCheck = await checkSchemaVersion({
       graphqlEndpoint,
-      bucketName: gcsBucketName,
-      gcsProjectId,
+      bucket,
       env: dynamicModulesEnv,
       game,
     });
@@ -101,8 +105,7 @@ export async function run(): Promise<void> {
     // Step 7: Upload build to GCS
     core.startGroup('☁️ Step 7: Uploading build to GCS');
     await uploadBuild({
-      bucketName: gcsBucketName,
-      gcsProjectId: gcsProjectId,
+      bucket,
       env: dynamicModulesEnv,
       game: game,
       schemaVersion: schemaVersionCheck.currentSchemaVersion,

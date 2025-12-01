@@ -1,12 +1,15 @@
+import { Storage } from '@google-cloud/storage';
 import { uploadBuild } from './upload-build';
 
 async function main() {
   console.log('Starting build upload to GCS...');
 
-  // todo Stas move to env vars
+  // Initialize Storage and Bucket
+  const storage = new Storage({ projectId: 'mobalytics-1242' });
+  const bucket = storage.bucket('festatic.mobalytics.gg');
+
   await uploadBuild({
-    bucketName: 'festatic.mobalytics.gg',
-    gcsProjectId: 'mobalytics-1242',
+    bucket,
     env: 'dev',
     game: 'riftbound',
     schemaVersion: '1.0.0',

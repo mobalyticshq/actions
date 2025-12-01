@@ -1,10 +1,9 @@
-import { Storage } from '@google-cloud/storage';
+import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
 
 export interface CheckSchemaVersionOptions {
   graphqlEndpoint: string;
-  bucketName: string;
-  gcsProjectId: string;
+  bucket: Bucket;
   env: string;
   game: string;
 }
@@ -87,26 +86,16 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
 }
 
 async function downloadConfigFromBucket(
-  bucketName: string,
-  gcsProjectId: string,
+  bucket: Bucket,
   env: string,
   game: string,
 ): Promise<{ schemaVersion: string } | null> {
   const configPath = `dynamic-modules/${env}/${game}/static-data-query/config.json`;
+  const bucketName = bucket.name;
 
   core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
 
   try {
-    const storage = new Storage({ projectId: gcsProjectId });
-    const bucket = storage.bucket(bucketName);
-
-    // Check if bucket exists
-    const [exists] = await bucket.exists();
-    if (!exists) {
-      core.warning(`Bucket ${bucketName} does not exist`);
-      return null;
-    }
-
     const file = bucket.file(configPath);
 
     // Download file
@@ -135,14 +124,14 @@ async function downloadConfigFromBucket(
 
 export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Promise<CheckSchemaVersionResult> {
   try {
-    const { graphqlEndpoint, bucketName, gcsProjectId, env, game } = options;
+    const { graphqlEndpoint, bucket, env, game } = options;
 
     core.info(`Checking schema version for game: ${game}`);
 
     // Execute GraphQL query and GCS download in parallel
     const [currentSchemaVersion, existingConfig] = await Promise.all([
       fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-      downloadConfigFromBucket(bucketName, gcsProjectId, env, game),
+      downloadConfigFromBucket(bucket, env, game),
     ]);
 
     // If config file doesn't exist, continue pipeline
