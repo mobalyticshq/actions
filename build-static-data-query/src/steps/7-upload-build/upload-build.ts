@@ -207,6 +207,27 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
+
+    // Step 8: Upload config.json
+    try {
+      const config = {
+        name: `gs://${bucketName}/${fullVersionPath}/${game}-static-data-query-compiled.gql.ts`,
+        schemaVersion: schemaVersion,
+      };
+
+      const configDestination = `${basePath}/config.json`;
+      const configFile = bucket.file(configDestination);
+      const configJson = JSON.stringify(config, null, 2);
+
+      core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
+      await configFile.save(configJson, {
+        contentType: 'application/json',
+      });
+      core.info(`✓ Config.json successfully uploaded`);
+    } catch (error) {
+      core.setFailed(`Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
   } catch (error) {
     core.setFailed(`Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
