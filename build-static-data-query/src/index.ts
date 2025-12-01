@@ -19,6 +19,7 @@ export async function run(): Promise<void> {
     const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
+    const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
@@ -77,9 +78,14 @@ export async function run(): Promise<void> {
 
     // Step 7: Upload build to GCS
     core.startGroup('☁️ Step 7: Uploading build to GCS');
+    // TODO: schemaVersion should come from a previous build step
+    const schemaVersion = '1.0.0';
     await uploadBuild({
       bucketName: gcsBucketName,
       gcsProjectId: gcsProjectId,
+      env: dynamicModulesEnv,
+      game: game,
+      schemaVersion: schemaVersion,
     });
     core.info(`✓ Build upload completed`);
     core.endGroup();

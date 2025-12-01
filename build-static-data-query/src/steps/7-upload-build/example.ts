@@ -7,6 +7,9 @@ async function main() {
   await uploadBuild({
     bucketName: 'festatic.mobalytics.gg',
     gcsProjectId: 'mobalytics-1242',
+    env: 'dev',
+    game: 'example-game',
+    schemaVersion: '1.0.0',
   });
 
   console.log('✓ Build upload completed');

@@ -23,6 +23,9 @@ inputs:
   gcs-project-id:
     description: 'Google Cloud Project id'
     required: true
+  dynamic-modules-env:
+    description: 'Environment for dynamic modules (e.g., prod, staging, dev)'
+    required: true
 
 runs:
   using: 'node20'
