@@ -1,5 +1,6 @@
 import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
+import { checkVersionFolderExists, buildVersionFolderPath } from '../../utils/version-folder.utils';
 
 export interface CheckSchemaVersionOptions {
   graphqlEndpoint: string;
@@ -133,6 +134,23 @@ export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Pr
       fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
       downloadConfigFromBucket(bucket, env, game),
     ]);
+
+    // Check if version folder already exists
+    if (currentSchemaVersion) {
+      const versionFolderExists = await checkVersionFolderExists(bucket, env, game, currentSchemaVersion);
+      if (versionFolderExists) {
+        const bucketName = bucket.name;
+        const versionFolderPath = buildVersionFolderPath(env, game, currentSchemaVersion);
+        core.info(
+          `✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`,
+        );
+        return {
+          shouldContinue: false,
+          currentSchemaVersion,
+          existingSchemaVersion: existingConfig?.schemaVersion,
+        };
+      }
+    }
 
     // If config file doesn't exist, continue pipeline
     if (!existingConfig) {
