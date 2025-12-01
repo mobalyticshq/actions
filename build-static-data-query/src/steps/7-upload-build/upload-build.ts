@@ -112,6 +112,8 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
     const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
     const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
+    const buildFragmentsTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments', 'gql-types');
+    const buildQueryTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'query', 'gql-types');
 
     // Step 6: Upload files according to new structure
     let uploadedCount = 0;
@@ -174,28 +176,40 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       core.warning(`Query file not found: ${queryFile}`);
     }
 
-    // 6.4: Upload all files from gql-types to types/ folder
-    const typeFiles = getAllFilesRecursive(buildTypesPath);
-    if (typeFiles.length > 0) {
-      for (const typeFile of typeFiles) {
-        try {
-          const relativePath = path.relative(buildTypesPath, typeFile);
-          const gcsPath = relativePath.split(path.sep).join('/');
-          const destination = `${fullVersionPath}/types/${gcsPath}`;
-          core.info(`Uploading: ${typeFile} -> gs://${bucketName}/${destination}`);
-          await bucket.upload(typeFile, { destination });
-          uploadedCount++;
-          core.info(`✓ Uploaded type file: ${relativePath}`);
-        } catch (error) {
-          failedCount++;
-          const relativePath = path.relative(buildTypesPath, typeFile);
-          core.error(
-            `Failed to upload type file ${relativePath}: ${error instanceof Error ? error.message : String(error)}`,
-          );
+    // 6.4: Upload all files from gql-types folders to types/ folder
+    const typeSourcePaths = [
+      { path: buildTypesPath, name: 'gql-types' },
+      { path: buildFragmentsTypesPath, name: 'fragments/gql-types' },
+      { path: buildQueryTypesPath, name: 'query/gql-types' },
+    ];
+
+    let hasTypeFiles = false;
+    for (const sourcePath of typeSourcePaths) {
+      const typeFiles = getAllFilesRecursive(sourcePath.path);
+      if (typeFiles.length > 0) {
+        hasTypeFiles = true;
+        for (const typeFile of typeFiles) {
+          try {
+            const relativePath = path.relative(sourcePath.path, typeFile);
+            const gcsPath = relativePath.split(path.sep).join('/');
+            const destination = `${fullVersionPath}/types/${gcsPath}`;
+            core.info(`Uploading: ${typeFile} -> gs://${bucketName}/${destination}`);
+            await bucket.upload(typeFile, { destination });
+            uploadedCount++;
+            core.info(`✓ Uploaded type file from ${sourcePath.name}: ${relativePath}`);
+          } catch (error) {
+            failedCount++;
+            const relativePath = path.relative(sourcePath.path, typeFile);
+            core.error(
+              `Failed to upload type file ${relativePath} from ${sourcePath.name}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
         }
       }
-    } else {
-      core.warning(`No type files found in ${buildTypesPath}`);
+    }
+
+    if (!hasTypeFiles) {
+      core.warning(`No type files found in any of the gql-types directories`);
     }
 
     // Step 7: Report results
