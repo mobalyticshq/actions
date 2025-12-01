@@ -67,6 +67,29 @@ function getAllFilesRecursive(dirPath: string): string[] {
   return files;
 }
 
+async function uploadFileToBucket(
+  bucket: Bucket,
+  sourcePath: string,
+  destination: string,
+  bucketName: string,
+  description?: string,
+): Promise<boolean> {
+  try {
+    const logPrefix = description ? `${description}: ` : '';
+    core.info(`Uploading: ${logPrefix}${sourcePath} -> gs://${bucketName}/${destination}`);
+    await bucket.upload(sourcePath, { destination });
+    const successMessage = description ? `✓ Uploaded ${description}` : `✓ Uploaded file`;
+    core.info(successMessage);
+    return true;
+  } catch (error) {
+    const errorMessage = description
+      ? `Failed to upload ${description}: ${error instanceof Error ? error.message : String(error)}`
+      : `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`;
+    core.error(errorMessage);
+    return false;
+  }
+}
+
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
     const { bucketName, gcsProjectId, env, game, schemaVersion } = options;
@@ -122,15 +145,12 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     // 6.1: Upload compiled query to root
     const compiledQueryFile = path.join(buildQueryPath, `${game}-static-data-query-compiled.gql.ts`);
     if (fs.existsSync(compiledQueryFile)) {
-      try {
-        const destination = `${fullVersionPath}/${game}-static-data-query-compiled.gql.ts`;
-        core.info(`Uploading: ${compiledQueryFile} -> gs://${bucketName}/${destination}`);
-        await bucket.upload(compiledQueryFile, { destination });
+      const destination = `${fullVersionPath}/${game}-static-data-query-compiled.gql.ts`;
+      const success = await uploadFileToBucket(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
+      if (success) {
         uploadedCount++;
-        core.info(`✓ Uploaded compiled query`);
-      } catch (error) {
+      } else {
         failedCount++;
-        core.error(`Failed to upload compiled query: ${error instanceof Error ? error.message : String(error)}`);
       }
     } else {
       core.warning(`Compiled query file not found: ${compiledQueryFile}`);
@@ -140,19 +160,19 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     const fragmentFiles = getFilesInDirectory(buildFragmentsPath, '.gql.ts');
     if (fragmentFiles.length > 0) {
       for (const fragmentFile of fragmentFiles) {
-        try {
-          const fileName = path.basename(fragmentFile);
-          const destination = `${fullVersionPath}/fragments/${fileName}`;
-          core.info(`Uploading: ${fragmentFile} -> gs://${bucketName}/${destination}`);
-          await bucket.upload(fragmentFile, { destination });
+        const fileName = path.basename(fragmentFile);
+        const destination = `${fullVersionPath}/fragments/${fileName}`;
+        const success = await uploadFileToBucket(
+          bucket,
+          fragmentFile,
+          destination,
+          bucketName,
+          `fragment: ${fileName}`,
+        );
+        if (success) {
           uploadedCount++;
-          core.info(`✓ Uploaded fragment: ${fileName}`);
-        } catch (error) {
+        } else {
           failedCount++;
-          const fileName = path.basename(fragmentFile);
-          core.error(
-            `Failed to upload fragment ${fileName}: ${error instanceof Error ? error.message : String(error)}`,
-          );
         }
       }
     } else {
@@ -162,15 +182,12 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     // 6.3: Upload query file (without -compiled suffix) to query/ folder
     const queryFile = path.join(buildQueryPath, `${game}-static-data-query.gql.ts`);
     if (fs.existsSync(queryFile)) {
-      try {
-        const destination = `${fullVersionPath}/query/${game}-static-data-query.gql.ts`;
-        core.info(`Uploading: ${queryFile} -> gs://${bucketName}/${destination}`);
-        await bucket.upload(queryFile, { destination });
+      const destination = `${fullVersionPath}/query/${game}-static-data-query.gql.ts`;
+      const success = await uploadFileToBucket(bucket, queryFile, destination, bucketName, 'query file');
+      if (success) {
         uploadedCount++;
-        core.info(`✓ Uploaded query file`);
-      } catch (error) {
+      } else {
         failedCount++;
-        core.error(`Failed to upload query file: ${error instanceof Error ? error.message : String(error)}`);
       }
     } else {
       core.warning(`Query file not found: ${queryFile}`);
@@ -189,20 +206,15 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       if (typeFiles.length > 0) {
         hasTypeFiles = true;
         for (const typeFile of typeFiles) {
-          try {
-            const relativePath = path.relative(sourcePath.path, typeFile);
-            const gcsPath = relativePath.split(path.sep).join('/');
-            const destination = `${fullVersionPath}/types/${gcsPath}`;
-            core.info(`Uploading: ${typeFile} -> gs://${bucketName}/${destination}`);
-            await bucket.upload(typeFile, { destination });
+          const relativePath = path.relative(sourcePath.path, typeFile);
+          const gcsPath = relativePath.split(path.sep).join('/');
+          const destination = `${fullVersionPath}/types/${gcsPath}`;
+          const description = `type file from ${sourcePath.name}: ${relativePath}`;
+          const success = await uploadFileToBucket(bucket, typeFile, destination, bucketName, description);
+          if (success) {
             uploadedCount++;
-            core.info(`✓ Uploaded type file from ${sourcePath.name}: ${relativePath}`);
-          } catch (error) {
+          } else {
             failedCount++;
-            const relativePath = path.relative(sourcePath.path, typeFile);
-            core.error(
-              `Failed to upload type file ${relativePath} from ${sourcePath.name}: ${error instanceof Error ? error.message : String(error)}`,
-            );
           }
         }
       }
