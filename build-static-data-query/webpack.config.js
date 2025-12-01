@@ -61,8 +61,7 @@ module.exports = {
       patterns: [
         {
           from: 'src/steps/**/*.md',
-          to: '[path][name][ext]',
-          context: '.',
+          to: '[name][ext]',
         },
       ],
     }),

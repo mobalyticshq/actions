@@ -124,8 +124,3 @@ export async function run(): Promise<void> {
     }
   }
 }
-
-// Run the action if this file is executed directly
-if (require.main === module) {
-  run();
-}
