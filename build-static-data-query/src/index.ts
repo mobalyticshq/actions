@@ -5,6 +5,7 @@ import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
 import { generateFragments } from './steps/4-generate-fragments';
+import { generateQuery } from './steps/5-generate-query';
 import { generateGqlTypes } from './steps/7-generate-gql-types';
 import { uploadBuild } from './steps/8-upload-build';
 import { compileQuery } from './steps/6-compile-query';
@@ -84,7 +85,7 @@ export async function run(): Promise<void> {
 
     // Step 5: Generate query
     core.startGroup('🔨 Step 5: Generating query');
-    await generateFragments({
+    await generateQuery({
       timeoutMs,
     });
     core.info(`✓ Query generation completed`);

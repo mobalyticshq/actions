@@ -63,23 +63,24 @@ export async function downloadSchema(options: DownloadSchemaOptions): Promise<st
     try {
       await generate(config, true);
     } catch (error) {
-      core.setFailed(
-        `Failed to download schema from ${endpoint}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      process.exit(1);
+      const errorMessage = `Failed to download schema from ${endpoint}: ${error instanceof Error ? error.message : String(error)}`;
+      core.setFailed(errorMessage);
+      throw new Error(errorMessage);
     }
 
     // Verify the file was created
     if (!fs.existsSync(absoluteOutputPath)) {
-      core.setFailed(`Schema file was not created at expected path: ${absoluteOutputPath}`);
-      process.exit(1);
+      const errorMessage = `Schema file was not created at expected path: ${absoluteOutputPath}`;
+      core.setFailed(errorMessage);
+      throw new Error(errorMessage);
     }
 
     core.info(`✓ Schema successfully saved to: ${absoluteOutputPath}`);
     return absoluteOutputPath;
   } catch (error) {
     // Catch any unexpected errors
-    core.setFailed(`Unexpected error in downloadSchema: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    const errorMessage = `Unexpected error in downloadSchema: ${error instanceof Error ? error.message : String(error)}`;
+    core.setFailed(errorMessage);
+    throw error instanceof Error ? error : new Error(errorMessage);
   }
 }

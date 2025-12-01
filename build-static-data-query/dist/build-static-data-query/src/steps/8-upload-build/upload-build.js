@@ -80,14 +80,16 @@ async function uploadBuild(options) {
         try {
             const [exists] = await bucket.exists();
             if (!exists) {
-                core.setFailed(`Bucket ${bucketName} does not exist`);
-                process.exit(1);
+                const errorMessage = `Bucket ${bucketName} does not exist`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
             }
             core.info(`✓ Bucket ${bucketName} verified`);
         }
         catch (error) {
-            core.setFailed(`Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`);
-            process.exit(1);
+            const errorMessage = `Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
         }
         // Step 2: Build GCS paths
         const fullVersionPath = (0, version_folder_utils_1.buildVersionFolderPath)(env, game, schemaVersion);
@@ -95,8 +97,9 @@ async function uploadBuild(options) {
         // Step 3: Check if version folder already exists
         const versionFolderExists = await (0, version_folder_utils_1.checkVersionFolderExists)(bucket, env, game, schemaVersion);
         if (versionFolderExists) {
-            core.setFailed(`Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`);
-            process.exit(1);
+            const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         const versionFolder = (0, version_folder_utils_1.generateVersionFolderName)(schemaVersion);
         core.info(`✓ Version folder ${versionFolder} does not exist, proceeding with upload`);
@@ -189,8 +192,9 @@ async function uploadBuild(options) {
         // Step 6: Report results
         core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
         if (failedCount > 0) {
-            core.setFailed(`Failed to upload ${failedCount} file(s)`);
-            process.exit(1);
+            const errorMessage = `Failed to upload ${failedCount} file(s)`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
         // Step 7: Upload config.json
@@ -210,13 +214,15 @@ async function uploadBuild(options) {
             core.info(`✓ Config.json successfully uploaded`);
         }
         catch (error) {
-            core.setFailed(`Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`);
-            process.exit(1);
+            const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
         }
     }
     catch (error) {
-        core.setFailed(`Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`);
-        process.exit(1);
+        const errorMessage = `Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
     }
 }
 //# sourceMappingURL=upload-build.js.map

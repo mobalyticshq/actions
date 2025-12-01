@@ -149,8 +149,9 @@ async function generateGqlTypes() {
             await (0, cli_1.generate)(config, true);
         }
         catch (error) {
-            core.setFailed(`Failed to generate GraphQL types: ${error instanceof Error ? error.message : String(error)}`);
-            process.exit(1);
+            const errorMessage = `Failed to generate GraphQL types: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         // Step 4: Verify that types were generated
         const expectedTypesFile = path.resolve(process.cwd(), 'build/gql/gql-types/types.ts');
@@ -163,8 +164,9 @@ async function generateGqlTypes() {
         core.info(`✓ GraphQL types generation completed successfully`);
     }
     catch (error) {
-        core.setFailed(`Unexpected error in generateGqlTypes: ${error instanceof Error ? error.message : String(error)}`);
-        process.exit(1);
+        const errorMessage = `Unexpected error in generateGqlTypes: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
     }
 }
 //# sourceMappingURL=generate-gql-types.js.map

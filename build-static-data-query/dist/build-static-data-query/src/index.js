@@ -41,6 +41,7 @@ const _1_download_schema_1 = require("./steps/1-download-schema");
 const _2_generate_scopes_1 = require("./steps/2-generate-scopes");
 const _3_clean_schema_1 = require("./steps/3-clean-schema");
 const _4_generate_fragments_1 = require("./steps/4-generate-fragments");
+const _5_generate_query_1 = require("./steps/5-generate-query");
 const _7_generate_gql_types_1 = require("./steps/7-generate-gql-types");
 const _8_upload_build_1 = require("./steps/8-upload-build");
 const _6_compile_query_1 = require("./steps/6-compile-query");
@@ -109,7 +110,7 @@ async function run() {
         core.endGroup();
         // Step 5: Generate query
         core.startGroup('🔨 Step 5: Generating query');
-        await (0, _4_generate_fragments_1.generateFragments)({
+        await (0, _5_generate_query_1.generateQuery)({
             timeoutMs,
         });
         core.info(`✓ Query generation completed`);

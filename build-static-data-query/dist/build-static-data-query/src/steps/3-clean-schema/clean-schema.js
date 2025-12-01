@@ -48,8 +48,9 @@ async function cleanSchema(options) {
         core.info(`Static data field: ${staticDataFieldName}`);
         // Verify input schema exists
         if (!fs.existsSync(schemaPath)) {
-            core.setFailed(`Input schema file not found: ${schemaPath}`);
-            process.exit(1);
+            const errorMessage = `Input schema file not found: ${schemaPath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         // Resolve the absolute path for the output
         const absoluteOutputPath = path.resolve(process.cwd(), OUTPUT_PATH);
@@ -85,20 +86,23 @@ async function cleanSchema(options) {
             await (0, cli_1.generate)(config, true);
         }
         catch (error) {
-            core.setFailed(`Failed to clean schema: ${error instanceof Error ? error.message : String(error)}`);
-            process.exit(1);
+            const errorMessage = `Failed to clean schema: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         // Verify the file was created
         if (!fs.existsSync(absoluteOutputPath)) {
-            core.setFailed(`Cleaned schema file was not created at expected path: ${absoluteOutputPath}`);
-            process.exit(1);
+            const errorMessage = `Cleaned schema file was not created at expected path: ${absoluteOutputPath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         core.info(`✓ Schema successfully cleaned and saved to: ${absoluteOutputPath}`);
         return absoluteOutputPath;
     }
     catch (error) {
-        core.setFailed(`Unexpected error in cleanSchema: ${error instanceof Error ? error.message : String(error)}`);
-        process.exit(1);
+        const errorMessage = `Unexpected error in cleanSchema: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
     }
 }
 //# sourceMappingURL=clean-schema.js.map

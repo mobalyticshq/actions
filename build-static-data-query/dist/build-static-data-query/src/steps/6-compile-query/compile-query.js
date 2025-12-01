@@ -49,9 +49,9 @@ async function compileQuery() {
     const queryFiles = findGqlFiles(absoluteQueryDir);
     core.info(`Found ${queryFiles.length} GraphQL query files to compile`);
     if (queryFiles.length === 0) {
-        core.setFailed('No GraphQL query files found');
-        process.exit(1);
-        return;
+        const errorMessage = 'No GraphQL query files found';
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
     }
     // Compile each file
     for (const filePath of queryFiles) {
@@ -73,9 +73,9 @@ async function compileQuery() {
             });
             const compiledCode = result?.code;
             if (!compiledCode) {
-                core.setFailed('Babel transformation returned no code');
-                process.exit(1);
-                return;
+                const errorMessage = 'Babel transformation returned no code';
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
             }
             // Create compiled file path with -compiled postfix
             const parsedPath = path.parse(filePath);
@@ -86,9 +86,9 @@ async function compileQuery() {
         }
         catch (error) {
             const relativePath = path.relative(process.cwd(), filePath);
-            core.setFailed(`Failed to compile ${relativePath}: ${error instanceof Error ? error.message : String(error)}`);
-            process.exit(1);
-            return;
+            const errorMessage = `Failed to compile ${relativePath}: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
         }
     }
     core.info(`✓ Successfully compiled ${queryFiles.length} GraphQL query files`);

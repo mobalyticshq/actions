@@ -45,8 +45,9 @@ function generateScopes(options) {
         core.info(`Reading schema from: ${schemaPath}`);
         // Step 1: Read the schema file
         if (!fs.existsSync(schemaPath)) {
-            core.setFailed(`Schema file not found: ${schemaPath}`);
-            process.exit(1);
+            const errorMessage = `Schema file not found: ${schemaPath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         const schemaContent = fs.readFileSync(schemaPath, 'utf-8');
         // Step 2: Parse the schema
@@ -55,8 +56,9 @@ function generateScopes(options) {
             schema = (0, graphql_1.buildSchema)(schemaContent);
         }
         catch (error) {
-            core.setFailed(`Failed to parse schema: ${error instanceof Error ? error.message : String(error)}`);
-            process.exit(1);
+            const errorMessage = `Failed to parse schema: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
         // Step 3: Extract root types
         const queryType = schema.getQueryType();
@@ -149,8 +151,9 @@ export const TargetGameQueryTypeName = '${targetGameQueryTypeName}' as const;
         return absoluteOutputPath;
     }
     catch (error) {
-        core.setFailed(`Unexpected error in generateScopes: ${error instanceof Error ? error.message : String(error)}`);
-        process.exit(1);
+        const errorMessage = `Unexpected error in generateScopes: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
     }
 }
 //# sourceMappingURL=generate-scopes.js.map
