@@ -17,7 +17,17 @@
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
-    "clean": "rm -rf dist && rm -rf build && rm -rf _generated"
+    "clean": "rm -rf dist && rm -rf build && rm -rf _generated",
+    "full-test-dist": "npm run step-0-test-dist && npm run step-1-test-dist && npm run step-2-test-dist && npm run step-3-test-dist && npm run step-4-test-dist && npm run step-5-test-dist && npm run step-6-test-dist && npm run step-7-test-dist && npm run step-8-test-dist",
+    "step-0-test-dist": "node dist/build-static-data-query/src/steps/0-check-schema-version/example.ts",
+    "step-1-test-dist": "tsx dist/build-static-data-query/src/steps/1-download-schema/example.ts",
+    "step-2-test-dist": "tsx dist/build-static-data-query/src/steps/2-generate-scopes/example.ts",
+    "step-3-test-dist": "tsx dist/build-static-data-query/src/steps/3-clean-schema/example.ts",
+    "step-4-test-dist": "tsx dist/build-static-data-query/src/steps/4-generate-fragments/example.ts",
+    "step-5-test-dist": "tsx dist/build-static-data-query/src/steps/5-generate-query/example.ts",
+    "step-6-test-dist": "tsx dist/build-static-data-query/src/steps/6-compile-query/example.ts",
+    "step-7-test-dist": "tsx dist/build-static-data-query/src/steps/7-generate-gql-types/example.ts",
+    "step-8-test-dist": "tsx dist/build-static-data-query/src/steps/8-upload-build/example.ts"
   },
   "keywords": [
     "github-action",

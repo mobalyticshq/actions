@@ -53,8 +53,7 @@ async function runCursorGeneration(input) {
         // Get CURSOR_API_KEY from environment (GitHub Actions secrets)
         const cursorApiKey = process.env.CURSOR_API_KEY;
         if (!cursorApiKey) {
-            core.setFailed('CURSOR_API_KEY environment variable is not set');
-            process.exit(1);
+            throw new Error('CURSOR_API_KEY environment variable is not set');
         }
         const command = 'cursor-agent';
         const args = ['-p', '--force', `--model=${model}`, '--output-format', 'text', prompt];
@@ -74,18 +73,20 @@ async function runCursorGeneration(input) {
             return;
         }
         catch (error) {
+            const errorMessage = `Failed to execute cursor-agent: ${error instanceof Error ? error.message : String(error)}`;
             if (error instanceof Error && error.message === exec_utils_1.TimeoutError) {
                 core.setFailed(`cursor-agent execution timed out after ${timeoutMs}ms`);
             }
             else {
-                core.setFailed(`Failed to execute cursor-agent: ${error instanceof Error ? error.message : String(error)}`);
+                core.setFailed(errorMessage);
             }
-            process.exit(1);
+            throw new Error(errorMessage);
         }
     }
     catch (error) {
-        core.setFailed(`Unexpected error in cursor generation: ${error instanceof Error ? error.message : String(error)}`);
-        process.exit(1);
+        const errorMessage = `Failed to execute cursor-agent: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
     }
 }
 //# sourceMappingURL=run-cursor-generation.js.map
