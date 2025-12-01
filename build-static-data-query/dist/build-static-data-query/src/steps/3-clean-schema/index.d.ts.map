@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["file:///Users/stanislav/Projects/actions/build-static-data-query/src/steps/3-clean-schema/index.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAE,KAAK,kBAAkB,EAAE,MAAM,gBAAgB,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../../src/steps/3-clean-schema/index.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAE,KAAK,kBAAkB,EAAE,MAAM,gBAAgB,CAAC"}

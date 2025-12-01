@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["file:///Users/stanislav/Projects/actions/build-static-data-query/src/steps/0-check-schema-version/index.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,kBAAkB,EAAE,KAAK,yBAAyB,EAAE,KAAK,wBAAwB,EAAE,MAAM,wBAAwB,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../../src/steps/0-check-schema-version/index.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,kBAAkB,EAAE,KAAK,yBAAyB,EAAE,KAAK,wBAAwB,EAAE,MAAM,wBAAwB,CAAC"}
