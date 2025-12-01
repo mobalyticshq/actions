@@ -1,9 +1,9 @@
 "use strict";
-exports.id = 506;
-exports.ids = [506];
+exports.id = 979;
+exports.ids = [979];
 exports.modules = {
 
-/***/ 18506:
+/***/ 38979:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 
@@ -13,8 +13,8 @@ __webpack_require__.d(__webpack_exports__, {
 });
 
 // EXTERNAL MODULE: ./node_modules/slice-ansi/index.js + 2 modules
-var slice_ansi = __webpack_require__(44237);
-;// CONCATENATED MODULE: ./node_modules/cli-truncate/node_modules/ansi-regex/index.js
+var slice_ansi = __webpack_require__(67434);
+;// CONCATENATED MODULE: ./node_modules/string-width/node_modules/ansi-regex/index.js
 function ansiRegex({onlyFirst = false} = {}) {
 	// Valid string terminator sequences are BEL, ESC\, and 0x9c
 	const ST = '(?:\\u0007|\\u001B\\u005C|\\u009C)';
@@ -30,7 +30,7 @@ function ansiRegex({onlyFirst = false} = {}) {
 	return new RegExp(pattern, onlyFirst ? undefined : 'g');
 }
 
-;// CONCATENATED MODULE: ./node_modules/cli-truncate/node_modules/strip-ansi/index.js
+;// CONCATENATED MODULE: ./node_modules/string-width/node_modules/strip-ansi/index.js
 
 
 const regex = ansiRegex();
@@ -48,7 +48,7 @@ function stripAnsi(string) {
 
 // EXTERNAL MODULE: ./node_modules/get-east-asian-width/index.js
 var get_east_asian_width = __webpack_require__(12057);
-;// CONCATENATED MODULE: ./node_modules/cli-truncate/node_modules/string-width/index.js
+;// CONCATENATED MODULE: ./node_modules/string-width/index.js
 
 
 
@@ -770,7 +770,7 @@ function getCategory(x) {
 
 /***/ }),
 
-/***/ 44237:
+/***/ 67434:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 
@@ -1006,7 +1006,7 @@ const ansiStyles = assembleStyles();
 
 // EXTERNAL MODULE: ./node_modules/get-east-asian-width/lookup.js
 var lookup = __webpack_require__(12435);
-;// CONCATENATED MODULE: ./node_modules/slice-ansi/node_modules/is-fullwidth-code-point/index.js
+;// CONCATENATED MODULE: ./node_modules/is-fullwidth-code-point/index.js
 
 
 function isFullwidthCodePoint(codePoint) {
