@@ -15,6 +15,21 @@ export interface CheckSchemaVersionResult {
   existingSchemaVersion?: string;
 }
 
+interface GraphQLResponse<T = unknown> {
+  data?: T;
+  errors?: Array<{ message: string }>;
+}
+
+interface SchemaVersionData {
+  [game: string]: {
+    staticData: {
+      metadata: {
+        schemaVersion: string;
+      };
+    };
+  };
+}
+
 const headers = {
   'xmoba-no-cache': '1',
   'Content-Type': 'application/json',
@@ -49,7 +64,7 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
       throw new Error(`GraphQL request failed with status ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as GraphQLResponse<SchemaVersionData>;
 
     if (result.errors) {
       throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
