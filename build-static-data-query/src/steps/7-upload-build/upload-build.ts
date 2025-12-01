@@ -237,7 +237,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     // Step 8: Upload config.json
     try {
       const config = {
-        name: `gs://${bucketName}/${fullVersionPath}/${game}-static-data-query-compiled.gql.ts`,
+        name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,
         schemaVersion: schemaVersion,
       };
 

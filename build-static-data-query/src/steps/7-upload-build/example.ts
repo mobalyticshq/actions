@@ -8,7 +8,7 @@ async function main() {
     bucketName: 'festatic.mobalytics.gg',
     gcsProjectId: 'mobalytics-1242',
     env: 'dev',
-    game: 'example-game',
+    game: 'riftbound',
     schemaVersion: '1.0.0',
   });
 
