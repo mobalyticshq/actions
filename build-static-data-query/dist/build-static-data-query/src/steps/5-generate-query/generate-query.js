@@ -8,7 +8,7 @@ const run_cursor_generation_1 = require("@shared/cursor-cli/run-cursor-generatio
 const path_1 = __importDefault(require("path"));
 async function generateQuery(options) {
     const { timeoutMs } = options;
-    const promptFilePath = path_1.default.resolve(process.cwd(), 'src/steps/5-generate-query/generate-query.md');
+    const promptFilePath = path_1.default.resolve(__dirname, 'generate-query.md');
     return await (0, run_cursor_generation_1.runCursorGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
