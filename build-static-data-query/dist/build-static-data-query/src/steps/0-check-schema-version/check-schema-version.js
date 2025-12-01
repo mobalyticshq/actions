@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkSchemaVersion = checkSchemaVersion;
 const core = __importStar(require("@actions/core"));
+const version_folder_utils_1 = require("../../utils/version-folder.utils");
 const headers = {
     'xmoba-no-cache': '1',
     'Content-Type': 'application/json',
@@ -116,6 +117,20 @@ async function checkSchemaVersion(options) {
             fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
             downloadConfigFromBucket(bucket, env, game),
         ]);
+        // Check if version folder already exists
+        if (currentSchemaVersion) {
+            const versionFolderExists = await (0, version_folder_utils_1.checkVersionFolderExists)(bucket, env, game, currentSchemaVersion);
+            if (versionFolderExists) {
+                const bucketName = bucket.name;
+                const versionFolderPath = (0, version_folder_utils_1.buildVersionFolderPath)(env, game, currentSchemaVersion);
+                core.info(`✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`);
+                return {
+                    shouldContinue: false,
+                    currentSchemaVersion,
+                    existingSchemaVersion: existingConfig?.schemaVersion,
+                };
+            }
+        }
         // If config file doesn't exist, continue pipeline
         if (!existingConfig) {
             core.info(`No existing config found, continuing pipeline`);

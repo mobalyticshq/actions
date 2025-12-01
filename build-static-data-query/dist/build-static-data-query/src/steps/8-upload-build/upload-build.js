@@ -38,18 +38,8 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const core = __importStar(require("@actions/core"));
 const bucket_utils_1 = require("@shared/utils/bucket.utils");
+const version_folder_utils_1 = require("../../utils/version-folder.utils");
 const buildPath = './build';
-/**
- * Check if a folder exists in GCS bucket
- */
-async function folderExists(bucket, folderPath) {
-    const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
-    const [files] = await bucket.getFiles({ prefix, maxResults: 1 });
-    return files.length > 0;
-}
-/**
- * Get all files with specific extension in a directory (non-recursive)
- */
 function getFilesInDirectory(dirPath, extension) {
     if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
         return [];
@@ -64,9 +54,6 @@ function getFilesInDirectory(dirPath, extension) {
     }
     return files;
 }
-/**
- * Get all files recursively in a directory
- */
 function getAllFilesRecursive(dirPath) {
     const files = [];
     if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
@@ -103,24 +90,23 @@ async function uploadBuild(options) {
             process.exit(1);
         }
         // Step 2: Build GCS paths
-        const basePath = `dynamic-modules/${env}/${game}/static-data-query`;
-        const versionFolder = `v-${schemaVersion}-query`;
-        const fullVersionPath = `${basePath}/${versionFolder}`;
+        const fullVersionPath = (0, version_folder_utils_1.buildVersionFolderPath)(env, game, schemaVersion);
         core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
-        // Step 4: Check if version folder already exists
-        const versionFolderExists = await folderExists(bucket, fullVersionPath);
+        // Step 3: Check if version folder already exists
+        const versionFolderExists = await (0, version_folder_utils_1.checkVersionFolderExists)(bucket, env, game, schemaVersion);
         if (versionFolderExists) {
             core.setFailed(`Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`);
             process.exit(1);
         }
+        const versionFolder = (0, version_folder_utils_1.generateVersionFolderName)(schemaVersion);
         core.info(`✓ Version folder ${versionFolder} does not exist, proceeding with upload`);
-        // Step 3: Resolve build directory paths
+        // Step 4: Resolve build directory paths
         const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
         const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
         const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
         const buildFragmentsTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments', 'gql-types');
         const buildQueryTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'query', 'gql-types');
-        // Step 4: Upload files according to new structure
+        // Step 5: Upload files according to new structure
         let uploadedCount = 0;
         let failedCount = 0;
         // 6.1: Upload compiled query to root
@@ -200,19 +186,20 @@ async function uploadBuild(options) {
         if (!hasTypeFiles) {
             core.warning(`No type files found in any of the gql-types directories`);
         }
-        // Step 5: Report results
+        // Step 6: Report results
         core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
         if (failedCount > 0) {
             core.setFailed(`Failed to upload ${failedCount} file(s)`);
             process.exit(1);
         }
         core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
-        // Step 6: Upload config.json
+        // Step 7: Upload config.json
         try {
             const config = {
                 name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,
                 schemaVersion: schemaVersion,
             };
+            const basePath = (0, version_folder_utils_1.generateBasePath)(env, game);
             const configDestination = `${basePath}/config.json`;
             const configFile = bucket.file(configDestination);
             const configJson = JSON.stringify(config, null, 2);

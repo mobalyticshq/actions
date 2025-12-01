@@ -29,4 +29,4 @@ inputs:
 
 runs:
   using: 'node20'
-  main: 'dist/build-static-data-query/index.js'
+  main: 'dist/build-static-data-query/src/index.js'
