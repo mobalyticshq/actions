@@ -1,1 +1,1 @@
-export { generateScopes, type GenerateScopesOptions } from './generate-scopes';
+export { generateScopes, type GenerateScopesOptions, type ScopesData } from './generate-scopes';

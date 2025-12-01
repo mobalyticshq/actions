@@ -58,11 +58,11 @@ export async function run(): Promise<void> {
 
     // Step 2: Generate scopes
     core.startGroup('🔧 Step 2: Generating scopes');
-    const scopesPath = generateScopes({
+    const scopesData = generateScopes({
       schemaPath: downloadedSchemaPath,
       gameField: game,
     });
-    core.info(`✓ Scopes generated: ${scopesPath}`);
+    core.info(`✓ Scopes generated`);
     core.endGroup();
 
     // Step 3: Clean schema
@@ -71,6 +71,7 @@ export async function run(): Promise<void> {
       schemaPath: downloadedSchemaPath,
       gameField: game,
       staticDataFieldName,
+      scopesData,
     });
     core.info(`✓ Schema cleaned: ${cleanedSchemaPath}`);
     core.endGroup();

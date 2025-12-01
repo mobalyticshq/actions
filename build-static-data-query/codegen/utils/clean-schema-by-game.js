@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { buildClientSchema, buildSchema, introspectionFromSchema } from 'graphql';
 import { Microfiber } from 'microfiber';
-import { MutationNamespaces, QueryNamespaces, SubscriptionNamespaces, TargetGameQueryFields, TargetGameQueryTypeName } from '../../_generated/scopes';
 import { pruneSchema } from './graphql-tools/prune';
 
-export const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, options = {} }) => {
-  const queriesToRemove = QueryNamespaces.filter(queryName => !includedScopes.includes(queryName));
+export const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, scopesData, options = {} }) => {
+  const { queryNamespaces, mutationNamespaces, subscriptionNamespaces, targetGameQueryFields, targetGameQueryTypeName } = scopesData;
+  const queriesToRemove = queryNamespaces.filter(queryName => !includedScopes.includes(queryName));
 
   const cleanUpSchema = (schemaString) => {
     const fullFederatedSchema = buildSchema(readFileSync(schemaString, 'utf8'));
@@ -19,30 +19,31 @@ export const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, op
         cleanup: false,
       });
     });
-    MutationNamespaces.forEach(name => {
+    mutationNamespaces.forEach(name => {
       microfiber.removeMutation({
         name,
         cleanup: false,
       });
     });
-    SubscriptionNamespaces.forEach(name => {
+    subscriptionNamespaces.forEach(name => {
       microfiber.removeSubscription({
         name,
         cleanup: false,
       });
+    });
 
-
-      const fieldsToRemoveFromQuery = TargetGameQueryFields.filter(field => field !== staticDataFieldName);
+    if (targetGameQueryTypeName && targetGameQueryFields.length > 0) {
+      const fieldsToRemoveFromQuery = targetGameQueryFields.filter(field => field !== staticDataFieldName);
 
       fieldsToRemoveFromQuery.forEach(name => {
         microfiber.removeField({
           typeKind: 'OBJECT',
-          typeName: TargetGameQueryTypeName,
+          typeName: targetGameQueryTypeName,
           fieldName: name,
           cleanup: false,
         });
       });
-    });
+    }
 
     microfiber.cleanSchema();
 

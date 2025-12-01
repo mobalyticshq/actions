@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import { buildSchema, isObjectType } from 'graphql';
 import * as core from '@actions/core';
 
@@ -8,9 +7,15 @@ export interface GenerateScopesOptions {
   gameField: string;
 }
 
-const OUTPUT_PATH = '_generated/scopes.ts';
+export interface ScopesData {
+  queryNamespaces: string[];
+  mutationNamespaces: string[];
+  subscriptionNamespaces: string[];
+  targetGameQueryFields: string[];
+  targetGameQueryTypeName: string | undefined;
+}
 
-export function generateScopes(options: GenerateScopesOptions): string {
+export function generateScopes(options: GenerateScopesOptions): ScopesData {
   try {
     const { schemaPath, gameField } = options;
 
@@ -97,50 +102,19 @@ export function generateScopes(options: GenerateScopesOptions): string {
       }
     }
 
-    // Step 5: Generate TypeScript output file content
-    let output = `// Top level nodes available in graphql api
-export const QueryNamespaces: readonly string[] = [
-${queryNamespaces.map(name => `  '${name}',`).join('\n')}
-] as const;
-
-export const MutationNamespaces: readonly string[] = [
-${mutationNamespaces.map(name => `  '${name}',`).join('\n')}
-] as const;
-
-export const SubscriptionNamespaces: readonly string[] = [
-${subscriptionNamespaces.map(name => `  '${name}',`).join('\n')}
-] as const;
-`;
-
-    // Add TargetGameQueryFields and TargetGameQueryTypeName if we have game-specific fields
-    if (targetGameQueryFields.length > 0 && targetGameQueryTypeName) {
-      output += `
-export const TargetGameQueryFields: readonly string[] = [
-${targetGameQueryFields.map(name => `  '${name}',`).join('\n')}
-] as const;
-
-export const TargetGameQueryTypeName = '${targetGameQueryTypeName}' as const;
-`;
-    }
-
-    // Step 6: Ensure output directory exists and write file
-    const absoluteOutputPath = path.resolve(process.cwd(), OUTPUT_PATH);
-    const outputDir = path.dirname(absoluteOutputPath);
-
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-      core.info(`Created output directory: ${outputDir}`);
-    }
-
-    fs.writeFileSync(absoluteOutputPath, output, 'utf-8');
-
-    core.info(`✓ Successfully generated scopes file: ${absoluteOutputPath}`);
+    core.info(`✓ Successfully generated scopes`);
     if (targetGameQueryFields.length > 0) {
       core.info(`  Target game (${gameField}) fields: ${targetGameQueryFields.length}`);
       core.info(`  Target game type name: ${targetGameQueryTypeName}`);
     }
 
-    return absoluteOutputPath;
+    return {
+      queryNamespaces,
+      mutationNamespaces,
+      subscriptionNamespaces,
+      targetGameQueryFields,
+      targetGameQueryTypeName,
+    };
   } catch (error) {
     const errorMessage = `Unexpected error in generateScopes: ${error instanceof Error ? error.message : String(error)}`;
     core.setFailed(errorMessage);

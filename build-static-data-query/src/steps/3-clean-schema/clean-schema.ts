@@ -3,18 +3,20 @@ import { getCleanedSchemaByGame } from '../../../codegen/utils/clean-schema-by-g
 import * as path from 'path';
 import * as fs from 'fs';
 import * as core from '@actions/core';
+import type { ScopesData } from '../2-generate-scopes';
 
 export interface CleanSchemaOptions {
   schemaPath: string;
   gameField: string;
   staticDataFieldName: string;
+  scopesData: ScopesData;
 }
 
 const OUTPUT_PATH = '_generated/cleaned-schema.graphql';
 
 export async function cleanSchema(options: CleanSchemaOptions): Promise<string> {
   try {
-    const { schemaPath, gameField, staticDataFieldName } = options;
+    const { schemaPath, gameField, staticDataFieldName, scopesData } = options;
 
     core.info(`Cleaning schema from: ${schemaPath}`);
     core.info(`Game field: ${gameField}`);
@@ -44,6 +46,7 @@ export async function cleanSchema(options: CleanSchemaOptions): Promise<string> 
           loader: getCleanedSchemaByGame({
             includedScopes: [gameField],
             staticDataFieldName,
+            scopesData,
           }),
         },
       },
