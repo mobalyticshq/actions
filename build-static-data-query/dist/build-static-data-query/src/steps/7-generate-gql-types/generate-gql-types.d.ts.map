@@ -1,1 +1,1 @@
-{"version":3,"file":"generate-gql-types.d.ts","sourceRoot":"","sources":["../../../../../src/steps/7-generate-gql-types/generate-gql-types.ts"],"names":[],"mappings":"AAOA,wBAAsB,gBAAgB,IAAI,OAAO,CAAC,IAAI,CAAC,CA2ItD"}
+{"version":3,"file":"generate-gql-types.d.ts","sourceRoot":"","sources":["file:///Users/stanislav/Projects/actions/build-static-data-query/src/steps/7-generate-gql-types/generate-gql-types.ts"],"names":[],"mappings":"AAOA,wBAAsB,gBAAgB,IAAI,OAAO,CAAC,IAAI,CAAC,CA2ItD"}

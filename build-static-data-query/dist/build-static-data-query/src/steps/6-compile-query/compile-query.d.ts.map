@@ -1,1 +1,1 @@
-{"version":3,"file":"compile-query.d.ts","sourceRoot":"","sources":["../../../../../src/steps/6-compile-query/compile-query.ts"],"names":[],"mappings":"AASA,wBAAsB,YAAY,IAAI,OAAO,CAAC,IAAI,CAAC,CAiElD"}
+{"version":3,"file":"compile-query.d.ts","sourceRoot":"","sources":["file:///Users/stanislav/Projects/actions/build-static-data-query/src/steps/6-compile-query/compile-query.ts"],"names":[],"mappings":"AASA,wBAAsB,YAAY,IAAI,OAAO,CAAC,IAAI,CAAC,CAiElD"}

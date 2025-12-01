@@ -1,1 +1,0 @@
-{"version":3,"file":"example.js","sourceRoot":"","sources":["../../../../../src/steps/4-generate-fragments/example.ts"],"names":[],"mappings":";;AAAA,6DAAyD;AAEzD,KAAK,UAAU,IAAI;IACjB,OAAO,CAAC,GAAG,CAAC,kCAAkC,CAAC,CAAC;IAEhD,MAAM,IAAA,sCAAiB,EAAC;QACtB,SAAS,EAAE,MAAM,EAAE,YAAY;KAChC,CAAC,CAAC;IAEH,OAAO,CAAC,GAAG,CAAC,gCAAgC,CAAC,CAAC;AAChD,CAAC;AAED,IAAI,EAAE,CAAC"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"example.js","sourceRoot":"","sources":["../../../../../src/steps/5-generate-query/example.ts"],"names":[],"mappings":";;AAAA,qDAAiD;AAEjD,KAAK,UAAU,IAAI;IACjB,OAAO,CAAC,GAAG,CAAC,8BAA8B,CAAC,CAAC;IAE5C,MAAM,IAAA,8BAAa,EAAC;QAClB,SAAS,EAAE,MAAM,EAAE,YAAY;KAChC,CAAC,CAAC;IAEH,OAAO,CAAC,GAAG,CAAC,2BAA2B,CAAC,CAAC;AAC3C,CAAC;AAED,IAAI,EAAE,CAAC"}
