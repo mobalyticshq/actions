@@ -34,7 +34,6 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadBuild = uploadBuild;
-const storage_1 = require("@google-cloud/storage");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const core = __importStar(require("@actions/core"));
@@ -87,12 +86,10 @@ function getAllFilesRecursive(dirPath) {
 }
 async function uploadBuild(options) {
     try {
-        const { bucketName, gcsProjectId, env, game, schemaVersion } = options;
+        const { bucket, env, game, schemaVersion } = options;
+        const bucketName = bucket.name;
         core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
-        // Step 1: Create Storage client
-        const storage = new storage_1.Storage({ projectId: gcsProjectId });
-        const bucket = storage.bucket(bucketName);
-        // Step 2: Verify bucket exists
+        // Step 1: Verify bucket exists
         try {
             const [exists] = await bucket.exists();
             if (!exists) {
@@ -105,7 +102,7 @@ async function uploadBuild(options) {
             core.setFailed(`Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`);
             process.exit(1);
         }
-        // Step 3: Build GCS paths
+        // Step 2: Build GCS paths
         const basePath = `dynamic-modules/${env}/${game}/static-data-query`;
         const versionFolder = `v-${schemaVersion}-query`;
         const fullVersionPath = `${basePath}/${versionFolder}`;
@@ -117,13 +114,13 @@ async function uploadBuild(options) {
             process.exit(1);
         }
         core.info(`✓ Version folder ${versionFolder} does not exist, proceeding with upload`);
-        // Step 5: Resolve build directory paths
+        // Step 3: Resolve build directory paths
         const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
         const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
         const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
         const buildFragmentsTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments', 'gql-types');
         const buildQueryTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'query', 'gql-types');
-        // Step 6: Upload files according to new structure
+        // Step 4: Upload files according to new structure
         let uploadedCount = 0;
         let failedCount = 0;
         // 6.1: Upload compiled query to root
@@ -203,14 +200,14 @@ async function uploadBuild(options) {
         if (!hasTypeFiles) {
             core.warning(`No type files found in any of the gql-types directories`);
         }
-        // Step 7: Report results
+        // Step 5: Report results
         core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
         if (failedCount > 0) {
             core.setFailed(`Failed to upload ${failedCount} file(s)`);
             process.exit(1);
         }
         core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
-        // Step 8: Upload config.json
+        // Step 6: Upload config.json
         try {
             const config = {
                 name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,

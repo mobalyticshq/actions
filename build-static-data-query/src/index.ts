@@ -5,9 +5,9 @@ import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
 import { generateFragments } from './steps/4-generate-fragments';
-import { generateGqlTypes } from './steps/6-generate-gql-types';
-import { uploadBuild } from './steps/7-upload-build';
-import { compileQuery } from './steps/5.5-compile-query';
+import { generateGqlTypes } from './steps/7-generate-gql-types';
+import { uploadBuild } from './steps/8-upload-build';
+import { compileQuery } from './steps/6-compile-query';
 
 /**
  * Main function for the GitHub Action
@@ -90,20 +90,20 @@ export async function run(): Promise<void> {
     core.info(`✓ Query generation completed`);
     core.endGroup();
 
-    // Step 5.5: Compile query
-    core.startGroup('🔨 Step 5.5: Compiling query');
+    // Step 6: Compile query
+    core.startGroup('🔨 Step 6: Compiling query');
     await compileQuery();
     core.info(`✓ Query Compiling completed`);
     core.endGroup();
 
-    // Step 6: Generate GraphQL types
-    core.startGroup('📝 Step 6: Generating GraphQL types');
+    // Step 7: Generate GraphQL types
+    core.startGroup('📝 Step 7: Generating GraphQL types');
     await generateGqlTypes();
     core.info(`✓ GraphQL types generation completed`);
     core.endGroup();
 
-    // Step 7: Upload build to GCS
-    core.startGroup('☁️ Step 7: Uploading build to GCS');
+    // Step 8: Upload build to GCS
+    core.startGroup('☁️ Step 8: Uploading build to GCS');
     await uploadBuild({
       bucket,
       env: dynamicModulesEnv,

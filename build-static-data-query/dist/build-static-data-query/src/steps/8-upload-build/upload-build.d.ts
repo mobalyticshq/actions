@@ -1,6 +1,6 @@
+import { Bucket } from '@google-cloud/storage';
 export interface UploadBuildOptions {
-    bucketName: string;
-    gcsProjectId: string;
+    bucket: Bucket;
     env: string;
     game: string;
     schemaVersion: string;

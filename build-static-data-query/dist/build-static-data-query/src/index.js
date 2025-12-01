@@ -35,13 +35,15 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = run;
 const core = __importStar(require("@actions/core"));
+const storage_1 = require("@google-cloud/storage");
+const _0_check_schema_version_1 = require("./steps/0-check-schema-version");
 const _1_download_schema_1 = require("./steps/1-download-schema");
 const _2_generate_scopes_1 = require("./steps/2-generate-scopes");
 const _3_clean_schema_1 = require("./steps/3-clean-schema");
 const _4_generate_fragments_1 = require("./steps/4-generate-fragments");
-const _6_generate_gql_types_1 = require("./steps/6-generate-gql-types");
-const _7_upload_build_1 = require("./steps/7-upload-build");
-const _5_5_compile_query_1 = require("./steps/5.5-compile-query");
+const _7_generate_gql_types_1 = require("./steps/7-generate-gql-types");
+const _8_upload_build_1 = require("./steps/8-upload-build");
+const _6_compile_query_1 = require("./steps/6-compile-query");
 /**
  * Main function for the GitHub Action
  */
@@ -56,6 +58,26 @@ async function run() {
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
         core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
+        // Initialize Storage and Bucket
+        const storage = new storage_1.Storage({ projectId: gcsProjectId });
+        const bucket = storage.bucket(gcsBucketName);
+        // Step 0: Check schema version
+        core.startGroup('🔍 Step 0: Checking schema version');
+        const schemaVersionCheck = await (0, _0_check_schema_version_1.checkSchemaVersion)({
+            graphqlEndpoint,
+            bucket,
+            env: dynamicModulesEnv,
+            game,
+        });
+        core.endGroup();
+        if (!schemaVersionCheck.shouldContinue) {
+            core.info(`✓ Schema version has not changed (${schemaVersionCheck.currentSchemaVersion}). Pipeline skipped.`);
+            return;
+        }
+        if (!schemaVersionCheck.currentSchemaVersion) {
+            core.setFailed('Schema version is not found, pipeline will be skipped');
+            return;
+        }
         // Step 1: Download GraphQL schema
         core.startGroup('📥 Step 1: Downloading GraphQL schema');
         const downloadedSchemaPath = await (0, _1_download_schema_1.downloadSchema)({ endpoint: graphqlEndpoint });
@@ -92,26 +114,23 @@ async function run() {
         });
         core.info(`✓ Query generation completed`);
         core.endGroup();
-        // Step 5.5: Compile query
-        core.startGroup('🔨 Step 5.5: Compiling query');
-        await (0, _5_5_compile_query_1.compileQuery)();
+        // Step 6: Compile query
+        core.startGroup('🔨 Step 6: Compiling query');
+        await (0, _6_compile_query_1.compileQuery)();
         core.info(`✓ Query Compiling completed`);
         core.endGroup();
-        // Step 6: Generate GraphQL types
-        core.startGroup('📝 Step 6: Generating GraphQL types');
-        await (0, _6_generate_gql_types_1.generateGqlTypes)();
+        // Step 7: Generate GraphQL types
+        core.startGroup('📝 Step 7: Generating GraphQL types');
+        await (0, _7_generate_gql_types_1.generateGqlTypes)();
         core.info(`✓ GraphQL types generation completed`);
         core.endGroup();
-        // Step 7: Upload build to GCS
-        core.startGroup('☁️ Step 7: Uploading build to GCS');
-        // TODO: schemaVersion should come from a previous build step
-        const schemaVersion = '1.0.0';
-        await (0, _7_upload_build_1.uploadBuild)({
-            bucketName: gcsBucketName,
-            gcsProjectId: gcsProjectId,
+        // Step 8: Upload build to GCS
+        core.startGroup('☁️ Step 8: Uploading build to GCS');
+        await (0, _8_upload_build_1.uploadBuild)({
+            bucket,
             env: dynamicModulesEnv,
             game: game,
-            schemaVersion: schemaVersion,
+            schemaVersion: schemaVersionCheck.currentSchemaVersion,
         });
         core.info(`✓ Build upload completed`);
         core.endGroup();
