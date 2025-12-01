@@ -35,9 +35,13 @@ export async function run(): Promise<void> {
     });
     core.endGroup();
 
-    // If schema versions match, skip the pipeline
     if (!schemaVersionCheck.shouldContinue) {
       core.info(`✓ Schema version has not changed (${schemaVersionCheck.currentSchemaVersion}). Pipeline skipped.`);
+      return;
+    }
+
+    if (!schemaVersionCheck.currentSchemaVersion) {
+      core.setFailed('Schema version is not found, pipeline will be skipped');
       return;
     }
 
@@ -96,14 +100,12 @@ export async function run(): Promise<void> {
 
     // Step 7: Upload build to GCS
     core.startGroup('☁️ Step 7: Uploading build to GCS');
-    // TODO: schemaVersion should come from a previous build step
-    const schemaVersion = '1.0.0';
     await uploadBuild({
       bucketName: gcsBucketName,
       gcsProjectId: gcsProjectId,
       env: dynamicModulesEnv,
       game: game,
-      schemaVersion: schemaVersion,
+      schemaVersion: schemaVersionCheck.currentSchemaVersion,
     });
     core.info(`✓ Build upload completed`);
     core.endGroup();
