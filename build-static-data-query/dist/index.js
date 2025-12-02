@@ -4273,6 +4273,7 @@ async function run() {
         }
     }
 }
+run();
 
 
 /***/ }),
