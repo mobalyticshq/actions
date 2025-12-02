@@ -50,7 +50,7 @@ module.exports = {
   externals: [
     nodeExternals({
       // Allow bundling of packages that need to be included
-      allowlist: [],
+      allowlist: ["@actions/core"],
     }),
   ],
   
