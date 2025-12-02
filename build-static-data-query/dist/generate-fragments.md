@@ -14,7 +14,17 @@ To locate the repository root: look for the directory containing `build-static-d
 ## Output
 
 - **Folder**: build-static-data-query/build/gql/fragments
-- **Requirement**: All generated files must be placed in this folder
+- **Requirement**: 
+  - Create this folder if it does not exist
+  - All generated files must be placed in this folder
+  - **ONLY** create new `.gql.ts` files in this folder
+  - **DO NOT** modify any files outside this folder
+  
+## Important Restrictions
+
+**DO NOT modify any existing source code files.**
+- Do NOT modify any files in the `build-static-data-query/src` directory
+- **ONLY create NEW files** in the output folder: `build-static-data-query/build/gql/fragments`
 
 ---
 

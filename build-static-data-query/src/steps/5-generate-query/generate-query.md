@@ -17,7 +17,18 @@ To locate the repository root: look for the directory containing `build-static-d
 ## Output
 
 - **Folder**: build-static-data-query/build/gql/query
-- **Requirement**: All generated files must be placed in this folder
+- **Requirement**: 
+  - Create this folder if it does not exist
+  - All generated files must be placed in this folder
+  - **ONLY** create new `.gql.ts` files in this folder
+  - **DO NOT** modify any files outside this folder
+
+
+## Important Restrictions
+
+**DO NOT modify any existing source code files.**
+- Do NOT modify any files in the `build-static-data-query/src` directory
+- **ONLY create NEW files** in the output folder: `build-static-data-query/build/gql/query/`
 
 ---
 
@@ -27,7 +38,7 @@ To locate the repository root: look for the directory containing `build-static-d
    - This type contains *groups* node and *metadata* node.
    - Node *groups* contains multiple nested nodes.
    - Node *metadata* contains node *dataVersion* and node *schemaVersion*.
-2. Generate a file containing a GraphQL query that:
+2. Generate a file containing a GraphQL query in the output folder that:
    - uses **all fields of the `groups` node**.
    - For each field, the filter must be the object: { page: { all: true } }.
    - Query only data field, ignore all other fields in the type.
