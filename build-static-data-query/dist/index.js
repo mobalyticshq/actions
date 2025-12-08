@@ -2957,8 +2957,35 @@ const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, scopesDat
 
     const cleanedSchema = (0,external_graphql_.buildClientSchema)(microfiber.getResponse());
 
+    console.log('targetGameQueryTypeName', targetGameQueryTypeName)
+
+    const entitiesEnumTypeName = targetGameQueryTypeName && targetGameQueryTypeName.endsWith('Query') ? `${targetGameQueryTypeName.slice(0, -5)}EntitiesEnum` : null;
+    console.log('entitiesEnumTypeName', entitiesEnumTypeName);
+
+    // Ensure the enum type survives Microfiber cleanup so skipPruning can see it
+    let schemaToPrune = cleanedSchema;
+    if (entitiesEnumTypeName && !schemaToPrune.getType(entitiesEnumTypeName)) {
+      const enumFromSource = fullFederatedSchema.getType(entitiesEnumTypeName);
+      if (enumFromSource && (0,external_graphql_.isEnumType)(enumFromSource) && enumFromSource.astNode) {
+        schemaToPrune = (0,external_graphql_.extendSchema)(schemaToPrune, {
+          kind: 'Document',
+          definitions: [enumFromSource.astNode],
+        });
+      }
+    }
     // remove rest orphan types
-    return pruneSchema(cleanedSchema, options);
+    const pruneOptions = {
+      ...options,
+      skipPruning: (type) => {
+        console.log('type', type);
+        if (entitiesEnumTypeName && (0,external_graphql_.isEnumType)(type)) {
+          return type.name === entitiesEnumTypeName;
+        }
+        return false;
+      },
+    };
+
+    return pruneSchema(schemaToPrune, pruneOptions);
   };
 
   return cleanUpSchema;

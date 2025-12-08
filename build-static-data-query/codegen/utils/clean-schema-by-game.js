@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { buildClientSchema, buildSchema, introspectionFromSchema } from 'graphql';
+import { buildClientSchema, buildSchema, extendSchema, introspectionFromSchema, isEnumType } from 'graphql';
 import { Microfiber } from 'microfiber';
 import { pruneSchema } from './graphql-tools/prune';
 
@@ -49,8 +49,31 @@ export const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, sc
 
     const cleanedSchema = buildClientSchema(microfiber.getResponse());
 
+    const entitiesEnumTypeName = targetGameQueryTypeName && targetGameQueryTypeName.endsWith('Query') ? `${targetGameQueryTypeName.slice(0, -5)}EntitiesEnum` : null;
+
+    // Ensure the entitiesEnumTypeName type survives Microfiber cleanup so skipPruning can see it
+    let schemaToPrune = cleanedSchema;
+    if (entitiesEnumTypeName && !schemaToPrune.getType(entitiesEnumTypeName)) {
+      const enumFromSource = fullFederatedSchema.getType(entitiesEnumTypeName);
+      if (enumFromSource && isEnumType(enumFromSource) && enumFromSource.astNode) {
+        schemaToPrune = extendSchema(schemaToPrune, {
+          kind: 'Document',
+          definitions: [enumFromSource.astNode],
+        });
+      }
+    }
     // remove rest orphan types
-    return pruneSchema(cleanedSchema, options);
+    const pruneOptions = {
+      ...options,
+      skipPruning: (type) => {
+        if (entitiesEnumTypeName && isEnumType(type)) {
+          return type.name === entitiesEnumTypeName;
+        }
+        return false;
+      },
+    };
+
+    return pruneSchema(schemaToPrune, pruneOptions);
   };
 
   return cleanUpSchema;
