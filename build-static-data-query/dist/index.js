@@ -934,6 +934,21 @@ async function uploadBuild(options) {
         if (!hasTypeFiles) {
             core.warning(`No type files found in any of the gql-types directories`);
         }
+        // 6.5: Upload cleaned schema to cleaned-schema/ folder
+        const cleanedSchemaFile = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
+        if (fs.existsSync(cleanedSchemaFile)) {
+            const destination = `${fullVersionPath}/cleaned-schema/cleaned-schema.graphql`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, cleanedSchemaFile, destination, bucketName, 'cleaned schema');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                failedCount++;
+            }
+        }
+        else {
+            core.warning(`Cleaned schema file not found: ${cleanedSchemaFile}`);
+        }
         // Step 6: Report results
         core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
         if (failedCount > 0) {
@@ -2957,12 +2972,9 @@ const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, scopesDat
 
     const cleanedSchema = (0,external_graphql_.buildClientSchema)(microfiber.getResponse());
 
-    console.log('targetGameQueryTypeName', targetGameQueryTypeName)
-
     const entitiesEnumTypeName = targetGameQueryTypeName && targetGameQueryTypeName.endsWith('Query') ? `${targetGameQueryTypeName.slice(0, -5)}EntitiesEnum` : null;
-    console.log('entitiesEnumTypeName', entitiesEnumTypeName);
 
-    // Ensure the enum type survives Microfiber cleanup so skipPruning can see it
+    // Ensure the entitiesEnumTypeName type survives Microfiber cleanup so skipPruning can see it
     let schemaToPrune = cleanedSchema;
     if (entitiesEnumTypeName && !schemaToPrune.getType(entitiesEnumTypeName)) {
       const enumFromSource = fullFederatedSchema.getType(entitiesEnumTypeName);
@@ -2977,7 +2989,6 @@ const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, scopesDat
     const pruneOptions = {
       ...options,
       skipPruning: (type) => {
-        console.log('type', type);
         if (entitiesEnumTypeName && (0,external_graphql_.isEnumType)(type)) {
           return type.name === entitiesEnumTypeName;
         }

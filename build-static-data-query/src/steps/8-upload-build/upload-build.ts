@@ -189,6 +189,20 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       core.warning(`No type files found in any of the gql-types directories`);
     }
 
+    // 6.5: Upload cleaned schema to cleaned-schema/ folder
+    const cleanedSchemaFile = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
+    if (fs.existsSync(cleanedSchemaFile)) {
+      const destination = `${fullVersionPath}/cleaned-schema/cleaned-schema.graphql`;
+      const success = await uploadFileToBucket(bucket, cleanedSchemaFile, destination, bucketName, 'cleaned schema');
+      if (success) {
+        uploadedCount++;
+      } else {
+        failedCount++;
+      }
+    } else {
+      core.warning(`Cleaned schema file not found: ${cleanedSchemaFile}`);
+    }
+
     // Step 6: Report results
     core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
 
