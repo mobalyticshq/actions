@@ -12,7 +12,8 @@ export interface DownloadBuildArtifactsOptions {
   game: string;
 }
 
-const filterTypesFiles = (fileName: string) => fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
+const filterTypesFiles = (fileName: string) =>
+  fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
 
 async function downloadFolderFromBucket(
   bucket: Bucket,
@@ -114,7 +115,7 @@ export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOpti
       const bucketFolderPath = `${baseBucketPath}${folderName}`;
       const localFolderPath = path.join(buildPath, folderName);
 
-      const filterFiles = folderName === 'types' ?filterTypesFiles : undefined;
+      const filterFiles = folderName === 'types' ? filterTypesFiles : undefined;
 
       await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles);
     }
