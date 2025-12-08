@@ -1,6 +1,10 @@
 import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
+import * as fs from 'fs';
+import * as path from 'path';
 import { downloadConfigFromBucket } from '@shared/utils/bucket.utils';
+import { generateModulePath } from '@shared/utils/dynamic-module.utils';
+import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 
 export interface DownloadBuildArtifactsOptions {
   bucket: Bucket;
@@ -8,15 +12,102 @@ export interface DownloadBuildArtifactsOptions {
   game: string;
 }
 
+async function downloadFolderFromBucket(
+  bucket: Bucket,
+  bucketFolderPath: string,
+  localFolderPath: string,
+  folderName: string,
+): Promise<void> {
+  const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
+
+  core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
+
+  // Get all files in the folder
+  const [files] = await bucket.getFiles({ prefix });
+
+  // Filter out files that are exactly the prefix (folder markers)
+  const actualFiles = files.filter(file => file.name !== prefix);
+
+  if (actualFiles.length === 0) {
+    const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
+    core.setFailed(errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
+
+  // Download each file
+  for (const file of actualFiles) {
+    // Get relative path from the folder prefix
+    const relativePath = file.name.replace(prefix, '');
+    const localFilePath = path.join(localFolderPath, relativePath);
+    const localFileDir = path.dirname(localFilePath);
+
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(localFileDir)) {
+      fs.mkdirSync(localFileDir, { recursive: true });
+    }
+
+    // Download file
+    await file.download({ destination: localFilePath });
+    core.info(`Downloaded: ${relativePath}`);
+  }
+
+  core.info(`✓ Successfully downloaded folder ${folderName}`);
+}
+
 export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOptions): Promise<void> {
   try {
     const { bucket, env, game } = options;
+    const bucketName = bucket.name;
 
-    const config = downloadConfigFromBucket(bucket, env, game);
+    // Step 1: Download config.json
+    const config = await downloadConfigFromBucket(bucket, env, game);
 
-    core.info(`Download build artifacts for game: ${game}`);
+    if (!config) {
+      const errorMessage = `Config file not found for game: ${game}`;
+      core.setFailed(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    // Step 2: Extract moduleFolder from config
+    if (!config.moduleFolder) {
+      const errorMessage = `Config file does not contain moduleFolder field for game: ${game}`;
+      core.setFailed(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    const moduleFolder = config.moduleFolder.endsWith('/') ? config.moduleFolder : `${config.moduleFolder}/`;
+    core.info(`Module folder: ${moduleFolder}`);
+
+    // Step 3: Build bucket path
+    const baseModulePath = generateModulePath(env, game, DynamicModuleSlug.STATIC_DATA_QUERY);
+    const baseBucketPath = `${baseModulePath}/${moduleFolder}`;
+
+    core.info(`Base bucket path: gs://${bucketName}/${baseBucketPath}`);
+
+    // Step 4: Create local build folder
+    const buildPath = path.resolve(process.cwd(), 'build', 'downloaded');
+    if (!fs.existsSync(buildPath)) {
+      fs.mkdirSync(buildPath, { recursive: true });
+      core.info(`Created build directory: ${buildPath}`);
+    } else {
+      core.info(`Build directory already exists: ${buildPath}`);
+    }
+
+    // Step 5: Download required folders
+    const requiredFolders = ['cleaned-schema', 'fragments', 'query', 'types'];
+
+    for (const folderName of requiredFolders) {
+      const bucketFolderPath = `${baseBucketPath}${folderName}`;
+      const localFolderPath = path.join(buildPath, folderName);
+
+      await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName);
+    }
+
+    core.info(`✓ Successfully downloaded all build artifacts for game: ${game}`);
   } catch (error) {
-    // GraphQL errors should fail the pipeline
+    // errors should fail the pipeline
     core.setFailed(`Error in downloadBuildArtifacts: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
