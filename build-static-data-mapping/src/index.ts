@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { Storage } from '@google-cloud/storage';
-import { checkSchemaVersion } from './steps/0-check-schema-version';
+import { downloadBuildArtifacts } from './steps/1-download-build-artifacts';
 
 /**
  * Main function for the GitHub Action
@@ -22,8 +22,7 @@ export async function run(): Promise<void> {
 
     // Step 0: Check schema version
     core.startGroup('🔍 Step 0: Checking schema version');
-    const schemaVersionCheck = await checkSchemaVersion({
-      graphqlEndpoint,
+    await downloadBuildArtifacts({
       bucket,
       env: dynamicModulesEnv,
       game,

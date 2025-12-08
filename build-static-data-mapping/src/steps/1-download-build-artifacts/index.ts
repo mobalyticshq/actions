@@ -1,2 +1,1 @@
-export { checkSchemaVersion, type CheckSchemaVersionOptions, type CheckSchemaVersionResult } from './check-schema-version';
-
+export { downloadBuildArtifacts } from './download-build-artifacts';
