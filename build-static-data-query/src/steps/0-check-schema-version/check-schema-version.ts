@@ -1,7 +1,7 @@
 import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
-import { checkVersionFolderExists, buildVersionFolderPath } from '../../utils/module-folder.utils';
-import { DynamicModuleConfig } from '@shared/types/dynamic-modules.types';
+import { buildVersionFolderPath, checkVersionFolderExists } from '../../utils/module-folder.utils';
+import { downloadConfigFromBucket } from '@shared/utils/bucket.utils';
 
 export interface CheckSchemaVersionOptions {
   graphqlEndpoint: string;
@@ -84,43 +84,6 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
       `Failed to fetch schema version from GraphQL: ${error instanceof Error ? error.message : String(error)}`,
     );
     throw error;
-  }
-}
-
-async function downloadConfigFromBucket(
-  bucket: Bucket,
-  env: string,
-  game: string,
-): Promise<DynamicModuleConfig | null> {
-  const configPath = `dynamic-modules/${env}/${game}/static-data-query/config.json`;
-  const bucketName = bucket.name;
-
-  core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
-
-  try {
-    const file = bucket.file(configPath);
-
-    // Download file
-    const [fileContents] = await file.download();
-    const configJson = JSON.parse(fileContents.toString('utf-8')) as DynamicModuleConfig;
-
-    if (!configJson.schemaVersion) {
-      core.warning(`Config file exists but does not contain schemaVersion field`);
-      return null;
-    }
-
-    core.info(`✓ Existing schema version from config.json: ${configJson.schemaVersion}`);
-    return configJson;
-  } catch (error: any) {
-    // Handle 404 (file not found) as a normal case
-    if (error?.code === 404 || error?.message?.includes('No such object')) {
-      core.info(`Config file not found at gs://${bucketName}/${configPath}, continuing pipeline`);
-      return null;
-    }
-
-    // For other errors, log warning but continue
-    core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
-    return null;
   }
 }
 

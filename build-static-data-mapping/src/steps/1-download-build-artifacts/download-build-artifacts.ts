@@ -1,5 +1,6 @@
 import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
+import { downloadConfigFromBucket } from '@shared/utils/bucket.utils';
 
 export interface DownloadBuildArtifactsOptions {
   bucket: Bucket;
@@ -10,6 +11,8 @@ export interface DownloadBuildArtifactsOptions {
 export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOptions): Promise<void> {
   try {
     const { bucket, env, game } = options;
+
+    const config = downloadConfigFromBucket(bucket, env, game);
 
     core.info(`Download build artifacts for game: ${game}`);
   } catch (error) {
