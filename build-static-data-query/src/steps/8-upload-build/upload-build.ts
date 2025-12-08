@@ -6,9 +6,9 @@ import { uploadFileToBucket } from '@shared/utils/bucket.utils';
 import {
   checkVersionFolderExists,
   buildVersionFolderPath,
-  generateBasePath,
+  generateStaticDataQueryModulePath,
   generateVersionFolderName,
-} from '../../utils/version-folder.utils';
+} from '../../utils/module-folder.utils';
 
 export interface UploadBuildOptions {
   bucket: Bucket;
@@ -222,7 +222,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
         schemaVersion: schemaVersion,
       };
 
-      const basePath = generateBasePath(env, game);
+      const basePath = generateStaticDataQueryModulePath(env, game);
       const configDestination = `${basePath}/config.json`;
       const configFile = bucket.file(configDestination);
       const configJson = JSON.stringify(config, null, 2);

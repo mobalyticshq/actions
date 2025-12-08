@@ -1,6 +1,7 @@
 import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
-import { checkVersionFolderExists, buildVersionFolderPath } from '../../utils/version-folder.utils';
+import { checkVersionFolderExists, buildVersionFolderPath } from '../../utils/module-folder.utils';
+import { DynamicModuleConfig } from '@shared/types/dynamic-modules.types';
 
 export interface CheckSchemaVersionOptions {
   graphqlEndpoint: string;
@@ -90,7 +91,7 @@ async function downloadConfigFromBucket(
   bucket: Bucket,
   env: string,
   game: string,
-): Promise<{ schemaVersion: string } | null> {
+): Promise<DynamicModuleConfig | null> {
   const configPath = `dynamic-modules/${env}/${game}/static-data-query/config.json`;
   const bucketName = bucket.name;
 
@@ -101,7 +102,7 @@ async function downloadConfigFromBucket(
 
     // Download file
     const [fileContents] = await file.download();
-    const configJson = JSON.parse(fileContents.toString('utf-8'));
+    const configJson = JSON.parse(fileContents.toString('utf-8')) as DynamicModuleConfig;
 
     if (!configJson.schemaVersion) {
       core.warning(`Config file exists but does not contain schemaVersion field`);
@@ -109,7 +110,7 @@ async function downloadConfigFromBucket(
     }
 
     core.info(`✓ Existing schema version from config.json: ${configJson.schemaVersion}`);
-    return { schemaVersion: configJson.schemaVersion };
+    return configJson;
   } catch (error: any) {
     // Handle 404 (file not found) as a normal case
     if (error?.code === 404 || error?.message?.includes('No such object')) {
@@ -130,9 +131,9 @@ export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Pr
     core.info(`Checking schema version for game: ${game}`);
 
     // Execute GraphQL query and GCS download in parallel
-    const [currentSchemaVersion, existingConfig] = await Promise.all([
+    const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
       fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-      downloadConfigFromBucket(bucket, env, game),
+      downloadConfigFromBucket(bucket, env, game).then(result => result?.schemaVersion),
     ]);
 
     // Check if version folder already exists
@@ -147,21 +148,19 @@ export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Pr
         return {
           shouldContinue: false,
           currentSchemaVersion,
-          existingSchemaVersion: existingConfig?.schemaVersion,
+          existingSchemaVersion: existingSchemaVersion,
         };
       }
     }
 
     // If config file doesn't exist, continue pipeline
-    if (!existingConfig) {
+    if (!existingSchemaVersion) {
       core.info(`No existing config found, continuing pipeline`);
       return {
         shouldContinue: true,
         currentSchemaVersion,
       };
     }
-
-    const existingSchemaVersion = existingConfig.schemaVersion;
 
     // If we can't get schema version from the endpoint, pipeline should be stopped
     if (!currentSchemaVersion) {
