@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { Storage } from '@google-cloud/storage';
 import { downloadBuildArtifacts } from './steps/1-download-build-artifacts';
+import { generateMapping } from './steps/2-generate-mapping';
 
 /**
  * Main function for the GitHub Action
@@ -14,13 +15,13 @@ export async function run(): Promise<void> {
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
 
-    core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
+    core.info(`🚀 Starting build static data mapping pipeline for game: ${game}`);
 
     // Initialize Storage and Bucket
     const storage = new Storage({ projectId: gcsProjectId });
     const bucket = storage.bucket(gcsBucketName);
 
-    // Step 0: Check schema version
+    // Step 1: Check schema version
     core.startGroup('🔍 Step 0: Checking schema version');
     await downloadBuildArtifacts({
       bucket,
@@ -28,6 +29,15 @@ export async function run(): Promise<void> {
       game,
     });
     core.endGroup();
+
+    // Step 2: Generate mapping
+    core.startGroup('🔨 Step 2: Generating mapping');
+    await generateMapping({
+      timeoutMs,
+    });
+    core.info(`✓ Mapping generation completed`);
+    core.endGroup();
+
     core.info(`✓ Pipeline completed successfully`);
   } catch (error) {
     if (error instanceof Error) {

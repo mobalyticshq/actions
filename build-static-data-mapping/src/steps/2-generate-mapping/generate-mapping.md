@@ -1,0 +1,75 @@
+## Paths
+
+**All paths are relative to the repository root directory** (the directory that contains the `build-static-data-mapping/` subdirectory).
+
+To locate the repository root: look for the directory containing `build-static-data-mapping/package.json` and `build-static-data-mapping/action.yml`.
+
+## Input
+
+- **File**: build-static-data-mapping/build/downloaded/cleaned-schema/cleaned-schema.graphql
+- **Content**: GraphQL schema
+
+---
+
+- **Folder**: build-static-data-mapping/build/downloaded/fragments
+- **Content**: GraphQL fragments
+
+---
+
+- **Folder**: build-static-data-mapping/src/types/output-data.types.ts
+- **Content**: Target TypeScript type for mapping
+
+---
+
+- **Folder**: build-static-data-mapping/src/static-data-mapping-prompts
+- **Content**: Prompts for generating static data mapping functions
+
+---
+
+## Output
+
+- **Folder**: src/static-data-mapping
+- **Requirement**: All generated files must be placed in this folder
+
+---
+
+## Important Restrictions
+
+**DO NOT modify any existing source code files.**
+- Do NOT modify any files in the `build-static-data-mapping/src` directory
+- **ONLY create NEW files** in the output folder: `build-static-data-mapping/build/mapping`
+
+---
+
+## Task
+
+1. **Analyze the enum `[Game]EntitiesEnum`** in the GraphQL schema.
+    - It contains a set of keys that correspond to the entities for which gql fragments have been generated.
+2. **Analyze the folder `src/static-data-mapping-prompts`**
+    - It contains a set of prompts, each designed to generate a mapping function for a specific entity.
+    - The filename corresponds to the key in the `[Game]EntitiesEnum`.
+3. **For each key in `[Game]EntitiesEnum`:**
+    - Find the corresponding gql fragment in the folder `src/api/gql/fragments`.
+    - Find the corresponding prompt in the folder `src/static-data-mapping-prompts`.
+        - The filename matches the key in `[Game]EntitiesEnum`.
+    - Generate a TypeScript mapping function that:
+        - Takes the corresponding gql fragment as **input**.
+        - Returns data matching the type **`StaticDataInfo`**.
+        - Uses the mapping instructions from the corresponding prompt.
+        - Must be **strictly typed** — the use of `any` is forbidden.
+        - ⚠️ **Important:** the `type` field in the returned object must always match the key from `[Game]EntitiesEnum` for which the mapping function is generated.
+    - Do **not** create a function if there is no corresponding gql fragment or prompt.
+    - Each mapping function must be **exported**.
+    - Each mapping function must have the name format: map[EntityName]
+      where `[EntityName]` is the name of the entity from `[Game]EntitiesEnum`, converted to **PascalCase**.
+    - Each mapping function must be placed in a separate file.
+        - The filename format must be: [entity-name].mapping.ts
+          where `[entity-name]` is the entity name from `[Game]EntitiesEnum`, converted to **kebab-case**.
+    - An example mapping function can be found in: src/examples/static-data-mapping.example.ts
+
+4. **Create a file `index.ts`** in the folder `src/static-data-mapping`.
+
+5. **In `index.ts`:**
+    - Import all generated mapping functions.
+    - Create an object `staticDataMappers` that maps keys from `[Game]EntitiesEnum` to their corresponding mapping functions.
+    - Export the object `staticDataMappers`.
