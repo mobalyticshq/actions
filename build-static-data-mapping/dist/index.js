@@ -23611,6 +23611,105 @@ exports["default"] = promisify;
 
 /***/ }),
 
+/***/ 5550:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.runCursorGeneration = runCursorGeneration;
+const core = __importStar(__webpack_require__(1659));
+const exec_utils_1 = __webpack_require__(9099);
+async function runCursorGeneration(input) {
+    try {
+        const { timeoutMs, model = 'sonnet-4.5', prompt } = input;
+        core.info(`Cursor-agent generation starts with prompt: ${prompt}`);
+        try {
+            await (0, exec_utils_1.spawnWithTimeout)({ command: 'which cursor-agent', args: [], timeoutMs });
+            core.info('cursor-agent is installed');
+        }
+        catch {
+            core.info('Installing cursor-cli...');
+            await (0, exec_utils_1.spawnWithTimeout)({ command: 'curl -fsSL https://cursor.com/install | bash', args: [], timeoutMs });
+            core.addPath(`${process.env.HOME}/.cursor/bin`);
+            core.info('Installation completed');
+        }
+        // Get CURSOR_API_KEY from environment (GitHub Actions secrets)
+        const cursorApiKey = process.env.CURSOR_API_KEY;
+        if (!cursorApiKey) {
+            throw new Error('CURSOR_API_KEY environment variable is not set');
+        }
+        const command = 'cursor-agent';
+        const args = ['-p', '--force', `--model=${model}`, '--output-format', 'text', prompt];
+        core.info(`Executing cursor-agent with timeout: ${timeoutMs}ms`);
+        // Execute command with timeout
+        try {
+            await (0, exec_utils_1.spawnWithTimeout)({
+                command,
+                args,
+                timeoutMs,
+                env: {
+                    ...process.env,
+                    CURSOR_API_KEY: cursorApiKey,
+                },
+            });
+            core.info(`✓ Generation completed successfully`);
+            return;
+        }
+        catch (error) {
+            const errorMessage = `Failed to execute cursor-agent: ${error instanceof Error ? error.message : String(error)}`;
+            if (error instanceof Error && error.message === exec_utils_1.TimeoutError) {
+                core.setFailed(`cursor-agent execution timed out after ${timeoutMs}ms`);
+            }
+            else {
+                core.setFailed(errorMessage);
+            }
+            throw new Error(errorMessage);
+        }
+    }
+    catch (error) {
+        const errorMessage = `Failed to execute cursor-agent: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+
+/***/ }),
+
 /***/ 5626:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -24898,13 +24997,22 @@ const path = __importStar(__webpack_require__(6928));
 const bucket_utils_1 = __webpack_require__(9328);
 const dynamic_module_utils_1 = __webpack_require__(4798);
 const dynamic_modules_types_1 = __webpack_require__(463);
-async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName) {
+const filterTypesFiles = (fileName) => fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
+async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles) {
     const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
     core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
     // Get all files in the folder
     const [files] = await bucket.getFiles({ prefix });
     // Filter out files that are exactly the prefix (folder markers)
-    const actualFiles = files.filter(file => file.name !== prefix);
+    let actualFiles = files.filter(file => file.name !== prefix);
+    // Apply file filter if provided
+    if (filterFiles) {
+        actualFiles = actualFiles.filter(file => {
+            const relativePath = file.name.replace(prefix, '');
+            const fileName = path.basename(relativePath);
+            return filterFiles(fileName);
+        });
+    }
     if (actualFiles.length === 0) {
         const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
         core.setFailed(errorMessage);
@@ -24960,11 +25068,12 @@ async function downloadBuildArtifacts(options) {
             core.info(`Build directory already exists: ${buildPath}`);
         }
         // Step 5: Download required folders
-        const requiredFolders = ['cleaned-schema', 'fragments', 'query', 'types'];
+        const requiredFolders = ['cleaned-schema', 'fragments', 'types'];
         for (const folderName of requiredFolders) {
             const bucketFolderPath = `${baseBucketPath}${folderName}`;
             const localFolderPath = path.join(buildPath, folderName);
-            await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName);
+            const filterFiles = folderName === 'types' ? filterTypesFiles : undefined;
+            await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles);
         }
         core.info(`✓ Successfully downloaded all build artifacts for game: ${game}`);
     }
@@ -27666,6 +27775,30 @@ module.exports = toXml;
 
 /***/ }),
 
+/***/ 6850:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateMapping = generateMapping;
+const run_cursor_generation_1 = __webpack_require__(5550);
+const path_1 = __importDefault(__webpack_require__(6928));
+async function generateMapping(options) {
+    const { timeoutMs } = options;
+    const promptFilePath = path_1.default.resolve(__dirname, 'generate-mapping.md');
+    return await (0, run_cursor_generation_1.runCursorGeneration)({
+        timeoutMs,
+        prompt: `"Implement instructions in the file ${promptFilePath}"`,
+    });
+}
+
+
+/***/ }),
+
 /***/ 6912:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -27726,6 +27859,19 @@ function fromArrayBufferToHex(arrayBuffer) {
 
 "use strict";
 module.exports = require("path");
+
+/***/ }),
+
+/***/ 6932:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateMapping = void 0;
+var generate_mapping_1 = __webpack_require__(6850);
+Object.defineProperty(exports, "generateMapping", ({ enumerable: true, get: function () { return generate_mapping_1.generateMapping; } }));
+
 
 /***/ }),
 
@@ -32377,6 +32523,7 @@ exports.run = run;
 const core = __importStar(__webpack_require__(1659));
 const storage_1 = __webpack_require__(6102);
 const _1_download_build_artifacts_1 = __webpack_require__(5244);
+const _2_generate_mapping_1 = __webpack_require__(6932);
 /**
  * Main function for the GitHub Action
  */
@@ -32388,17 +32535,24 @@ async function run() {
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
-        core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
+        core.info(`🚀 Starting build static data mapping pipeline for game: ${game}`);
         // Initialize Storage and Bucket
         const storage = new storage_1.Storage({ projectId: gcsProjectId });
         const bucket = storage.bucket(gcsBucketName);
-        // Step 0: Check schema version
+        // Step 1: Check schema version
         core.startGroup('🔍 Step 0: Checking schema version');
         await (0, _1_download_build_artifacts_1.downloadBuildArtifacts)({
             bucket,
             env: dynamicModulesEnv,
             game,
         });
+        core.endGroup();
+        // Step 2: Generate mapping
+        core.startGroup('🔨 Step 2: Generating mapping');
+        await (0, _2_generate_mapping_1.generateMapping)({
+            timeoutMs,
+        });
+        core.info(`✓ Mapping generation completed`);
         core.endGroup();
         core.info(`✓ Pipeline completed successfully`);
     }
@@ -38561,6 +38715,107 @@ class DownscopedClient extends authclient_1.AuthClient {
     }
 }
 exports.DownscopedClient = DownscopedClient;
+
+
+/***/ }),
+
+/***/ 9099:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TimeoutError = void 0;
+exports.spawnWithTimeout = spawnWithTimeout;
+const child_process_1 = __webpack_require__(5317);
+const core = __importStar(__webpack_require__(1659));
+exports.TimeoutError = 'TIMEOUT_ERROR';
+function makeSpawnPromise(input) {
+    const { command, args, timeoutMs, env } = input;
+    return new Promise((resolve, reject) => {
+        const child = (0, child_process_1.spawn)(command, args, {
+            env: { ...process.env, ...env },
+            shell: true,
+            stdio: 'inherit',
+        });
+        let stderr = '';
+        child.stdout?.on('data', data => {
+            core.info(data.toString());
+        });
+        child.stderr?.on('data', data => {
+            stderr += data.toString();
+            core.warning(data.toString());
+        });
+        const timeout = setTimeout(() => {
+            core.warning(`Command timeout reached (${timeoutMs}ms), killing process...`);
+            child.kill('SIGTERM');
+            // Даем процессу время на корректное завершение
+            setTimeout(() => {
+                if (!child.killed) {
+                    child.kill('SIGKILL');
+                }
+            }, 5000);
+            reject(new Error(exports.TimeoutError));
+        }, timeoutMs);
+        child.on('close', (code, signal) => {
+            clearTimeout(timeout);
+            if (code === 0) {
+                resolve('Command completed successfully');
+            }
+            else if (signal === 'SIGTERM') {
+                reject(new Error(exports.TimeoutError));
+            }
+            else {
+                reject(new Error(`Process exited with code ${code}. stderr: ${stderr}`));
+            }
+        });
+        child.on('error', error => {
+            clearTimeout(timeout);
+            reject(error);
+        });
+    });
+}
+function spawnWithTimeout(input) {
+    const { extraConditionPromise, ...restInput } = input;
+    const spawnPromise = makeSpawnPromise(restInput);
+    if (extraConditionPromise) {
+        return Promise.race([spawnPromise, extraConditionPromise]);
+    }
+    return spawnPromise;
+}
 
 
 /***/ }),

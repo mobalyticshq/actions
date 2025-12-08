@@ -12,11 +12,14 @@ export interface DownloadBuildArtifactsOptions {
   game: string;
 }
 
+const filterTypesFiles = (fileName: string) => fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
+
 async function downloadFolderFromBucket(
   bucket: Bucket,
   bucketFolderPath: string,
   localFolderPath: string,
   folderName: string,
+  filterFiles?: (fileName: string) => boolean,
 ): Promise<void> {
   const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
 
@@ -26,7 +29,16 @@ async function downloadFolderFromBucket(
   const [files] = await bucket.getFiles({ prefix });
 
   // Filter out files that are exactly the prefix (folder markers)
-  const actualFiles = files.filter(file => file.name !== prefix);
+  let actualFiles = files.filter(file => file.name !== prefix);
+
+  // Apply file filter if provided
+  if (filterFiles) {
+    actualFiles = actualFiles.filter(file => {
+      const relativePath = file.name.replace(prefix, '');
+      const fileName = path.basename(relativePath);
+      return filterFiles(fileName);
+    });
+  }
 
   if (actualFiles.length === 0) {
     const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
@@ -96,13 +108,15 @@ export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOpti
     }
 
     // Step 5: Download required folders
-    const requiredFolders = ['cleaned-schema', 'fragments', 'query', 'types'];
+    const requiredFolders = ['cleaned-schema', 'fragments', 'types'];
 
     for (const folderName of requiredFolders) {
       const bucketFolderPath = `${baseBucketPath}${folderName}`;
       const localFolderPath = path.join(buildPath, folderName);
 
-      await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName);
+      const filterFiles = folderName === 'types' ?filterTypesFiles : undefined;
+
+      await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles);
     }
 
     core.info(`✓ Successfully downloaded all build artifacts for game: ${game}`);
