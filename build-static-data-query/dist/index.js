@@ -960,6 +960,7 @@ async function uploadBuild(options) {
         // Step 7: Upload config.json
         try {
             const config = {
+                moduleFolder: `${versionFolder}/`,
                 name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,
                 schemaVersion: schemaVersion,
             };
