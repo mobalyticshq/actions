@@ -16,6 +16,11 @@ To locate the repository root: look for the directory containing `build-static-d
 
 ---
 
+- **Folder**: build-static-data-mapping/build/downloaded/types
+- **Content**: Generated types for GraphQL fragments
+
+---
+
 - **Folder**: build-static-data-mapping/src/types/output-data.types.ts
 - **Content**: Target TypeScript type for mapping
 
@@ -28,7 +33,7 @@ To locate the repository root: look for the directory containing `build-static-d
 
 ## Output
 
-- **Folder**: src/static-data-mapping
+- **Folder**: build-static-data-mapping/build/mapping
 - **Requirement**: All generated files must be placed in this folder
 
 ---
@@ -49,11 +54,12 @@ To locate the repository root: look for the directory containing `build-static-d
     - It contains a set of prompts, each designed to generate a mapping function for a specific entity.
     - The filename corresponds to the key in the `[Game]EntitiesEnum`.
 3. **For each key in `[Game]EntitiesEnum`:**
-    - Find the corresponding gql fragment in the folder `src/api/gql/fragments`.
+    - Find the corresponding gql fragment in the folder `build-static-data-mapping/build/downloaded/fragments`.
+    - Find the corresponding type for the gql fragment in the folder `build-static-data-mapping/build/downloaded/types`.
     - Find the corresponding prompt in the folder `src/static-data-mapping-prompts`.
         - The filename matches the key in `[Game]EntitiesEnum`.
     - Generate a TypeScript mapping function that:
-        - Takes the corresponding gql fragment as **input**.
+        - Takes the corresponding type for gql fragment as **input**.
         - Returns data matching the type **`StaticDataInfo`**.
         - Uses the mapping instructions from the corresponding prompt.
         - Must be **strictly typed** — the use of `any` is forbidden.
@@ -67,9 +73,9 @@ To locate the repository root: look for the directory containing `build-static-d
           where `[entity-name]` is the entity name from `[Game]EntitiesEnum`, converted to **kebab-case**.
     - An example mapping function can be found in: src/examples/static-data-mapping.example.ts
 
-4. **Create a file `index.ts`** in the folder `src/static-data-mapping`.
+4. **Create a file `index.ts`** in the folder `build-static-data-mapping/src/examples/static-data-mapping.example.ts`.
 
 5. **In `index.ts`:**
     - Import all generated mapping functions.
     - Create an object `staticDataMappers` that maps keys from `[Game]EntitiesEnum` to their corresponding mapping functions.
-    - Export the object `staticDataMappers`.
+    - The object `staticDataMappers` should have an export default.
