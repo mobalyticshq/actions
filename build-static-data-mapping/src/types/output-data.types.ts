@@ -52,7 +52,6 @@ export type StaticDataInfo = {
   groupName: string;
   color?: string | null;
   backgroundImage?: string | null;
-  tooltipColor?: string | null;
   isTooltipDisabled?: boolean;
   icon: string | null;
   iconStyle: 'square' | 'square-rounded' | 'circle';
