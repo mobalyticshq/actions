@@ -9082,6 +9082,19 @@ module.exports = require("inherits");
 
 /***/ }),
 
+/***/ 2361:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.copyUserPrompts = void 0;
+var copy_user_prompts_1 = __webpack_require__(2828);
+Object.defineProperty(exports, "copyUserPrompts", ({ enumerable: true, get: function () { return copy_user_prompts_1.copyUserPrompts; } }));
+
+
+/***/ }),
+
 /***/ 2410:
 /***/ ((module) => {
 
@@ -10064,6 +10077,130 @@ class MissingProjectIdError extends Error {
 }
 exports.MissingProjectIdError = MissingProjectIdError;
 //# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 2828:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.copyUserPrompts = copyUserPrompts;
+const core = __importStar(__webpack_require__(1659));
+const fs = __importStar(__webpack_require__(9896));
+const path = __importStar(__webpack_require__(6928));
+/**
+ * Recursively copy files from source directory to destination directory
+ */
+async function copyRecursive(src, dest) {
+    const stat = await fs.promises.stat(src);
+    if (stat.isDirectory()) {
+        // Create destination directory if it doesn't exist
+        if (!fs.existsSync(dest)) {
+            await fs.promises.mkdir(dest, { recursive: true });
+        }
+        // Read all entries in the source directory
+        const entries = await fs.promises.readdir(src, { withFileTypes: true });
+        // Copy each entry recursively
+        for (const entry of entries) {
+            const srcPath = path.join(src, entry.name);
+            const destPath = path.join(dest, entry.name);
+            await copyRecursive(srcPath, destPath);
+        }
+    }
+    else {
+        // Copy file
+        const destDir = path.dirname(dest);
+        if (!fs.existsSync(destDir)) {
+            await fs.promises.mkdir(destDir, { recursive: true });
+        }
+        await fs.promises.copyFile(src, dest);
+        core.info(`Copied: ${path.relative(process.env.GITHUB_WORKSPACE || '', src)} -> ${path.relative(process.cwd(), dest)}`);
+    }
+}
+async function copyUserPrompts(options) {
+    try {
+        const { game, dynamicModulesEnv } = options;
+        // Get repository root from GitHub Actions environment variable
+        const githubWorkspace = process.env.GITHUB_WORKSPACE;
+        if (!githubWorkspace) {
+            const errorMessage = 'GITHUB_WORKSPACE environment variable is not set';
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Build source path: ${game}/${dynamicModulesEnv}/static_data_mapping
+        const sourcePath = path.join(githubWorkspace, game, dynamicModulesEnv, 'static_data_mapping');
+        core.info(`Source path: ${sourcePath}`);
+        // Check if source directory exists
+        if (!fs.existsSync(sourcePath)) {
+            const errorMessage = `Source directory does not exist: ${sourcePath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Check if source is a directory
+        const stat = await fs.promises.stat(sourcePath);
+        if (!stat.isDirectory()) {
+            const errorMessage = `Source path is not a directory: ${sourcePath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Build destination path: dist/user-prompts (relative to action directory)
+        const destPath = path.resolve(process.cwd(), 'dist', 'user-prompts');
+        core.info(`Destination path: ${destPath}`);
+        // Create destination directory if it doesn't exist
+        if (!fs.existsSync(destPath)) {
+            await fs.promises.mkdir(destPath, { recursive: true });
+            core.info(`Created destination directory: ${destPath}`);
+        }
+        else {
+            core.info(`Destination directory already exists: ${destPath}`);
+        }
+        // Copy all files recursively
+        core.info(`Copying files from ${sourcePath} to ${destPath}...`);
+        await copyRecursive(sourcePath, destPath);
+        core.info(`✓ Successfully copied user prompts from ${sourcePath} to ${destPath}`);
+    }
+    catch (error) {
+        const errorMessage = `Error in copyUserPrompts: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error;
+    }
+}
+
 
 /***/ }),
 
@@ -32523,6 +32660,7 @@ exports.run = run;
 const core = __importStar(__webpack_require__(1659));
 const storage_1 = __webpack_require__(6102);
 const _1_download_build_artifacts_1 = __webpack_require__(5244);
+const _1_5_copy_user_prompts_1 = __webpack_require__(2361);
 const _2_generate_mapping_1 = __webpack_require__(6932);
 /**
  * Main function for the GitHub Action
@@ -32545,6 +32683,13 @@ async function run() {
             bucket,
             env: dynamicModulesEnv,
             game,
+        });
+        core.endGroup();
+        // Step 1.5: Copy user prompts from repository
+        core.startGroup('📋 Step 1.5: Copying user prompts from repository');
+        await (0, _1_5_copy_user_prompts_1.copyUserPrompts)({
+            game,
+            dynamicModulesEnv,
         });
         core.endGroup();
         // Step 2: Generate mapping

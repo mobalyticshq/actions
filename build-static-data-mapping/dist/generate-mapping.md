@@ -71,9 +71,9 @@ To locate the repository root: look for the directory containing `build-static-d
     - Each mapping function must be placed in a separate file.
         - The filename format must be: [entity-name].mapping.ts
           where `[entity-name]` is the entity name from `[Game]EntitiesEnum`, converted to **kebab-case**.
-    - An example mapping function can be found in: src/examples/static-data-mapping.example.ts
+    - An example mapping function can be found in: `build-static-data-mapping/src/examples/static-data-mapping.example.ts`
 
-4. **Create a file `index.ts`** in the folder `build-static-data-mapping/src/examples/static-data-mapping.example.ts`.
+4. **Create a file `index.ts`** in the folder `build-static-data-mapping/build/mapping`.
 
 5. **In `index.ts`:**
     - Import all generated mapping functions.

@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { Storage } from '@google-cloud/storage';
 import { downloadBuildArtifacts } from './steps/1-download-build-artifacts';
+import { copyUserPrompts } from './steps/1.5-copy-user-prompts';
 import { generateMapping } from './steps/2-generate-mapping';
 
 /**
@@ -27,6 +28,14 @@ export async function run(): Promise<void> {
       bucket,
       env: dynamicModulesEnv,
       game,
+    });
+    core.endGroup();
+
+    // Step 1.5: Copy user prompts from repository
+    core.startGroup('📋 Step 1.5: Copying user prompts from repository');
+    await copyUserPrompts({
+      game,
+      dynamicModulesEnv,
     });
     core.endGroup();
 
