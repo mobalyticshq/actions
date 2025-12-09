@@ -56,7 +56,7 @@ To locate the repository root: look for the directory containing `build-static-d
 3. **For each key in `[Game]EntitiesEnum`:**
     - Find the corresponding gql fragment in the folder `build-static-data-mapping/build/downloaded/fragments`.
     - Find the corresponding type for the gql fragment in the folder `build-static-data-mapping/build/downloaded/types`.
-    - Find the corresponding prompt in the folder `src/static-data-mapping-prompts`.
+    - Find the corresponding prompt in the folder `build-static-data-mapping/build/user-prompts`.
         - The filename matches the key in `[Game]EntitiesEnum`.
     - Generate a TypeScript mapping function that:
         - Takes the corresponding type for gql fragment as **input**.

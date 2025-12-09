@@ -26,5 +26,8 @@ npm-debug.log*
 .env
 .env.local
 
+# User prompts
+test-user-prompts/*
+
 codegen/temp*
 

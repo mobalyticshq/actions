@@ -8454,8 +8454,8 @@ async function copyUserPrompts(options) {
             core.setFailed(errorMessage);
             throw new Error(errorMessage);
         }
-        // Build destination path: dist/user-prompts (relative to action directory)
-        const destPath = path.resolve(process.cwd(), 'dist', 'user-prompts');
+        // Build destination path: build/user-prompts (relative to action directory)
+        const destPath = path.resolve(process.cwd(), 'build', 'user-prompts');
         core.info(`Destination path: ${destPath}`);
         // Create destination directory if it doesn't exist
         if (!fs.existsSync(destPath)) {

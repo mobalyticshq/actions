@@ -35,7 +35,9 @@ async function copyRecursive(src: string, dest: string): Promise<void> {
       await fs.promises.mkdir(destDir, { recursive: true });
     }
     await fs.promises.copyFile(src, dest);
-    core.info(`Copied: ${path.relative(process.env.GITHUB_WORKSPACE || '', src)} -> ${path.relative(process.cwd(), dest)}`);
+    core.info(
+      `Copied: ${path.relative(process.env.GITHUB_WORKSPACE || '', src)} -> ${path.relative(process.cwd(), dest)}`,
+    );
   }
 }
 
@@ -70,8 +72,8 @@ export async function copyUserPrompts(options: CopyUserPromptsOptions): Promise<
       throw new Error(errorMessage);
     }
 
-    // Build destination path: dist/user-prompts (relative to action directory)
-    const destPath = path.resolve(process.cwd(), 'dist', 'user-prompts');
+    // Build destination path: build/user-prompts (relative to action directory)
+    const destPath = path.resolve(process.cwd(), 'build', 'user-prompts');
     core.info(`Destination path: ${destPath}`);
 
     // Create destination directory if it doesn't exist
@@ -93,4 +95,3 @@ export async function copyUserPrompts(options: CopyUserPromptsOptions): Promise<
     throw error;
   }
 }
-
