@@ -1,8 +1,8 @@
 import * as core from '@actions/core';
 import { Storage } from '@google-cloud/storage';
 import { downloadBuildArtifacts } from './steps/1-download-build-artifacts';
-import { copyUserPrompts } from './steps/1.5-copy-user-prompts';
-import { generateMapping } from './steps/2-generate-mapping';
+import { copyUserPrompts } from './steps/2-copy-user-prompts';
+import { generateMapping } from './steps/3-generate-mapping';
 
 /**
  * Main function for the GitHub Action
@@ -31,16 +31,16 @@ export async function run(): Promise<void> {
     });
     core.endGroup();
 
-    // Step 1.5: Copy user prompts from repository
-    core.startGroup('📋 Step 1.5: Copying user prompts from repository');
+    // Step 2: Copy user prompts from repository
+    core.startGroup('📋 Step 2: Copying user prompts from repository');
     await copyUserPrompts({
       game,
       dynamicModulesEnv,
     });
     core.endGroup();
 
-    // Step 2: Generate mapping
-    core.startGroup('🔨 Step 2: Generating mapping');
+    // Step 3: Generate mapping
+    core.startGroup('🔨 Step 3: Generating mapping');
     await generateMapping({
       timeoutMs,
     });
