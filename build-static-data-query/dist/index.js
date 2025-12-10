@@ -10116,7 +10116,7 @@ function generateStaticDataQueryModuleFolderName(schemaVersion) {
 }
 function buildStaticDataQueryModuleFolderPath(env, game, schemaVersion) {
     const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
-    const versionFolder = generateStaticDataQueryModuleFolderName(schemaVersion);
+    const versionFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
     return `${basePath}/${versionFolder}`;
 }
 async function checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion) {
@@ -19216,8 +19216,12 @@ module.exports = require("tls");
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateModulePath = generateModulePath;
+exports.generateModuleFolderName = generateModuleFolderName;
 function generateModulePath(env, game, moduleSlug) {
     return `dynamic-modules/${env}/${game}/${moduleSlug}`;
+}
+function generateModuleFolderName(version) {
+    return `v${version}`;
 }
 
 
@@ -37363,14 +37367,14 @@ async function uploadBuild(options) {
         const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, game, schemaVersion);
         core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
         // Step 3: Check if version folder already exists
-        const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, game, schemaVersion);
-        if (versionFolderExists) {
+        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, game, schemaVersion);
+        if (moduleFolderExists) {
             const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
             core.setFailed(errorMessage);
             throw new Error(errorMessage);
         }
-        const versionFolder = (0, module_folder_utils_1.generateStaticDataQueryModuleFolderName)(schemaVersion);
-        core.info(`✓ Version folder ${versionFolder} does not exist, proceeding with upload`);
+        const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
+        core.info(`✓ Version folder ${moduleFolder} does not exist, proceeding with upload`);
         // Step 4: Resolve build directory paths
         const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
         const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
@@ -37483,8 +37487,8 @@ async function uploadBuild(options) {
         // Step 7: Upload config.json
         try {
             const config = {
-                moduleFolder: `${versionFolder}/`,
-                name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,
+                moduleFolder: `${moduleFolder}/`,
+                name: `${moduleFolder}/${game}-static-data-query-compiled.gql.ts`,
                 version: schemaVersion,
             };
             const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);

@@ -10194,18 +10194,19 @@ function buildStaticDataMappingModulePath(env, game, version) {
     return `${basePath}/${version}`;
 }
 function incrementVersion(currentVersion) {
+    const defaultFolderName = (0, dynamic_module_utils_1.generateModuleFolderName)('1');
     if (!currentVersion) {
-        return 'v1';
+        return defaultFolderName;
     }
     // Extract number from version string (e.g., "v1" -> 1, "v2" -> 2)
     const match = currentVersion.match(/^v(\d+)$/);
     if (!match) {
         core.warning(`Invalid version format: ${currentVersion}. Starting with v1`);
-        return 'v1';
+        return defaultFolderName;
     }
     const versionNumber = parseInt(match[1], 10);
-    const nextVersion = versionNumber + 1;
-    return `v${nextVersion}`;
+    const nextVersion = `${versionNumber + 1}`;
+    return (0, dynamic_module_utils_1.generateModuleFolderName)(nextVersion);
 }
 
 
@@ -22208,8 +22209,12 @@ fetch.Promise = global.Promise;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateModulePath = generateModulePath;
+exports.generateModuleFolderName = generateModuleFolderName;
 function generateModulePath(env, game, moduleSlug) {
     return `dynamic-modules/${env}/${game}/${moduleSlug}`;
+}
+function generateModuleFolderName(version) {
+    return `v${version}`;
 }
 
 

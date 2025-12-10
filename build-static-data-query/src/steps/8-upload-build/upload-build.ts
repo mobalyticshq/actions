@@ -9,7 +9,7 @@ import {
   generateStaticDataQueryModuleFolderName,
 } from '../../utils/module-folder.utils';
 import { DynamicModuleConfig, DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
-import { generateModulePath } from '@shared/utils/dynamic-module.utils';
+import { generateModuleFolderName, generateModulePath } from '@shared/utils/dynamic-module.utils';
 
 export interface UploadBuildOptions {
   bucket: Bucket;
@@ -87,15 +87,15 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
 
     // Step 3: Check if version folder already exists
-    const versionFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion);
-    if (versionFolderExists) {
+    const moduleFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion);
+    if (moduleFolderExists) {
       const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
       core.setFailed(errorMessage);
       throw new Error(errorMessage);
     }
 
-    const versionFolder = generateStaticDataQueryModuleFolderName(schemaVersion);
-    core.info(`✓ Version folder ${versionFolder} does not exist, proceeding with upload`);
+    const moduleFolder = generateModuleFolderName(schemaVersion);
+    core.info(`✓ Version folder ${moduleFolder} does not exist, proceeding with upload`);
 
     // Step 4: Resolve build directory paths
     const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
@@ -218,8 +218,8 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     // Step 7: Upload config.json
     try {
       const config: DynamicModuleConfig = {
-        moduleFolder: `${versionFolder}/`,
-        name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,
+        moduleFolder: `${moduleFolder}/`,
+        name: `${moduleFolder}/${game}-static-data-query-compiled.gql.ts`,
         version: schemaVersion,
       };
 

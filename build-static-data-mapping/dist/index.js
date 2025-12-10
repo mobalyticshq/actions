@@ -22225,8 +22225,12 @@ fetch.Promise = global.Promise;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateModulePath = generateModulePath;
+exports.generateModuleFolderName = generateModuleFolderName;
 function generateModulePath(env, game, moduleSlug) {
     return `dynamic-modules/${env}/${game}/${moduleSlug}`;
+}
+function generateModuleFolderName(version) {
+    return `v${version}`;
 }
 
 
