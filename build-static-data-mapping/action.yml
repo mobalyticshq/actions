@@ -62,7 +62,7 @@ runs:
       working-directory: ${{ github.action_path }}
 
     - name: Run upload build script
-      run: npm run upload-build:dev
+      run: node dist/upload-build.js
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
