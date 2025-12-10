@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "build/mapping/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/*",
+    "dist/**/*",
+    "build/downloaded/**/*",
+    "build/user-prompts/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}
+

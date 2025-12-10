@@ -1,14 +1,15 @@
-import { Bucket } from '@google-cloud/storage';
+import { Bucket, SaveOptions } from '@google-cloud/storage';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as core from '@actions/core';
 import { uploadFileToBucket } from '@shared/utils/bucket.utils';
 import {
-  checkVersionFolderExists,
-  buildVersionFolderPath,
-  generateBasePath,
-  generateVersionFolderName,
-} from '../../utils/version-folder.utils';
+  checkStaticDataQueryModuleFolderExists,
+  buildStaticDataQueryModuleFolderPath,
+  generateStaticDataQueryModuleFolderName,
+} from '../../utils/module-folder.utils';
+import { DynamicModuleConfig, DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
+import { generateModuleFolderName, generateModulePath } from '@shared/utils/dynamic-module.utils';
 
 export interface UploadBuildOptions {
   bucket: Bucket;
@@ -81,20 +82,20 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     // Step 2: Build GCS paths
-    const fullVersionPath = buildVersionFolderPath(env, game, schemaVersion);
+    const fullVersionPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion);
 
     core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
 
     // Step 3: Check if version folder already exists
-    const versionFolderExists = await checkVersionFolderExists(bucket, env, game, schemaVersion);
-    if (versionFolderExists) {
+    const moduleFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion);
+    if (moduleFolderExists) {
       const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
       core.setFailed(errorMessage);
       throw new Error(errorMessage);
     }
 
-    const versionFolder = generateVersionFolderName(schemaVersion);
-    core.info(`✓ Version folder ${versionFolder} does not exist, proceeding with upload`);
+    const moduleFolder = generateModuleFolderName(schemaVersion);
+    core.info(`✓ Version folder ${moduleFolder} does not exist, proceeding with upload`);
 
     // Step 4: Resolve build directory paths
     const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
@@ -216,20 +217,19 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
 
     // Step 7: Upload config.json
     try {
-      const config = {
-        name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,
-        schemaVersion: schemaVersion,
+      const config: DynamicModuleConfig = {
+        moduleFolder: `${moduleFolder}/`,
+        name: `${moduleFolder}/${game}-static-data-query-compiled.gql.ts`,
+        version: schemaVersion,
       };
 
-      const basePath = generateBasePath(env, game);
+      const basePath = generateModulePath(env, game, DynamicModuleSlug.STATIC_DATA_QUERY);
       const configDestination = `${basePath}/config.json`;
       const configFile = bucket.file(configDestination);
       const configJson = JSON.stringify(config, null, 2);
 
       core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
-      await configFile.save(configJson, {
-        contentType: 'application/json',
-      });
+      await configFile.save(configJson);
       core.info(`✓ Config.json successfully uploaded`);
     } catch (error) {
       const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;

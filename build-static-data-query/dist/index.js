@@ -351,7 +351,9 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.checkSchemaVersion = checkSchemaVersion;
 const core = __importStar(__webpack_require__(659));
-const version_folder_utils_1 = __webpack_require__(924);
+const module_folder_utils_1 = __webpack_require__(994);
+const bucket_utils_1 = __webpack_require__(328);
+const dynamic_modules_types_1 = __webpack_require__(463);
 const headers = {
     'xmoba-no-cache': '1',
     'Content-Type': 'application/json',
@@ -397,65 +399,37 @@ async function fetchSchemaVersionFromGraphQL(endpoint, game) {
         throw error;
     }
 }
-async function downloadConfigFromBucket(bucket, env, game) {
-    const configPath = `dynamic-modules/${env}/${game}/static-data-query/config.json`;
-    const bucketName = bucket.name;
-    core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
-    try {
-        const file = bucket.file(configPath);
-        // Download file
-        const [fileContents] = await file.download();
-        const configJson = JSON.parse(fileContents.toString('utf-8'));
-        if (!configJson.schemaVersion) {
-            core.warning(`Config file exists but does not contain schemaVersion field`);
-            return null;
-        }
-        core.info(`✓ Existing schema version from config.json: ${configJson.schemaVersion}`);
-        return { schemaVersion: configJson.schemaVersion };
-    }
-    catch (error) {
-        // Handle 404 (file not found) as a normal case
-        if (error?.code === 404 || error?.message?.includes('No such object')) {
-            core.info(`Config file not found at gs://${bucketName}/${configPath}, continuing pipeline`);
-            return null;
-        }
-        // For other errors, log warning but continue
-        core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
-        return null;
-    }
-}
 async function checkSchemaVersion(options) {
     try {
         const { graphqlEndpoint, bucket, env, game } = options;
         core.info(`Checking schema version for game: ${game}`);
         // Execute GraphQL query and GCS download in parallel
-        const [currentSchemaVersion, existingConfig] = await Promise.all([
+        const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
             fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-            downloadConfigFromBucket(bucket, env, game),
+            (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY).then(result => result?.version),
         ]);
         // Check if version folder already exists
         if (currentSchemaVersion) {
-            const versionFolderExists = await (0, version_folder_utils_1.checkVersionFolderExists)(bucket, env, game, currentSchemaVersion);
+            const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, game, currentSchemaVersion);
             if (versionFolderExists) {
                 const bucketName = bucket.name;
-                const versionFolderPath = (0, version_folder_utils_1.buildVersionFolderPath)(env, game, currentSchemaVersion);
+                const versionFolderPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, game, currentSchemaVersion);
                 core.info(`✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`);
                 return {
                     shouldContinue: false,
                     currentSchemaVersion,
-                    existingSchemaVersion: existingConfig?.schemaVersion,
+                    existingSchemaVersion: existingSchemaVersion,
                 };
             }
         }
         // If config file doesn't exist, continue pipeline
-        if (!existingConfig) {
+        if (!existingSchemaVersion) {
             core.info(`No existing config found, continuing pipeline`);
             return {
                 shouldContinue: true,
                 currentSchemaVersion,
             };
         }
-        const existingSchemaVersion = existingConfig.schemaVersion;
         // If we can't get schema version from the endpoint, pipeline should be stopped
         if (!currentSchemaVersion) {
             core.info(`Schema versions can't be fetched. Pipeline will be skipped.`);
@@ -783,7 +757,9 @@ const fs = __importStar(__webpack_require__(896));
 const path = __importStar(__webpack_require__(928));
 const core = __importStar(__webpack_require__(659));
 const bucket_utils_1 = __webpack_require__(328);
-const version_folder_utils_1 = __webpack_require__(924);
+const module_folder_utils_1 = __webpack_require__(994);
+const dynamic_modules_types_1 = __webpack_require__(463);
+const dynamic_module_utils_1 = __webpack_require__(798);
 const buildPath = './build';
 function getFilesInDirectory(dirPath, extension) {
     if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
@@ -837,17 +813,17 @@ async function uploadBuild(options) {
             throw error instanceof Error ? error : new Error(errorMessage);
         }
         // Step 2: Build GCS paths
-        const fullVersionPath = (0, version_folder_utils_1.buildVersionFolderPath)(env, game, schemaVersion);
+        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, game, schemaVersion);
         core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
         // Step 3: Check if version folder already exists
-        const versionFolderExists = await (0, version_folder_utils_1.checkVersionFolderExists)(bucket, env, game, schemaVersion);
-        if (versionFolderExists) {
+        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, game, schemaVersion);
+        if (moduleFolderExists) {
             const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
             core.setFailed(errorMessage);
             throw new Error(errorMessage);
         }
-        const versionFolder = (0, version_folder_utils_1.generateVersionFolderName)(schemaVersion);
-        core.info(`✓ Version folder ${versionFolder} does not exist, proceeding with upload`);
+        const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
+        core.info(`✓ Version folder ${moduleFolder} does not exist, proceeding with upload`);
         // Step 4: Resolve build directory paths
         const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
         const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
@@ -960,17 +936,16 @@ async function uploadBuild(options) {
         // Step 7: Upload config.json
         try {
             const config = {
-                name: `${versionFolder}/${game}-static-data-query-compiled.gql.ts`,
-                schemaVersion: schemaVersion,
+                moduleFolder: `${moduleFolder}/`,
+                name: `${moduleFolder}/${game}-static-data-query-compiled.gql.ts`,
+                version: schemaVersion,
             };
-            const basePath = (0, version_folder_utils_1.generateBasePath)(env, game);
+            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
             const configDestination = `${basePath}/config.json`;
             const configFile = bucket.file(configDestination);
             const configJson = JSON.stringify(config, null, 2);
             core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
-            await configFile.save(configJson, {
-                contentType: 'application/json',
-            });
+            await configFile.save(configJson);
             core.info(`✓ Config.json successfully uploaded`);
         }
         catch (error) {
@@ -1361,12 +1336,16 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.uploadFileToBucket = uploadFileToBucket;
+exports.downloadConfigFromBucket = downloadConfigFromBucket;
+exports.isFolderExists = isFolderExists;
 const core = __importStar(__webpack_require__(659));
+const dynamic_module_utils_1 = __webpack_require__(798);
 async function uploadFileToBucket(bucket, sourcePath, destination, bucketName, description) {
     try {
         const logPrefix = description ? `${description}: ` : '';
         core.info(`Uploading: ${logPrefix}${sourcePath} -> gs://${bucketName}/${destination}`);
-        await bucket.upload(sourcePath, { destination });
+        const options = { destination };
+        await bucket.upload(sourcePath, options);
         const successMessage = description ? `✓ Uploaded ${description}` : `✓ Uploaded file`;
         core.info(successMessage);
         return true;
@@ -1378,6 +1357,34 @@ async function uploadFileToBucket(bucket, sourcePath, destination, bucketName, d
         core.error(errorMessage);
         return false;
     }
+}
+async function downloadConfigFromBucket(bucket, env, game, dynamicModuleSlug) {
+    const configPath = `${(0, dynamic_module_utils_1.generateModulePath)(env, game, dynamicModuleSlug)}/config.json`;
+    const bucketName = bucket.name;
+    core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
+    try {
+        const file = bucket.file(configPath);
+        // Download file
+        const [fileContents] = await file.download();
+        const configJson = JSON.parse(fileContents.toString('utf-8'));
+        core.info(`✓ Config.json downloaded: ${configJson.version}`);
+        return configJson;
+    }
+    catch (error) {
+        // Handle 404 (file not found) as a normal case
+        if (error?.code === 404 || error?.message?.includes('No such object')) {
+            core.info(`Config file not found at gs://${bucketName}/${configPath}, continuing pipeline`);
+            return null;
+        }
+        // For other errors, log warning but continue
+        core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
+    }
+}
+async function isFolderExists(bucket, folderPath) {
+    const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    const [files] = await bucket.getFiles({ prefix, maxResults: 1 });
+    return files.length > 0;
 }
 
 
@@ -3035,6 +3042,21 @@ async function generateQuery(options) {
 
 /***/ }),
 
+/***/ 463:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DynamicModuleSlug = void 0;
+var DynamicModuleSlug;
+(function (DynamicModuleSlug) {
+    DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
+    DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
+})(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
+
+
+/***/ }),
+
 /***/ 485:
 /***/ ((module) => {
 
@@ -3178,6 +3200,23 @@ module.exports = require("@actions/core");
 
 /***/ }),
 
+/***/ 798:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateModulePath = generateModulePath;
+exports.generateModuleFolderName = generateModuleFolderName;
+function generateModulePath(env, game, moduleSlug) {
+    return `dynamic-modules/${env}/${game}/${moduleSlug}`;
+}
+function generateModuleFolderName(version) {
+    return `v${version}`;
+}
+
+
+/***/ }),
+
 /***/ 869:
 /***/ ((module) => {
 
@@ -3216,40 +3255,6 @@ Object.defineProperty(exports, "cleanSchema", ({ enumerable: true, get: function
 
 /***/ }),
 
-/***/ 924:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateBasePath = generateBasePath;
-exports.generateVersionFolderName = generateVersionFolderName;
-exports.buildVersionFolderPath = buildVersionFolderPath;
-exports.folderExists = folderExists;
-exports.checkVersionFolderExists = checkVersionFolderExists;
-function generateBasePath(env, game) {
-    return `dynamic-modules/${env}/${game}/static-data-query`;
-}
-function generateVersionFolderName(schemaVersion) {
-    return `v-${schemaVersion}-query`;
-}
-function buildVersionFolderPath(env, game, schemaVersion) {
-    const basePath = generateBasePath(env, game);
-    const versionFolder = generateVersionFolderName(schemaVersion);
-    return `${basePath}/${versionFolder}`;
-}
-async function folderExists(bucket, folderPath) {
-    const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
-    const [files] = await bucket.getFiles({ prefix, maxResults: 1 });
-    return files.length > 0;
-}
-async function checkVersionFolderExists(bucket, env, game, schemaVersion) {
-    const versionFolderPath = buildVersionFolderPath(env, game, schemaVersion);
-    return folderExists(bucket, versionFolderPath);
-}
-
-
-/***/ }),
-
 /***/ 928:
 /***/ ((module) => {
 
@@ -3265,6 +3270,33 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateFragments = void 0;
 var generate_fragments_1 = __webpack_require__(258);
 Object.defineProperty(exports, "generateFragments", ({ enumerable: true, get: function () { return generate_fragments_1.generateFragments; } }));
+
+
+/***/ }),
+
+/***/ 994:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateStaticDataQueryModuleFolderName = generateStaticDataQueryModuleFolderName;
+exports.buildStaticDataQueryModuleFolderPath = buildStaticDataQueryModuleFolderPath;
+exports.checkStaticDataQueryModuleFolderExists = checkStaticDataQueryModuleFolderExists;
+const dynamic_module_utils_1 = __webpack_require__(798);
+const dynamic_modules_types_1 = __webpack_require__(463);
+const bucket_utils_1 = __webpack_require__(328);
+function generateStaticDataQueryModuleFolderName(schemaVersion) {
+    return `v-${schemaVersion}-query`;
+}
+function buildStaticDataQueryModuleFolderPath(env, game, schemaVersion) {
+    const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+    const versionFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
+    return `${basePath}/${versionFolder}`;
+}
+async function checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion) {
+    const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion);
+    return (0, bucket_utils_1.isFolderExists)(bucket, versionFolderPath);
+}
 
 
 /***/ })

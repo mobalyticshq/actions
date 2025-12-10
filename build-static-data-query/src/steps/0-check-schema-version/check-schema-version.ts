@@ -1,6 +1,8 @@
 import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
-import { checkVersionFolderExists, buildVersionFolderPath } from '../../utils/version-folder.utils';
+import { buildStaticDataQueryModuleFolderPath, checkStaticDataQueryModuleFolderExists } from '../../utils/module-folder.utils';
+import { downloadConfigFromBucket } from '@shared/utils/bucket.utils';
+import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 
 export interface CheckSchemaVersionOptions {
   graphqlEndpoint: string;
@@ -86,43 +88,6 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
   }
 }
 
-async function downloadConfigFromBucket(
-  bucket: Bucket,
-  env: string,
-  game: string,
-): Promise<{ schemaVersion: string } | null> {
-  const configPath = `dynamic-modules/${env}/${game}/static-data-query/config.json`;
-  const bucketName = bucket.name;
-
-  core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
-
-  try {
-    const file = bucket.file(configPath);
-
-    // Download file
-    const [fileContents] = await file.download();
-    const configJson = JSON.parse(fileContents.toString('utf-8'));
-
-    if (!configJson.schemaVersion) {
-      core.warning(`Config file exists but does not contain schemaVersion field`);
-      return null;
-    }
-
-    core.info(`✓ Existing schema version from config.json: ${configJson.schemaVersion}`);
-    return { schemaVersion: configJson.schemaVersion };
-  } catch (error: any) {
-    // Handle 404 (file not found) as a normal case
-    if (error?.code === 404 || error?.message?.includes('No such object')) {
-      core.info(`Config file not found at gs://${bucketName}/${configPath}, continuing pipeline`);
-      return null;
-    }
-
-    // For other errors, log warning but continue
-    core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
-    return null;
-  }
-}
-
 export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Promise<CheckSchemaVersionResult> {
   try {
     const { graphqlEndpoint, bucket, env, game } = options;
@@ -130,38 +95,36 @@ export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Pr
     core.info(`Checking schema version for game: ${game}`);
 
     // Execute GraphQL query and GCS download in parallel
-    const [currentSchemaVersion, existingConfig] = await Promise.all([
+    const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
       fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-      downloadConfigFromBucket(bucket, env, game),
+      downloadConfigFromBucket(bucket, env, game, DynamicModuleSlug.STATIC_DATA_QUERY).then(result => result?.version),
     ]);
 
     // Check if version folder already exists
     if (currentSchemaVersion) {
-      const versionFolderExists = await checkVersionFolderExists(bucket, env, game, currentSchemaVersion);
+      const versionFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, game, currentSchemaVersion);
       if (versionFolderExists) {
         const bucketName = bucket.name;
-        const versionFolderPath = buildVersionFolderPath(env, game, currentSchemaVersion);
+        const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, currentSchemaVersion);
         core.info(
           `✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`,
         );
         return {
           shouldContinue: false,
           currentSchemaVersion,
-          existingSchemaVersion: existingConfig?.schemaVersion,
+          existingSchemaVersion: existingSchemaVersion,
         };
       }
     }
 
     // If config file doesn't exist, continue pipeline
-    if (!existingConfig) {
+    if (!existingSchemaVersion) {
       core.info(`No existing config found, continuing pipeline`);
       return {
         shouldContinue: true,
         currentSchemaVersion,
       };
     }
-
-    const existingSchemaVersion = existingConfig.schemaVersion;
 
     // If we can't get schema version from the endpoint, pipeline should be stopped
     if (!currentSchemaVersion) {
