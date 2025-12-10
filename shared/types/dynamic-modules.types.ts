@@ -4,7 +4,7 @@ export enum DynamicModuleSlug {
 }
 
 export interface DynamicModuleConfig {
-  moduleFolder?: string,
-  name: string,
-  schemaVersion?: string
+  moduleFolder?: string;
+  name: string;
+  version?: string;
 }

@@ -75,7 +75,7 @@ export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOpti
     const bucketName = bucket.name;
 
     // Step 1: Download config.json
-    const config = await downloadConfigFromBucket(bucket, env, game);
+    const config = await downloadConfigFromBucket(bucket, env, game, DynamicModuleSlug.STATIC_DATA_QUERY);
 
     if (!config) {
       const errorMessage = `Config file not found for game: ${game}`;

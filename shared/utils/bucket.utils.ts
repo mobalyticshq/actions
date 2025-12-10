@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { type Bucket, type UploadOptions } from '@google-cloud/storage';
-import { DynamicModuleConfig } from '../types/dynamic-modules.types';
+import { DynamicModuleConfig, DynamicModuleSlug } from '../types/dynamic-modules.types';
+import { generateModulePath } from './dynamic-module.utils';
 
 export async function uploadFileToBucket(
   bucket: Bucket,
@@ -30,8 +31,9 @@ export async function downloadConfigFromBucket(
   bucket: Bucket,
   env: string,
   game: string,
+  dynamicModuleSlug: DynamicModuleSlug,
 ): Promise<DynamicModuleConfig | null> {
-  const configPath = `dynamic-modules/${env}/${game}/static-data-query/config.json`;
+  const configPath = `${generateModulePath(env, game, dynamicModuleSlug)}/config.json`;
   const bucketName = bucket.name;
 
   core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
@@ -43,12 +45,7 @@ export async function downloadConfigFromBucket(
     const [fileContents] = await file.download();
     const configJson = JSON.parse(fileContents.toString('utf-8')) as DynamicModuleConfig;
 
-    if (!configJson.schemaVersion) {
-      core.warning(`Config file exists but does not contain schemaVersion field`);
-      return null;
-    }
-
-    core.info(`✓ Existing schema version from config.json: ${configJson.schemaVersion}`);
+    core.info(`✓ Config.json downloaded: ${configJson.version}`);
     return configJson;
   } catch (error: any) {
     // Handle 404 (file not found) as a normal case
@@ -61,4 +58,10 @@ export async function downloadConfigFromBucket(
     core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
+}
+
+export async function isFolderExists(bucket: Bucket, folderPath: string): Promise<boolean> {
+  const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+  const [files] = await bucket.getFiles({ prefix, maxResults: 1 });
+  return files.length > 0;
 }

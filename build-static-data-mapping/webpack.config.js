@@ -3,7 +3,10 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
-  entry: './src/index.ts',
+  entry: {
+    index: './src/index.ts',
+    'upload-build': './src/upload-build/index.ts',
+  },
   target: 'node',
   mode: 'production',
   devtool: 'source-map',
@@ -27,7 +30,7 @@ module.exports = {
   },
 
   output: {
-    filename: 'index.js',
+    filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
     library: {
