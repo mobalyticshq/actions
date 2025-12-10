@@ -4,9 +4,11 @@
   "description": "GitHub Action for building static data mapping according to prompt",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "node test-run.js",
-    "upload-build-dev": "node upload-build-test-run.js",
+    "dev": "npm run pipeline:dev && npm run build:mapping && npm run upload-build:dev",
+    "pipeline:dev": "node test-run.js",
+    "upload-build:dev": "node upload-build-test-run.js",
     "build": "webpack --mode production",
+    "build:mapping": "webpack --config webpack.mapping.config.js --mode production",
     "test": "jest",
     "test:watch": "jest --watch",
     "clean": "rm -rf dist && rm -rf build && rm -rf _generated"
@@ -35,6 +37,7 @@
     "webpack-node-externals": "^3.0.0"
   },
   "dependencies": {
-    "@actions/core": "^1.10.0"
+    "@actions/core": "^1.10.0",
+    "graphql": "^16.12.0"
   }
 }
