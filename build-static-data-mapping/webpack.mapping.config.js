@@ -12,8 +12,24 @@ module.exports = {
     rules: [
       {
         test: /\.ts$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
+        use: {
+          loader: 'ts-loader',
+          options: {
+            // Используем отдельный tsconfig только для маппинга
+            configFile: path.resolve(__dirname, 'tsconfig.mapping.json'),
+            // Компилируем только файлы, которые реально используются в bundle
+            onlyCompileBundledFiles: true,
+            // Не проверяем файлы вне build/mapping
+            projectReferences: false,
+          },
+        },
+        // Исключаем все файлы кроме build/mapping
+        exclude: [
+          /node_modules/,
+          /src/,
+          /dist/,
+          /build\/(?!mapping)/, // Исключаем все в build кроме mapping
+        ],
       },
     ],
   },
