@@ -55,3 +55,18 @@ runs:
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
+
+    - name: Run webpack build for generated mapping
+      run: npm run build:mapping
+      shell: bash
+      working-directory: ${{ github.action_path }}
+
+    - name: Run upload build script
+      run: npm run upload-build:dev
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        INPUT_GAME: ${{ inputs.game }}
+        INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
+        INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
+        INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
