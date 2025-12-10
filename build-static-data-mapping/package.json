@@ -4,7 +4,8 @@
   "description": "GitHub Action for building static data mapping according to prompt",
   "main": "dist/index.js",
   "scripts": {
-    "run:dev": "node test-run.js",
+    "dev": "node test-run.js",
+    "upload-build-dev": "node upload-build-test-run.js",
     "build": "webpack --mode production",
     "test": "jest",
     "test:watch": "jest --watch",
