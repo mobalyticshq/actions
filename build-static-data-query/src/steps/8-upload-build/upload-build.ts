@@ -229,8 +229,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       const configJson = JSON.stringify(config, null, 2);
 
       core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
-      const options: SaveOptions = { destination: configDestination };
-      await configFile.save(configJson, options);
+      await configFile.save(configJson);
       core.info(`✓ Config.json successfully uploaded`);
     } catch (error) {
       const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;

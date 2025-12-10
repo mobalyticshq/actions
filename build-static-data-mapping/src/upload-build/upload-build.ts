@@ -3,10 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as core from '@actions/core';
 import { downloadConfigFromBucket, uploadFileToBucket, isFolderExists } from '@shared/utils/bucket.utils';
-import {
-  buildStaticDataMappingModulePath,
-  incrementVersion,
-} from '../utils/module-folder.utils';
+import { buildStaticDataMappingModulePath, incrementVersion } from '../utils/module-folder.utils';
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import { generateModulePath } from '@shared/utils/dynamic-module.utils';
 
@@ -143,9 +140,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       const configJson = JSON.stringify(config, null, 2);
 
       core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
-      await configFile.save(configJson, {
-        contentType: 'application/json',
-      });
+      await configFile.save(configJson);
       core.info(`✓ Config.json successfully uploaded`);
     } catch (error) {
       const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
@@ -158,4 +153,3 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     throw error instanceof Error ? error : new Error(errorMessage);
   }
 }
-

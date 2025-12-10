@@ -5,6 +5,6 @@ export declare enum DynamicModuleSlug {
 export interface DynamicModuleConfig {
     moduleFolder?: string;
     name: string;
-    schemaVersion?: string;
+    version?: string;
 }
 //# sourceMappingURL=dynamic-modules.types.d.ts.map
