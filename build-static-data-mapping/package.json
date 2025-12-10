@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@actions/core": "^1.10.0",
+    "@google-cloud/storage": "^7.18.0",
     "graphql": "^16.12.0"
   }
 }
