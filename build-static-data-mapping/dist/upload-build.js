@@ -38540,7 +38540,8 @@ const bucket_utils_1 = __webpack_require__(9328);
 const module_folder_utils_1 = __webpack_require__(2994);
 const dynamic_modules_types_1 = __webpack_require__(463);
 const dynamic_module_utils_1 = __webpack_require__(4798);
-const buildPath = './build/mapping';
+const buildMappingPath = './build/mapping';
+const buildDistPath = './build/dist';
 function getAllFilesRecursive(dirPath) {
     const files = [];
     if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
@@ -38557,6 +38558,44 @@ function getAllFilesRecursive(dirPath) {
         }
     }
     return files;
+}
+async function uploadFolder(bucket, bucketName, sourcePath, destinationPrefix, fileTypeDescription, requireExists = true) {
+    if (!fs.existsSync(sourcePath)) {
+        if (requireExists) {
+            const errorMessage = `Directory does not exist: ${sourcePath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        else {
+            core.warning(`Directory does not exist: ${sourcePath}, skipping`);
+            return { uploadedCount: 0, failedCount: 0 };
+        }
+    }
+    const files = getAllFilesRecursive(sourcePath);
+    if (files.length === 0) {
+        core.warning(`No files found in ${sourcePath}`);
+        return { uploadedCount: 0, failedCount: 0 };
+    }
+    core.info(`Uploading ${files.length} file(s) from ${path.relative(process.cwd(), sourcePath)} to ${destinationPrefix}`);
+    let resultUploadedCount = 0;
+    let resultFailedCount = 0;
+    for (const filePath of files) {
+        const relativePath = path.relative(sourcePath, filePath);
+        const gcsPath = relativePath.split(path.sep).join('/');
+        const destination = `${destinationPrefix}${gcsPath}`;
+        const description = `${fileTypeDescription}: ${relativePath}`;
+        const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, filePath, destination, bucketName, description);
+        if (success) {
+            resultUploadedCount++;
+        }
+        else {
+            resultFailedCount++;
+        }
+    }
+    return {
+        uploadedCount: resultUploadedCount,
+        failedCount: resultFailedCount,
+    };
 }
 async function uploadBuild(options) {
     try {
@@ -38594,36 +38633,16 @@ async function uploadBuild(options) {
             throw new Error(errorMessage);
         }
         core.info(`✓ Module folder ${newVersion} does not exist, proceeding with upload`);
-        // Step 5: Resolve build directory path
-        const buildMappingPath = path.resolve(process.cwd(), buildPath);
-        if (!fs.existsSync(buildMappingPath)) {
-            const errorMessage = `Build directory does not exist: ${buildMappingPath}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // Step 6: Upload all files from build/mapping recursively
-        const mappingFiles = getAllFilesRecursive(buildMappingPath);
-        if (mappingFiles.length === 0) {
-            const errorMessage = `No files found in ${buildMappingPath}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        let uploadedCount = 0;
-        let failedCount = 0;
-        for (const filePath of mappingFiles) {
-            const relativePath = path.relative(buildMappingPath, filePath);
-            const gcsPath = relativePath.split(path.sep).join('/');
-            const destination = `${moduleFolderPath}/${gcsPath}`;
-            const description = `mapping file: ${relativePath}`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, filePath, destination, bucketName, description);
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                failedCount++;
-            }
-        }
-        // Step 7: Report results
+        // Step 5: Resolve build directory paths
+        const buildMappingFullPath = path.resolve(process.cwd(), buildMappingPath);
+        const buildDistFullPath = path.resolve(process.cwd(), buildDistPath);
+        // Step 6: Upload files from build/mapping to src/ subfolder
+        const mappingResult = await uploadFolder(bucket, bucketName, buildMappingFullPath, `${moduleFolderPath}/src/`, 'mapping file', true);
+        // Step 7: Upload files from build/dist to root of moduleFolder
+        const distResult = await uploadFolder(bucket, bucketName, buildDistFullPath, `${moduleFolderPath}/`, 'dist file', true);
+        const uploadedCount = mappingResult.uploadedCount + distResult.uploadedCount;
+        const failedCount = mappingResult.failedCount + distResult.failedCount;
+        // Step 8: Report results
         core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
         if (failedCount > 0) {
             const errorMessage = `Failed to upload ${failedCount} file(s)`;
@@ -38631,11 +38650,11 @@ async function uploadBuild(options) {
             throw new Error(errorMessage);
         }
         core.info(`✓ All files successfully uploaded to gs://${bucketName}/${moduleFolderPath}/`);
-        // Step 8: Upload config.json
+        // Step 9: Upload config.json
         try {
             const config = {
                 moduleFolder: `${newVersion}/`,
-                name: `${newVersion}/index.ts`,
+                name: `${newVersion}/index.js`,
                 version: newVersion,
             };
             const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
