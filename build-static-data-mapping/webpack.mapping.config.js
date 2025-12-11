@@ -47,10 +47,11 @@ module.exports = {
     clean: true,
     library: {
       type: 'module',
+      export: 'default' 
     },
-    module: true,
     chunkFormat: 'module',
   },
+
   experiments: {
     outputModule: true,
   },

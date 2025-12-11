@@ -42,11 +42,11 @@ export async function compileQuery(): Promise<void> {
     output: {
       path: absoluteOutputDir,
       filename: outputFileName,
+      chunkFormat: 'module',
       library: {
         type: 'module',
+        export: 'default',
       },
-      module: true,
-      chunkFormat: 'module',
     },
     experiments: {
       outputModule: true,
