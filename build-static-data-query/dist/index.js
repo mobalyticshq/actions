@@ -834,9 +834,9 @@ async function uploadBuild(options) {
         let uploadedCount = 0;
         let failedCount = 0;
         // 6.1: Upload compiled query to root
-        const compiledQueryFile = path.join(buildQueryPath, `${game}-static-data-query-compiled.gql.ts`);
+        const compiledQueryFile = path.join(buildQueryPath, `static-data-query-compiled.gql.ts`);
         if (fs.existsSync(compiledQueryFile)) {
-            const destination = `${fullVersionPath}/${game}-static-data-query-compiled.gql.ts`;
+            const destination = `${fullVersionPath}/static-data-query-compiled.gql.ts`;
             const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
             if (success) {
                 uploadedCount++;
@@ -867,9 +867,9 @@ async function uploadBuild(options) {
             core.warning(`No fragment files found in ${buildFragmentsPath}`);
         }
         // 6.3: Upload query file (without -compiled suffix) to query/ folder
-        const queryFile = path.join(buildQueryPath, `${game}-static-data-query.gql.ts`);
+        const queryFile = path.join(buildQueryPath, `static-data-query.gql.ts`);
         if (fs.existsSync(queryFile)) {
-            const destination = `${fullVersionPath}/query/${game}-static-data-query.gql.ts`;
+            const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
             const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, queryFile, destination, bucketName, 'query file');
             if (success) {
                 uploadedCount++;
@@ -937,7 +937,7 @@ async function uploadBuild(options) {
         try {
             const config = {
                 moduleFolder: `${moduleFolder}/`,
-                name: `${moduleFolder}/${game}-static-data-query-compiled.gql.ts`,
+                name: `${moduleFolder}/static-data-query-compiled.gql.ts`,
                 version: schemaVersion,
             };
             const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);

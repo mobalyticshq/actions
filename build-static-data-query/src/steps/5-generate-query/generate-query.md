@@ -49,8 +49,7 @@ To locate the repository root: look for the directory containing `build-static-d
 
 ## File Naming Convention
 
-- Format: [query-name].gql.ts
-- Where [query-name] = the GraphQL type name [Game]StaticDataQuery, transformed to kebab-case.
+- Format: static-data-query.gql.ts
 
 ---
 
