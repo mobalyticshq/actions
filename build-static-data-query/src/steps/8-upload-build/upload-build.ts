@@ -98,6 +98,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     core.info(`✓ Version folder ${moduleFolder} does not exist, proceeding with upload`);
 
     // Step 4: Resolve build directory paths
+    const distPath = path.resolve(process.cwd(), buildPath, 'dist');
     const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
     const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
     const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
@@ -109,9 +110,9 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     let failedCount = 0;
 
     // 6.1: Upload compiled query to root
-    const compiledQueryFile = path.join(buildQueryPath, `static-data-query-compiled.gql.ts`);
+    const compiledQueryFile = path.join(distPath, `static-data-query.js`);
     if (fs.existsSync(compiledQueryFile)) {
-      const destination = `${fullVersionPath}/static-data-query-compiled.gql.ts`;
+      const destination = `${fullVersionPath}/static-data-query.js`;
       const success = await uploadFileToBucket(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
       if (success) {
         uploadedCount++;
@@ -145,7 +146,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       core.warning(`No fragment files found in ${buildFragmentsPath}`);
     }
 
-    // 6.3: Upload query file (without -compiled suffix) to query/ folder
+    // 6.3: Upload ts query file to query/ folder
     const queryFile = path.join(buildQueryPath, `static-data-query.gql.ts`);
     if (fs.existsSync(queryFile)) {
       const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
@@ -219,7 +220,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     try {
       const config: DynamicModuleConfig = {
         moduleFolder: `${moduleFolder}/`,
-        name: `${moduleFolder}/static-data-query-compiled.gql.ts`,
+        name: `${moduleFolder}/static-data-query.js`,
         version: schemaVersion,
       };
 

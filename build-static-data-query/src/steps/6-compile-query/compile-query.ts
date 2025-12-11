@@ -1,94 +1,168 @@
-import * as babel from '@babel/core';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as core from '@actions/core';
+import webpack from 'webpack';
 
 const graphqlTagPlugin = require('babel-plugin-graphql-tag');
 
 const queryDir = 'build/gql/query';
+const outputDir = 'build/dist';
+const entryFileName = 'static-data-query.gql.ts';
+const outputFileName = 'static-data-query.js';
 
 export async function compileQuery(): Promise<void> {
   const absoluteQueryDir = path.resolve(process.cwd(), queryDir);
+  const absoluteOutputDir = path.resolve(process.cwd(), outputDir);
+  const entryFile = path.join(absoluteQueryDir, entryFileName);
 
   if (!fs.existsSync(absoluteQueryDir)) {
     throw new Error(`Query directory does not exist: ${absoluteQueryDir}`);
   }
 
-  // Find all .gql.ts files
-  const queryFiles = findGqlFiles(absoluteQueryDir);
-  core.info(`Found ${queryFiles.length} GraphQL query files to compile`);
-
-  if (queryFiles.length === 0) {
-    const errorMessage = 'No GraphQL query files found';
+  if (!fs.existsSync(entryFile)) {
+    const errorMessage = `Entry file does not exist: ${entryFile}`;
     core.setFailed(errorMessage);
     throw new Error(errorMessage);
   }
 
-  // Compile each file
-  for (const filePath of queryFiles) {
-    try {
-      core.info(`Compiling: ${path.relative(process.cwd(), filePath)}`);
+  core.info(`Bundling query file: ${path.relative(process.cwd(), entryFile)}`);
 
-      const sourceCode = fs.readFileSync(filePath, 'utf-8');
+  // Create output directory if it doesn't exist
+  if (!fs.existsSync(absoluteOutputDir)) {
+    fs.mkdirSync(absoluteOutputDir, { recursive: true });
+    core.info(`Created output directory: ${absoluteOutputDir}`);
+  }
 
-      const result = await babel.transformAsync(sourceCode, {
-        filename: filePath,
-        plugins: [[graphqlTagPlugin]],
-        presets: [
-          [
-            '@babel/preset-typescript',
+  // Webpack configuration
+  const webpackConfig: webpack.Configuration = {
+    mode: 'production',
+    entry: entryFile,
+    target: 'node',
+    output: {
+      path: absoluteOutputDir,
+      filename: outputFileName,
+      library: {
+        type: 'module',
+      },
+      module: true,
+      chunkFormat: 'module',
+    },
+    experiments: {
+      outputModule: true,
+    },
+    resolve: {
+      extensions: ['.ts', '.js', '.gql.ts'],
+      modules: ['node_modules', path.resolve(process.cwd(), 'build/gql')],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.gql\.ts$/,
+          use: [
             {
-              isTSX: false,
-              allExtensions: false,
+              loader: 'babel-loader',
+              options: {
+                presets: [
+                  [
+                    '@babel/preset-env',
+                    {
+                      modules: false,
+                      targets: {
+                        node: 'current',
+                      },
+                    },
+                  ],
+                  [
+                    '@babel/preset-typescript',
+                    {
+                      isTSX: false,
+                      allExtensions: false,
+                    },
+                  ],
+                ],
+                plugins: [[graphqlTagPlugin]],
+              },
             },
           ],
-        ],
-      });
+          exclude: /node_modules/,
+        },
+        {
+          test: /\.ts$/,
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: [
+                  [
+                    '@babel/preset-env',
+                    {
+                      modules: false,
+                      targets: {
+                        node: 'current',
+                      },
+                    },
+                  ],
+                  [
+                    '@babel/preset-typescript',
+                    {
+                      isTSX: false,
+                      allExtensions: false,
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          exclude: /node_modules/,
+        },
+      ],
+    },
+    optimization: {
+      minimize: false,
+    },
+    externals: {
+      '@apollo/client': {
+        commonjs: '@apollo/client',
+        commonjs2: '@apollo/client',
+        amd: '@apollo/client',
+        root: 'apolloClient',
+      },
+    },
+  };
 
-      const compiledCode = result?.code;
-
-      if (!compiledCode) {
-        const errorMessage = 'Babel transformation returned no code';
+  // Run webpack
+  return new Promise<void>((resolve, reject) => {
+    webpack(webpackConfig, (err, stats) => {
+      if (err) {
+        const errorMessage = `Webpack compilation failed: ${err.message}`;
         core.setFailed(errorMessage);
-        throw new Error(errorMessage);
+        reject(new Error(errorMessage));
+        return;
       }
 
-      // Create compiled file path with -compiled postfix
-      const parsedPath = path.parse(filePath);
-      const compiledFilePath = path.join(
-        parsedPath.dir,
-        `${parsedPath.name.replace('.gql', '-compiled.gql')}${parsedPath.ext}`,
-      );
+      if (!stats) {
+        const errorMessage = 'Webpack compilation returned no stats';
+        core.setFailed(errorMessage);
+        reject(new Error(errorMessage));
+        return;
+      }
 
-      // Write compiled code to new file
-      fs.writeFileSync(compiledFilePath, compiledCode, 'utf-8');
-      core.info(`✓ Compiled: ${path.relative(process.cwd(), compiledFilePath)}`);
-    } catch (error) {
-      const relativePath = path.relative(process.cwd(), filePath);
-      const errorMessage = `Failed to compile ${relativePath}: ${error instanceof Error ? error.message : String(error)}`;
-      core.setFailed(errorMessage);
-      throw error instanceof Error ? error : new Error(errorMessage);
-    }
-  }
+      if (stats.hasErrors()) {
+        const errors = stats.compilation.errors.map(e => e.message).join('\n');
+        const errorMessage = `Webpack compilation errors:\n${errors}`;
+        core.setFailed(errorMessage);
+        reject(new Error(errorMessage));
+        return;
+      }
 
-  core.info(`✓ Successfully compiled ${queryFiles.length} GraphQL query files`);
-}
+      if (stats.hasWarnings()) {
+        const warnings = stats.compilation.warnings.map(w => w.message).join('\n');
+        core.warning(`Webpack compilation warnings:\n${warnings}`);
+      }
 
-/**
- * Recursively find all .gql.ts files
- */
-function findGqlFiles(dirPath: string, files: string[] = []): string[] {
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry.name);
-
-    if (entry.isDirectory()) {
-      findGqlFiles(fullPath, files);
-    } else if (entry.isFile() && entry.name.endsWith('.gql.ts')) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
+      const outputPath = path.join(absoluteOutputDir, outputFileName);
+      core.info(`✓ Successfully bundled query to: ${path.relative(process.cwd(), outputPath)}`);
+      resolve();
+    });
+  });
 }
