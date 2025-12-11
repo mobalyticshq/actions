@@ -67,3 +67,4 @@ runs:
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
+        INPUT_CACHE-VERSION: ${{ inputs.cache-version }}
