@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client';
 import { SomeGameStaticDataWeaponsFragmentGql } from '../fragments/some-game-static-data-weapons-fragment.gql';
 
-export const SomeGameStaticDataQueryGql = gql`
+const SomeGameStaticDataQueryGql = gql`
   query SomeGameStaticDataQuery {
     game: someGame {
       staticData {
@@ -22,3 +22,5 @@ export const SomeGameStaticDataQueryGql = gql`
   }
   ${SomeGameStaticDataWeaponsFragmentGql}
 `;
+
+export default SomeGameStaticDataQueryGql;
