@@ -792,9 +792,12 @@ function getAllFilesRecursive(dirPath) {
     }
     return files;
 }
+function makeModuleEntrypointName(cacheVersion) {
+    return `static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.js`;
+}
 async function uploadBuild(options) {
     try {
-        const { bucket, env, game, schemaVersion } = options;
+        const { bucket, env, game, schemaVersion, cacheVersion } = options;
         const bucketName = bucket.name;
         core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
         // Step 1: Verify bucket exists
@@ -823,7 +826,7 @@ async function uploadBuild(options) {
             throw new Error(errorMessage);
         }
         const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
-        core.info(`✓ Version folder ${moduleFolder} does not exist, proceeding with upload`);
+        core.info(`✓ Version folder does not exist, proceeding with upload`);
         // Step 4: Resolve build directory paths
         const distPath = path.resolve(process.cwd(), buildPath, 'dist');
         const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
@@ -837,7 +840,7 @@ async function uploadBuild(options) {
         // 6.1: Upload compiled query to root
         const compiledQueryFile = path.join(distPath, `static-data-query.js`);
         if (fs.existsSync(compiledQueryFile)) {
-            const destination = `${fullVersionPath}/static-data-query.js`;
+            const destination = `${fullVersionPath}/${makeModuleEntrypointName(cacheVersion)}`;
             const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
             if (success) {
                 uploadedCount++;
@@ -870,7 +873,7 @@ async function uploadBuild(options) {
         // 6.3: Upload ts query file to query/ folder
         const queryFile = path.join(buildQueryPath, `static-data-query.gql.ts`);
         if (fs.existsSync(queryFile)) {
-            const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
+            const destination = `${fullVersionPath}/query/static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.gql.ts`;
             const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, queryFile, destination, bucketName, 'query file');
             if (success) {
                 uploadedCount++;
@@ -938,7 +941,7 @@ async function uploadBuild(options) {
         try {
             const config = {
                 moduleFolder: `${moduleFolder}/`,
-                name: `${moduleFolder}/static-data-query.js`,
+                name: `${moduleFolder}/${makeModuleEntrypointName(cacheVersion)}`,
                 version: schemaVersion,
             };
             const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
@@ -1024,6 +1027,7 @@ async function run() {
         const game = core.getInput('game', { required: true });
         const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
         const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
+        const cacheVersion = core.getInput('cache-version') || '';
         const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
@@ -1103,6 +1107,7 @@ async function run() {
             env: dynamicModulesEnv,
             game: game,
             schemaVersion: schemaVersionCheck.currentSchemaVersion,
+            cacheVersion,
         });
         core.info(`✓ Build upload completed`);
         core.endGroup();
@@ -3363,15 +3368,11 @@ Object.defineProperty(exports, "generateFragments", ({ enumerable: true, get: fu
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateStaticDataQueryModuleFolderName = generateStaticDataQueryModuleFolderName;
 exports.buildStaticDataQueryModuleFolderPath = buildStaticDataQueryModuleFolderPath;
 exports.checkStaticDataQueryModuleFolderExists = checkStaticDataQueryModuleFolderExists;
 const dynamic_module_utils_1 = __webpack_require__(798);
 const dynamic_modules_types_1 = __webpack_require__(463);
 const bucket_utils_1 = __webpack_require__(328);
-function generateStaticDataQueryModuleFolderName(schemaVersion) {
-    return `v-${schemaVersion}-query`;
-}
 function buildStaticDataQueryModuleFolderPath(env, game, schemaVersion) {
     const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
     const versionFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);

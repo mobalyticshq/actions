@@ -13,6 +13,9 @@ inputs:
     description: 'Name of the static data field in schema'
     required: false
     default: 'staticData'
+  cache-version:
+    description: 'This field is used to invalidate cache if you need to rebuild query for the same schema'
+    required: false
   timeout:
     description: 'Timeout for cursor-agent execution in milliseconds'
     required: false

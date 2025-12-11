@@ -6,7 +6,6 @@ import { uploadFileToBucket } from '@shared/utils/bucket.utils';
 import {
   checkStaticDataQueryModuleFolderExists,
   buildStaticDataQueryModuleFolderPath,
-  generateStaticDataQueryModuleFolderName,
 } from '../../utils/module-folder.utils';
 import { DynamicModuleConfig, DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import { generateModuleFolderName, generateModulePath } from '@shared/utils/dynamic-module.utils';
@@ -16,6 +15,7 @@ export interface UploadBuildOptions {
   env: string;
   game: string;
   schemaVersion: string;
+  cacheVersion: string;
 }
 
 const buildPath = './build';
@@ -59,9 +59,13 @@ function getAllFilesRecursive(dirPath: string): string[] {
   return files;
 }
 
+function makeModuleEntrypointName(cacheVersion: string): string {
+  return `static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.js`;
+}
+
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, game, schemaVersion } = options;
+    const { bucket, env, game, schemaVersion, cacheVersion } = options;
     const bucketName = bucket.name;
 
     core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
@@ -95,7 +99,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     const moduleFolder = generateModuleFolderName(schemaVersion);
-    core.info(`✓ Version folder ${moduleFolder} does not exist, proceeding with upload`);
+    core.info(`✓ Version folder does not exist, proceeding with upload`);
 
     // Step 4: Resolve build directory paths
     const distPath = path.resolve(process.cwd(), buildPath, 'dist');
@@ -112,7 +116,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     // 6.1: Upload compiled query to root
     const compiledQueryFile = path.join(distPath, `static-data-query.js`);
     if (fs.existsSync(compiledQueryFile)) {
-      const destination = `${fullVersionPath}/static-data-query.js`;
+      const destination = `${fullVersionPath}/${makeModuleEntrypointName(cacheVersion)}`;
       const success = await uploadFileToBucket(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
       if (success) {
         uploadedCount++;
@@ -149,7 +153,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     // 6.3: Upload ts query file to query/ folder
     const queryFile = path.join(buildQueryPath, `static-data-query.gql.ts`);
     if (fs.existsSync(queryFile)) {
-      const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
+      const destination = `${fullVersionPath}/query/static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.gql.ts`;
       const success = await uploadFileToBucket(bucket, queryFile, destination, bucketName, 'query file');
       if (success) {
         uploadedCount++;
@@ -220,7 +224,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     try {
       const config: DynamicModuleConfig = {
         moduleFolder: `${moduleFolder}/`,
-        name: `${moduleFolder}/static-data-query.js`,
+        name: `${moduleFolder}/${makeModuleEntrypointName(cacheVersion)}`,
         version: schemaVersion,
       };
 
