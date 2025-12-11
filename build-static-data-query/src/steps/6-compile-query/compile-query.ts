@@ -4,6 +4,7 @@ import * as core from '@actions/core';
 import webpack from 'webpack';
 
 const graphqlTagPlugin = require('babel-plugin-graphql-tag');
+const nodeExternals = require('webpack-node-externals');
 
 const queryDir = 'build/gql/query';
 const outputDir = 'build/dist';
@@ -118,16 +119,13 @@ export async function compileQuery(): Promise<void> {
       ],
     },
     optimization: {
-      minimize: false,
+      minimize: true,
     },
-    externals: {
-      '@apollo/client': {
-        commonjs: '@apollo/client',
-        commonjs2: '@apollo/client',
-        amd: '@apollo/client',
-        root: 'apolloClient',
-      },
-    },
+    externals: [
+      nodeExternals({
+        allowlist: [],
+      }),
+    ],
   };
 
   // Run webpack

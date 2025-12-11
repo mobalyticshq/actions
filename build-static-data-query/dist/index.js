@@ -1443,6 +1443,7 @@ const path = __importStar(__webpack_require__(928));
 const core = __importStar(__webpack_require__(659));
 const webpack_1 = __importDefault(__webpack_require__(807));
 const graphqlTagPlugin = __webpack_require__(561);
+const nodeExternals = __webpack_require__(523);
 const queryDir = 'build/gql/query';
 const outputDir = 'build/dist';
 const entryFileName = 'static-data-query.gql.ts';
@@ -1550,16 +1551,13 @@ async function compileQuery() {
             ],
         },
         optimization: {
-            minimize: false,
+            minimize: true,
         },
-        externals: {
-            '@apollo/client': {
-                commonjs: '@apollo/client',
-                commonjs2: '@apollo/client',
-                amd: '@apollo/client',
-                root: 'apolloClient',
-            },
-        },
+        externals: [
+            nodeExternals({
+                allowlist: [],
+            }),
+        ],
     };
     // Run webpack
     return new Promise((resolve, reject) => {
@@ -3155,6 +3153,13 @@ exports.generateQuery = void 0;
 var generate_query_1 = __webpack_require__(419);
 Object.defineProperty(exports, "generateQuery", ({ enumerable: true, get: function () { return generate_query_1.generateQuery; } }));
 
+
+/***/ }),
+
+/***/ 523:
+/***/ ((module) => {
+
+module.exports = require("webpack-node-externals");
 
 /***/ }),
 

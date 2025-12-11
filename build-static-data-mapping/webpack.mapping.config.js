@@ -46,8 +46,13 @@ module.exports = {
     path: path.resolve(__dirname, 'build/dist'),
     clean: true,
     library: {
-      type: 'commonjs2',
+      type: 'module',
     },
+    module: true,
+    chunkFormat: 'module',
+  },
+  experiments: {
+    outputModule: true,
   },
 
   externals: [
@@ -60,4 +65,3 @@ module.exports = {
     minimize: true,
   },
 };
-
