@@ -81,13 +81,10 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     const moduleFolder = generateModuleFolderName(schemaVersion);
     core.info(`✓ Version folder does not exist, proceeding with upload`);
 
-    // Step 4: Resolve build directory paths
+    // Step 4: Resolve build directory paths]
     const distPath = path.resolve(process.cwd(), buildPath, 'dist');
-    const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
-    const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
+    const buildGqlPath = path.resolve(process.cwd(), buildPath, 'gql');
     const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
-    const buildFragmentsTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments', 'gql-types');
-    const buildQueryTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'query', 'gql-types');
 
     // Step 5: Upload files according to new structure
     let uploadedCount = 0;
@@ -108,7 +105,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     // 6.2: Upload fragments to fragments/ folder
-    const fragmentFiles = getFilesInDirectory(buildFragmentsPath, '.gql.ts');
+    const fragmentFiles = getFilesInDirectory(buildGqlPath, '-fragment.gql.ts');
     if (fragmentFiles.length > 0) {
       for (const fragmentFile of fragmentFiles) {
         const fileName = path.basename(fragmentFile);
@@ -127,13 +124,13 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
         }
       }
     } else {
-      core.warning(`No fragment files found in ${buildFragmentsPath}`);
+      core.warning(`No fragment files found in ${buildGqlPath}`);
     }
 
     // 6.3: Upload ts query file to query/ folder
-    const queryFile = path.join(buildQueryPath, `static-data-query.gql.ts`);
+    const queryFile = path.join(buildGqlPath, `static-data-query.gql.ts`);
     if (fs.existsSync(queryFile)) {
-      const destination = `${fullVersionPath}/query/static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.gql.ts`;
+      const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
       const success = await uploadFileToBucket(bucket, queryFile, destination, bucketName, 'query file');
       if (success) {
         uploadedCount++;
@@ -145,11 +142,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     // 6.4: Upload all files from gql-types folders to types/ folder
-    const typeSourcePaths = [
-      { path: buildTypesPath, name: 'gql-types' },
-      { path: buildFragmentsTypesPath, name: 'fragments/gql-types' },
-      { path: buildQueryTypesPath, name: 'query/gql-types' },
-    ];
+    const typeSourcePaths = [{ path: buildTypesPath, name: 'gql-types' }];
 
     let hasTypeFiles = false;
     for (const sourcePath of typeSourcePaths) {

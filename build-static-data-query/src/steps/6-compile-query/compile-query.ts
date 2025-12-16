@@ -6,7 +6,7 @@ import webpack from 'webpack';
 const graphqlTagPlugin = require('babel-plugin-graphql-tag');
 const nodeExternals = require('webpack-node-externals');
 
-const queryDir = 'build/gql/query';
+const queryDir = 'build/gql';
 const outputDir = 'build/dist';
 const entryFileName = 'static-data-query.gql.ts';
 const outputFileName = 'static-data-query.js';

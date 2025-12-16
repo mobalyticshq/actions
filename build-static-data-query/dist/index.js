@@ -134,20 +134,10 @@ async function generateGqlTypes() {
                 enumsAsTypes: true,
             },
         };
-        // Config for possible-types.json
-        const possibleTypesConfig = {
-            schema: schemaFilePath,
-            documents,
-            plugins: ['fragment-matcher'],
-            config: {
-                module: 'commonjs',
-            },
-        };
         const config = {
             generates: {
                 [typesFilePath]: fileConfig,
                 [typesDirPath]: dirConfig,
-                [`${typesDirPath}/possible-types.json`]: possibleTypesConfig,
             },
         };
         // Step 3: Execute the code generation
@@ -843,13 +833,10 @@ async function uploadBuild(options) {
         }
         const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
         core.info(`✓ Version folder does not exist, proceeding with upload`);
-        // Step 4: Resolve build directory paths
+        // Step 4: Resolve build directory paths]
         const distPath = path.resolve(process.cwd(), buildPath, 'dist');
-        const buildQueryPath = path.resolve(process.cwd(), buildPath, 'gql', 'query');
-        const buildFragmentsPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments');
+        const buildGqlPath = path.resolve(process.cwd(), buildPath, 'gql');
         const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
-        const buildFragmentsTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'fragments', 'gql-types');
-        const buildQueryTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'query', 'gql-types');
         // Step 5: Upload files according to new structure
         let uploadedCount = 0;
         let failedCount = 0;
@@ -869,7 +856,7 @@ async function uploadBuild(options) {
             core.warning(`Compiled query file not found: ${compiledQueryFile}`);
         }
         // 6.2: Upload fragments to fragments/ folder
-        const fragmentFiles = getFilesInDirectory(buildFragmentsPath, '.gql.ts');
+        const fragmentFiles = getFilesInDirectory(buildGqlPath, '-fragment.gql.ts');
         if (fragmentFiles.length > 0) {
             for (const fragmentFile of fragmentFiles) {
                 const fileName = path.basename(fragmentFile);
@@ -884,12 +871,12 @@ async function uploadBuild(options) {
             }
         }
         else {
-            core.warning(`No fragment files found in ${buildFragmentsPath}`);
+            core.warning(`No fragment files found in ${buildGqlPath}`);
         }
         // 6.3: Upload ts query file to query/ folder
-        const queryFile = path.join(buildQueryPath, `static-data-query.gql.ts`);
+        const queryFile = path.join(buildGqlPath, `static-data-query.gql.ts`);
         if (fs.existsSync(queryFile)) {
-            const destination = `${fullVersionPath}/query/static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.gql.ts`;
+            const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
             const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, queryFile, destination, bucketName, 'query file');
             if (success) {
                 uploadedCount++;
@@ -902,11 +889,7 @@ async function uploadBuild(options) {
             core.warning(`Query file not found: ${queryFile}`);
         }
         // 6.4: Upload all files from gql-types folders to types/ folder
-        const typeSourcePaths = [
-            { path: buildTypesPath, name: 'gql-types' },
-            { path: buildFragmentsTypesPath, name: 'fragments/gql-types' },
-            { path: buildQueryTypesPath, name: 'query/gql-types' },
-        ];
+        const typeSourcePaths = [{ path: buildTypesPath, name: 'gql-types' }];
         let hasTypeFiles = false;
         for (const sourcePath of typeSourcePaths) {
             const typeFiles = (0, fs_utils_1.getAllFilesRecursive)(sourcePath.path);
@@ -1461,7 +1444,7 @@ const core = __importStar(__webpack_require__(659));
 const webpack_1 = __importDefault(__webpack_require__(807));
 const graphqlTagPlugin = __webpack_require__(561);
 const nodeExternals = __webpack_require__(523);
-const queryDir = 'build/gql/query';
+const queryDir = 'build/gql';
 const outputDir = 'build/dist';
 const entryFileName = 'static-data-query.gql.ts';
 const outputFileName = 'static-data-query.js';

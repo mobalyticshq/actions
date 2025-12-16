@@ -102,21 +102,10 @@ export async function generateGqlTypes(): Promise<void> {
       },
     };
 
-    // Config for possible-types.json
-    const possibleTypesConfig: Types.ConfiguredOutput = {
-      schema: schemaFilePath,
-      documents,
-      plugins: ['fragment-matcher'],
-      config: {
-        module: 'commonjs',
-      },
-    };
-
     const config: Types.Config = {
       generates: {
         [typesFilePath]: fileConfig,
         [typesDirPath]: dirConfig,
-        [`${typesDirPath}/possible-types.json`]: possibleTypesConfig,
       },
     };
 
