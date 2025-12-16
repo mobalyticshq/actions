@@ -9,6 +9,7 @@ import { uploadBuild } from './upload-build';
 async function run(): Promise<void> {
   try {
     const game = core.getInput('game', { required: true });
+    const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
@@ -23,7 +24,7 @@ async function run(): Promise<void> {
     await uploadBuild({
       bucket,
       env: dynamicModulesEnv,
-      game,
+      gameUrlSlug,
     });
 
     core.info(`✓ Upload build completed successfully`);
@@ -37,4 +38,3 @@ async function run(): Promise<void> {
 }
 
 run();
-

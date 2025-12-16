@@ -87,25 +87,25 @@ async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPat
 }
 async function downloadBuildArtifacts(options) {
     try {
-        const { bucket, env, game } = options;
+        const { bucket, env, gameUrlSlug } = options;
         const bucketName = bucket.name;
         // Step 1: Download config.json
-        const config = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+        const config = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
         if (!config) {
-            const errorMessage = `Config file not found for game: ${game}`;
+            const errorMessage = `Config file not found for game: ${gameUrlSlug}`;
             core.setFailed(errorMessage);
             throw new Error(errorMessage);
         }
         // Step 2: Extract moduleFolder from config
         if (!config.moduleFolder) {
-            const errorMessage = `Config file does not contain moduleFolder field for game: ${game}`;
+            const errorMessage = `Config file does not contain moduleFolder field for game: ${gameUrlSlug}`;
             core.setFailed(errorMessage);
             throw new Error(errorMessage);
         }
         const moduleFolder = config.moduleFolder.endsWith('/') ? config.moduleFolder : `${config.moduleFolder}/`;
         core.info(`Module folder: ${moduleFolder}`);
         // Step 3: Build bucket path
-        const baseModulePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+        const baseModulePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
         const baseBucketPath = `${baseModulePath}/${moduleFolder}`;
         core.info(`Base bucket path: gs://${bucketName}/${baseBucketPath}`);
         // Step 4: Create local build folder
@@ -125,7 +125,7 @@ async function downloadBuildArtifacts(options) {
             const filterFiles = folderName === 'types' ? filterTypesFiles : undefined;
             await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles);
         }
-        core.info(`✓ Successfully downloaded all build artifacts for game: ${game}`);
+        core.info(`✓ Successfully downloaded all build artifacts for game: ${gameUrlSlug}`);
     }
     catch (error) {
         // errors should fail the pipeline
@@ -311,6 +311,7 @@ async function run() {
     try {
         // Get inputs
         const game = core.getInput('game', { required: true });
+        const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
         const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
@@ -324,7 +325,7 @@ async function run() {
         await (0, _1_download_build_artifacts_1.downloadBuildArtifacts)({
             bucket,
             env: dynamicModulesEnv,
-            game,
+            gameUrlSlug,
         });
         core.endGroup();
         // Step 2: Copy user prompts from repository
