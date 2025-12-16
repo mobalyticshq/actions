@@ -39,6 +39,7 @@ export async function run(): Promise<void> {
       bucket,
       env: dynamicModulesEnv,
       game,
+      gameUrlSlug,
     });
     core.endGroup();
 

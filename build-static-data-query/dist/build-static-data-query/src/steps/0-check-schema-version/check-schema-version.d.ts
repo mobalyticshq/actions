@@ -4,6 +4,7 @@ export interface CheckSchemaVersionOptions {
     bucket: Bucket;
     env: string;
     game: string;
+    gameUrlSlug: string;
 }
 export interface CheckSchemaVersionResult {
     shouldContinue: boolean;

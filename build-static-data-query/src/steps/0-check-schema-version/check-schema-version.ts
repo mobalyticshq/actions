@@ -1,6 +1,9 @@
 import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
-import { buildStaticDataQueryModuleFolderPath, checkStaticDataQueryModuleFolderExists } from '../../utils/module-folder.utils';
+import {
+  buildStaticDataQueryModuleFolderPath,
+  checkStaticDataQueryModuleFolderExists,
+} from '../../utils/module-folder.utils';
 import { downloadConfigFromBucket } from '@shared/utils/bucket.utils';
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 
@@ -9,6 +12,7 @@ export interface CheckSchemaVersionOptions {
   bucket: Bucket;
   env: string;
   game: string;
+  gameUrlSlug: string;
 }
 
 export interface CheckSchemaVersionResult {
@@ -90,22 +94,29 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
 
 export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Promise<CheckSchemaVersionResult> {
   try {
-    const { graphqlEndpoint, bucket, env, game } = options;
+    const { graphqlEndpoint, bucket, env, game, gameUrlSlug } = options;
 
     core.info(`Checking schema version for game: ${game}`);
 
     // Execute GraphQL query and GCS download in parallel
     const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
       fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-      downloadConfigFromBucket(bucket, env, game, DynamicModuleSlug.STATIC_DATA_QUERY).then(result => result?.version),
+      downloadConfigFromBucket(bucket, env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY).then(
+        result => result?.version,
+      ),
     ]);
 
     // Check if version folder already exists
     if (currentSchemaVersion) {
-      const versionFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, game, currentSchemaVersion);
+      const versionFolderExists = await checkStaticDataQueryModuleFolderExists(
+        bucket,
+        env,
+        gameUrlSlug,
+        currentSchemaVersion,
+      );
       if (versionFolderExists) {
         const bucketName = bucket.name;
-        const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, currentSchemaVersion);
+        const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, gameUrlSlug, currentSchemaVersion);
         core.info(
           `✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`,
         );

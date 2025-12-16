@@ -423,19 +423,19 @@ async function fetchSchemaVersionFromGraphQL(endpoint, game) {
 }
 async function checkSchemaVersion(options) {
     try {
-        const { graphqlEndpoint, bucket, env, game } = options;
+        const { graphqlEndpoint, bucket, env, game, gameUrlSlug } = options;
         core.info(`Checking schema version for game: ${game}`);
         // Execute GraphQL query and GCS download in parallel
         const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
             fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-            (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY).then(result => result?.version),
+            (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY).then(result => result?.version),
         ]);
         // Check if version folder already exists
         if (currentSchemaVersion) {
-            const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, game, currentSchemaVersion);
+            const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, currentSchemaVersion);
             if (versionFolderExists) {
                 const bucketName = bucket.name;
-                const versionFolderPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, game, currentSchemaVersion);
+                const versionFolderPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, currentSchemaVersion);
                 core.info(`✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`);
                 return {
                     shouldContinue: false,
@@ -1043,6 +1043,7 @@ async function run() {
             bucket,
             env: dynamicModulesEnv,
             game,
+            gameUrlSlug,
         });
         core.endGroup();
         if (!schemaVersionCheck.shouldContinue) {
