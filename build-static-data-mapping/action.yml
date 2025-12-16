@@ -54,6 +54,7 @@ runs:
       working-directory: ${{ github.action_path }}
       env:
         INPUT_GAME: ${{ inputs.game }}
+        INPUT_GAME-URL-SLUG: ${{ inputs.game-url-slug }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
@@ -70,6 +71,7 @@ runs:
       working-directory: ${{ github.action_path }}
       env:
         INPUT_GAME: ${{ inputs.game }}
+        INPUT_GAME-URL-SLUG: ${{ inputs.game-url-slug }}
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}

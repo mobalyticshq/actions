@@ -64,6 +64,7 @@ runs:
       working-directory: ${{ github.action_path }}
       env:
         INPUT_GAME: ${{ inputs.game }}
+        INPUT_GAME-URL-SLUG: ${{ inputs.game-url-slug }}
         INPUT_GRAPHQL-ENDPOINT: ${{ inputs.graphql-endpoint }}
         INPUT_STATIC-DATA-FIELD-NAME: ${{ inputs.static-data-field-name }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
