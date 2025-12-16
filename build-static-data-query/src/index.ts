@@ -17,6 +17,7 @@ export async function run(): Promise<void> {
   try {
     // Get inputs
     const game = core.getInput('game', { required: true });
+    const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
     const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
     const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
     const cacheVersion = core.getInput('cache-version') || '';
@@ -110,7 +111,7 @@ export async function run(): Promise<void> {
     await uploadBuild({
       bucket,
       env: dynamicModulesEnv,
-      game: game,
+      gameUrlSlug,
       schemaVersion: schemaVersionCheck.currentSchemaVersion,
       cacheVersion,
     });

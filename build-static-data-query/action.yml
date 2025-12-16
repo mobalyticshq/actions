@@ -6,6 +6,9 @@ inputs:
   game:
     description: 'The slug of the current game'
     required: true
+  game-url-slug:
+    description: 'The url slug of the current game. In some cases (for example 2xko) url slug may be different from the game slug. If not provided, the "game" input will be used.'
+    required: false
   graphql-endpoint:
     description: 'GraphQL endpoint URL'
     required: true

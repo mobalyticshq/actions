@@ -11,6 +11,7 @@ export async function run(): Promise<void> {
   try {
     // Get inputs
     const game = core.getInput('game', { required: true });
+    const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
     const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
@@ -27,7 +28,7 @@ export async function run(): Promise<void> {
     await downloadBuildArtifacts({
       bucket,
       env: dynamicModulesEnv,
-      game,
+      gameUrlSlug,
     });
     core.endGroup();
 

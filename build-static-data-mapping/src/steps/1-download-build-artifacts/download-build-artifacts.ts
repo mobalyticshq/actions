@@ -9,7 +9,7 @@ import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 export interface DownloadBuildArtifactsOptions {
   bucket: Bucket;
   env: string;
-  game: string;
+  gameUrlSlug: string;
 }
 
 const filterTypesFiles = (fileName: string) =>
@@ -71,21 +71,21 @@ async function downloadFolderFromBucket(
 
 export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOptions): Promise<void> {
   try {
-    const { bucket, env, game } = options;
+    const { bucket, env, gameUrlSlug } = options;
     const bucketName = bucket.name;
 
     // Step 1: Download config.json
-    const config = await downloadConfigFromBucket(bucket, env, game, DynamicModuleSlug.STATIC_DATA_QUERY);
+    const config = await downloadConfigFromBucket(bucket, env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY);
 
     if (!config) {
-      const errorMessage = `Config file not found for game: ${game}`;
+      const errorMessage = `Config file not found for game: ${gameUrlSlug}`;
       core.setFailed(errorMessage);
       throw new Error(errorMessage);
     }
 
     // Step 2: Extract moduleFolder from config
     if (!config.moduleFolder) {
-      const errorMessage = `Config file does not contain moduleFolder field for game: ${game}`;
+      const errorMessage = `Config file does not contain moduleFolder field for game: ${gameUrlSlug}`;
       core.setFailed(errorMessage);
       throw new Error(errorMessage);
     }
@@ -94,7 +94,7 @@ export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOpti
     core.info(`Module folder: ${moduleFolder}`);
 
     // Step 3: Build bucket path
-    const baseModulePath = generateModulePath(env, game, DynamicModuleSlug.STATIC_DATA_QUERY);
+    const baseModulePath = generateModulePath(env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY);
     const baseBucketPath = `${baseModulePath}/${moduleFolder}`;
 
     core.info(`Base bucket path: gs://${bucketName}/${baseBucketPath}`);
@@ -120,7 +120,7 @@ export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOpti
       await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles);
     }
 
-    core.info(`✓ Successfully downloaded all build artifacts for game: ${game}`);
+    core.info(`✓ Successfully downloaded all build artifacts for game: ${gameUrlSlug}`);
   } catch (error) {
     // errors should fail the pipeline
     core.setFailed(`Error in downloadBuildArtifacts: ${error instanceof Error ? error.message : String(error)}`);

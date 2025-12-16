@@ -6,36 +6,16 @@ import { downloadConfigFromBucket, uploadFileToBucket, isFolderExists } from '@s
 import { buildStaticDataMappingModulePath, incrementVersion } from '../utils/module-folder.utils';
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import { generateModulePath } from '@shared/utils/dynamic-module.utils';
+import { getAllFilesRecursive } from '@shared/utils/fs.utils';
 
 export interface UploadBuildOptions {
   bucket: Bucket;
   env: string;
-  game: string;
+  gameUrlSlug: string;
 }
 
 const buildMappingPath = './build/mapping';
 const buildDistPath = './build/dist';
-
-function getAllFilesRecursive(dirPath: string): string[] {
-  const files: string[] = [];
-
-  if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
-    return files;
-  }
-
-  const entries = fs.readdirSync(dirPath);
-
-  for (const entry of entries) {
-    const filePath = path.join(dirPath, entry);
-    if (fs.statSync(filePath).isDirectory()) {
-      files.push(...getAllFilesRecursive(filePath));
-    } else {
-      files.push(filePath);
-    }
-  }
-
-  return files;
-}
 
 interface UploadFolderResult {
   uploadedCount: number;
@@ -97,7 +77,7 @@ async function uploadFolder(
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, game } = options;
+    const { bucket, env, gameUrlSlug } = options;
     const bucketName = bucket.name;
 
     core.info(`Starting upload of mapping files to GCS bucket: ${bucketName}`);
@@ -118,14 +98,19 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     // Step 2: Get current version and increment
-    const existingConfig = await downloadConfigFromBucket(bucket, env, game, DynamicModuleSlug.STATIC_DATA_MAPPING);
+    const existingConfig = await downloadConfigFromBucket(
+      bucket,
+      env,
+      gameUrlSlug,
+      DynamicModuleSlug.STATIC_DATA_MAPPING,
+    );
     const currentVersion = existingConfig?.version || null;
     const newVersion = incrementVersion(currentVersion);
 
     core.info(`Current version: ${currentVersion || 'none'}, new version: ${newVersion}`);
 
     // Step 3: Build GCS paths
-    const moduleFolderPath = buildStaticDataMappingModulePath(env, game, newVersion);
+    const moduleFolderPath = buildStaticDataMappingModulePath(env, gameUrlSlug, newVersion);
 
     core.info(`Target path: gs://${bucketName}/${moduleFolderPath}`);
 
@@ -185,7 +170,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
         version: newVersion,
       };
 
-      const basePath = generateModulePath(env, game, DynamicModuleSlug.STATIC_DATA_MAPPING);
+      const basePath = generateModulePath(env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_MAPPING);
       const configDestination = `${basePath}/config.json`;
       const configFile = bucket.file(configDestination);
       const configJson = JSON.stringify(config, null, 2);

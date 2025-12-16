@@ -299,6 +299,38 @@ async function downloadSchema(options) {
 
 /***/ }),
 
+/***/ 37:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getAllFilesRecursive = getAllFilesRecursive;
+const fs_1 = __importDefault(__webpack_require__(896));
+const path_1 = __importDefault(__webpack_require__(928));
+function getAllFilesRecursive(dirPath) {
+    const files = [];
+    if (!fs_1.default.existsSync(dirPath) || !fs_1.default.statSync(dirPath).isDirectory()) {
+        return files;
+    }
+    const entries = fs_1.default.readdirSync(dirPath);
+    for (const entry of entries) {
+        const filePath = path_1.default.join(dirPath, entry);
+        if (fs_1.default.statSync(filePath).isDirectory()) {
+            files.push(...getAllFilesRecursive(filePath));
+        }
+        else {
+            files.push(filePath);
+        }
+    }
+    return files;
+}
+
+
+/***/ }),
+
 /***/ 39:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -760,6 +792,7 @@ const bucket_utils_1 = __webpack_require__(328);
 const module_folder_utils_1 = __webpack_require__(994);
 const dynamic_modules_types_1 = __webpack_require__(463);
 const dynamic_module_utils_1 = __webpack_require__(798);
+const fs_utils_1 = __webpack_require__(37);
 const buildPath = './build';
 function getFilesInDirectory(dirPath, extension) {
     if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
@@ -775,29 +808,12 @@ function getFilesInDirectory(dirPath, extension) {
     }
     return files;
 }
-function getAllFilesRecursive(dirPath) {
-    const files = [];
-    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
-        return files;
-    }
-    const entries = fs.readdirSync(dirPath);
-    for (const entry of entries) {
-        const filePath = path.join(dirPath, entry);
-        if (fs.statSync(filePath).isDirectory()) {
-            files.push(...getAllFilesRecursive(filePath));
-        }
-        else {
-            files.push(filePath);
-        }
-    }
-    return files;
-}
 function makeModuleEntrypointName(cacheVersion) {
     return `static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.js`;
 }
 async function uploadBuild(options) {
     try {
-        const { bucket, env, game, schemaVersion, cacheVersion } = options;
+        const { bucket, env, gameUrlSlug, schemaVersion, cacheVersion } = options;
         const bucketName = bucket.name;
         core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
         // Step 1: Verify bucket exists
@@ -816,10 +832,10 @@ async function uploadBuild(options) {
             throw error instanceof Error ? error : new Error(errorMessage);
         }
         // Step 2: Build GCS paths
-        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, game, schemaVersion);
+        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, schemaVersion);
         core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
         // Step 3: Check if version folder already exists
-        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, game, schemaVersion);
+        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, schemaVersion);
         if (moduleFolderExists) {
             const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
             core.setFailed(errorMessage);
@@ -893,7 +909,7 @@ async function uploadBuild(options) {
         ];
         let hasTypeFiles = false;
         for (const sourcePath of typeSourcePaths) {
-            const typeFiles = getAllFilesRecursive(sourcePath.path);
+            const typeFiles = (0, fs_utils_1.getAllFilesRecursive)(sourcePath.path);
             if (typeFiles.length > 0) {
                 hasTypeFiles = true;
                 for (const typeFile of typeFiles) {
@@ -944,7 +960,7 @@ async function uploadBuild(options) {
                 name: `${moduleFolder}/${makeModuleEntrypointName(cacheVersion)}`,
                 version: schemaVersion,
             };
-            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
             const configDestination = `${basePath}/config.json`;
             const configFile = bucket.file(configDestination);
             const configJson = JSON.stringify(config, null, 2);
@@ -1025,6 +1041,7 @@ async function run() {
     try {
         // Get inputs
         const game = core.getInput('game', { required: true });
+        const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
         const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
         const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
         const cacheVersion = core.getInput('cache-version') || '';
@@ -1105,7 +1122,7 @@ async function run() {
         await (0, _8_upload_build_1.uploadBuild)({
             bucket,
             env: dynamicModulesEnv,
-            game: game,
+            gameUrlSlug,
             schemaVersion: schemaVersionCheck.currentSchemaVersion,
             cacheVersion,
         });

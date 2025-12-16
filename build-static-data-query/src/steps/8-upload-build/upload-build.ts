@@ -9,11 +9,12 @@ import {
 } from '../../utils/module-folder.utils';
 import { DynamicModuleConfig, DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import { generateModuleFolderName, generateModulePath } from '@shared/utils/dynamic-module.utils';
+import { getAllFilesRecursive } from '@shared/utils/fs.utils';
 
 export interface UploadBuildOptions {
   bucket: Bucket;
   env: string;
-  game: string;
+  gameUrlSlug: string;
   schemaVersion: string;
   cacheVersion: string;
 }
@@ -38,34 +39,13 @@ function getFilesInDirectory(dirPath: string, extension: string): string[] {
   return files;
 }
 
-function getAllFilesRecursive(dirPath: string): string[] {
-  const files: string[] = [];
-
-  if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
-    return files;
-  }
-
-  const entries = fs.readdirSync(dirPath);
-
-  for (const entry of entries) {
-    const filePath = path.join(dirPath, entry);
-    if (fs.statSync(filePath).isDirectory()) {
-      files.push(...getAllFilesRecursive(filePath));
-    } else {
-      files.push(filePath);
-    }
-  }
-
-  return files;
-}
-
 function makeModuleEntrypointName(cacheVersion: string): string {
   return `static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.js`;
 }
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, game, schemaVersion, cacheVersion } = options;
+    const { bucket, env, gameUrlSlug, schemaVersion, cacheVersion } = options;
     const bucketName = bucket.name;
 
     core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
@@ -86,12 +66,12 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     // Step 2: Build GCS paths
-    const fullVersionPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion);
+    const fullVersionPath = buildStaticDataQueryModuleFolderPath(env, gameUrlSlug, schemaVersion);
 
     core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
 
     // Step 3: Check if version folder already exists
-    const moduleFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion);
+    const moduleFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, gameUrlSlug, schemaVersion);
     if (moduleFolderExists) {
       const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
       core.setFailed(errorMessage);
@@ -228,7 +208,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
         version: schemaVersion,
       };
 
-      const basePath = generateModulePath(env, game, DynamicModuleSlug.STATIC_DATA_QUERY);
+      const basePath = generateModulePath(env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY);
       const configDestination = `${basePath}/config.json`;
       const configFile = bucket.file(configDestination);
       const configJson = JSON.stringify(config, null, 2);
