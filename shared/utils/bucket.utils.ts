@@ -1,7 +1,10 @@
 import * as core from '@actions/core';
+import * as fs from 'fs';
+import * as path from 'path';
 import { type Bucket, type UploadOptions } from '@google-cloud/storage';
 import { DynamicModuleConfig, DynamicModuleSlug } from '../types/dynamic-modules.types';
 import { generateModulePath } from './dynamic-module.utils';
+import { getAllFilesRecursive } from './fs.utils';
 
 export async function uploadFileToBucket(
   bucket: Bucket,
@@ -58,6 +61,118 @@ export async function downloadConfigFromBucket(
     core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
+}
+
+export async function downloadFolderFromBucket(
+  bucket: Bucket,
+  bucketFolderPath: string,
+  localFolderPath: string,
+  folderName: string,
+  filterFiles?: (fileName: string) => boolean,
+): Promise<void> {
+  const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
+
+  core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
+
+  // Get all files in the folder
+  const [files] = await bucket.getFiles({ prefix });
+
+  // Filter out files that are exactly the prefix (folder markers)
+  let actualFiles = files.filter(file => file.name !== prefix);
+
+  // Apply file filter if provided
+  if (filterFiles) {
+    actualFiles = actualFiles.filter(file => {
+      const relativePath = file.name.replace(prefix, '');
+      const fileName = path.basename(relativePath);
+      return filterFiles(fileName);
+    });
+  }
+
+  if (actualFiles.length === 0) {
+    const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
+    core.setFailed(errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
+
+  // Download each file
+  for (const file of actualFiles) {
+    // Get relative path from the folder prefix
+    const relativePath = file.name.replace(prefix, '');
+    const localFilePath = path.join(localFolderPath, relativePath);
+    const localFileDir = path.dirname(localFilePath);
+
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(localFileDir)) {
+      fs.mkdirSync(localFileDir, { recursive: true });
+    }
+
+    // Download file
+    await file.download({ destination: localFilePath });
+    core.info(`Downloaded: ${relativePath}`);
+  }
+
+  core.info(`✓ Successfully downloaded folder ${folderName}`);
+}
+
+interface UploadFolderResult {
+  uploadedCount: number;
+  failedCount: number;
+}
+
+export async function uploadFolderToBucket(
+  bucket: Bucket,
+  bucketName: string,
+  sourcePath: string,
+  destinationPrefix: string,
+  fileTypeDescription: string,
+  requireExists: boolean = true,
+): Promise<UploadFolderResult> {
+  if (!fs.existsSync(sourcePath)) {
+    if (requireExists) {
+      const errorMessage = `Directory does not exist: ${sourcePath}`;
+      core.setFailed(errorMessage);
+      throw new Error(errorMessage);
+    } else {
+      core.warning(`Directory does not exist: ${sourcePath}, skipping`);
+      return { uploadedCount: 0, failedCount: 0 };
+    }
+  }
+
+  const files = getAllFilesRecursive(sourcePath);
+
+  if (files.length === 0) {
+    core.warning(`No files found in ${sourcePath}`);
+    return { uploadedCount: 0, failedCount: 0 };
+  }
+
+  core.info(
+    `Uploading ${files.length} file(s) from ${path.relative(process.cwd(), sourcePath)} to ${destinationPrefix}`,
+  );
+
+  let resultUploadedCount = 0;
+  let resultFailedCount = 0;
+
+  for (const filePath of files) {
+    const relativePath = path.relative(sourcePath, filePath);
+    const gcsPath = relativePath.split(path.sep).join('/');
+    const destination = `${destinationPrefix}${gcsPath}`;
+    const description = `${fileTypeDescription}: ${relativePath}`;
+
+    const success = await uploadFileToBucket(bucket, filePath, destination, bucketName, description);
+    if (success) {
+      resultUploadedCount++;
+    } else {
+      resultFailedCount++;
+    }
+  }
+
+  return {
+    uploadedCount: resultUploadedCount,
+    failedCount: resultFailedCount,
+  };
 }
 
 export async function isFolderExists(bucket: Bucket, folderPath: string): Promise<boolean> {

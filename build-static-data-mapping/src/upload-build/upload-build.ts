@@ -1,12 +1,15 @@
 import { Bucket } from '@google-cloud/storage';
-import * as fs from 'fs';
 import * as path from 'path';
 import * as core from '@actions/core';
-import { downloadConfigFromBucket, uploadFileToBucket, isFolderExists } from '@shared/utils/bucket.utils';
+import {
+  downloadConfigFromBucket,
+  uploadFileToBucket,
+  isFolderExists,
+  uploadFolderToBucket,
+} from '@shared/utils/bucket.utils';
 import { buildStaticDataMappingModulePath, incrementVersion } from '../utils/module-folder.utils';
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import { generateModulePath } from '@shared/utils/dynamic-module.utils';
-import { getAllFilesRecursive } from '@shared/utils/fs.utils';
 
 export interface UploadBuildOptions {
   bucket: Bucket;
@@ -17,64 +20,6 @@ export interface UploadBuildOptions {
 const buildMappingPath = './build/mapping';
 const buildTypesPath = './build/types';
 const buildDistPath = './build/dist';
-
-interface UploadFolderResult {
-  uploadedCount: number;
-  failedCount: number;
-}
-
-async function uploadFolder(
-  bucket: Bucket,
-  bucketName: string,
-  sourcePath: string,
-  destinationPrefix: string,
-  fileTypeDescription: string,
-  requireExists: boolean = true,
-): Promise<UploadFolderResult> {
-  if (!fs.existsSync(sourcePath)) {
-    if (requireExists) {
-      const errorMessage = `Directory does not exist: ${sourcePath}`;
-      core.setFailed(errorMessage);
-      throw new Error(errorMessage);
-    } else {
-      core.warning(`Directory does not exist: ${sourcePath}, skipping`);
-      return { uploadedCount: 0, failedCount: 0 };
-    }
-  }
-
-  const files = getAllFilesRecursive(sourcePath);
-
-  if (files.length === 0) {
-    core.warning(`No files found in ${sourcePath}`);
-    return { uploadedCount: 0, failedCount: 0 };
-  }
-
-  core.info(
-    `Uploading ${files.length} file(s) from ${path.relative(process.cwd(), sourcePath)} to ${destinationPrefix}`,
-  );
-
-  let resultUploadedCount = 0;
-  let resultFailedCount = 0;
-
-  for (const filePath of files) {
-    const relativePath = path.relative(sourcePath, filePath);
-    const gcsPath = relativePath.split(path.sep).join('/');
-    const destination = `${destinationPrefix}${gcsPath}`;
-    const description = `${fileTypeDescription}: ${relativePath}`;
-
-    const success = await uploadFileToBucket(bucket, filePath, destination, bucketName, description);
-    if (success) {
-      resultUploadedCount++;
-    } else {
-      resultFailedCount++;
-    }
-  }
-
-  return {
-    uploadedCount: resultUploadedCount,
-    failedCount: resultFailedCount,
-  };
-}
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
@@ -131,7 +76,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     const buildDistFullPath = path.resolve(process.cwd(), buildDistPath);
 
     // Step 6: Upload files from build/mapping to src/ subfolder
-    const mappingResult = await uploadFolder(
+    const mappingResult = await uploadFolderToBucket(
       bucket,
       bucketName,
       buildMappingFullPath,
@@ -141,7 +86,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     );
 
     // Step 7: Upload files from build/types to types/ subfolder
-    const typesResult = await uploadFolder(
+    const typesResult = await uploadFolderToBucket(
       bucket,
       bucketName,
       buildTypesFullPath,
@@ -151,7 +96,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     );
 
     // Step 8: Upload files from build/dist to root of moduleFolder
-    const distResult = await uploadFolder(
+    const distResult = await uploadFolderToBucket(
       bucket,
       bucketName,
       buildDistFullPath,
@@ -160,8 +105,8 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       true,
     );
 
-    const uploadedCount = mappingResult.uploadedCount + distResult.uploadedCount;
-    const failedCount = mappingResult.failedCount + distResult.failedCount;
+    const uploadedCount = mappingResult.uploadedCount + distResult.uploadedCount + typesResult.uploadedCount;
+    const failedCount = mappingResult.failedCount + distResult.failedCount + typesResult.failedCount;
 
     // Step 9: Report results
     core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);

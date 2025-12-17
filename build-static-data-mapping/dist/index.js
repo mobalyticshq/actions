@@ -48,43 +48,6 @@ const bucket_utils_1 = __webpack_require__(328);
 const dynamic_module_utils_1 = __webpack_require__(798);
 const dynamic_modules_types_1 = __webpack_require__(463);
 const filterTypesFiles = (fileName) => fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
-async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles) {
-    const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
-    core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
-    // Get all files in the folder
-    const [files] = await bucket.getFiles({ prefix });
-    // Filter out files that are exactly the prefix (folder markers)
-    let actualFiles = files.filter(file => file.name !== prefix);
-    // Apply file filter if provided
-    if (filterFiles) {
-        actualFiles = actualFiles.filter(file => {
-            const relativePath = file.name.replace(prefix, '');
-            const fileName = path.basename(relativePath);
-            return filterFiles(fileName);
-        });
-    }
-    if (actualFiles.length === 0) {
-        const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
-        core.setFailed(errorMessage);
-        throw new Error(errorMessage);
-    }
-    core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
-    // Download each file
-    for (const file of actualFiles) {
-        // Get relative path from the folder prefix
-        const relativePath = file.name.replace(prefix, '');
-        const localFilePath = path.join(localFolderPath, relativePath);
-        const localFileDir = path.dirname(localFilePath);
-        // Create directory if it doesn't exist
-        if (!fs.existsSync(localFileDir)) {
-            fs.mkdirSync(localFileDir, { recursive: true });
-        }
-        // Download file
-        await file.download({ destination: localFilePath });
-        core.info(`Downloaded: ${relativePath}`);
-    }
-    core.info(`✓ Successfully downloaded folder ${folderName}`);
-}
 async function downloadBuildArtifacts(options) {
     try {
         const { bucket, env, gameUrlSlug } = options;
@@ -123,7 +86,7 @@ async function downloadBuildArtifacts(options) {
             const bucketFolderPath = `${baseBucketPath}${folderName}`;
             const localFolderPath = path.join(buildPath, folderName);
             const filterFiles = folderName === 'types' ? filterTypesFiles : undefined;
-            await downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles);
+            await (0, bucket_utils_1.downloadFolderFromBucket)(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles);
         }
         core.info(`✓ Successfully downloaded all build artifacts for game: ${gameUrlSlug}`);
     }
@@ -132,6 +95,38 @@ async function downloadBuildArtifacts(options) {
         core.setFailed(`Error in downloadBuildArtifacts: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
     }
+}
+
+
+/***/ }),
+
+/***/ 37:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getAllFilesRecursive = getAllFilesRecursive;
+const fs_1 = __importDefault(__webpack_require__(896));
+const path_1 = __importDefault(__webpack_require__(928));
+function getAllFilesRecursive(dirPath) {
+    const files = [];
+    if (!fs_1.default.existsSync(dirPath) || !fs_1.default.statSync(dirPath).isDirectory()) {
+        return files;
+    }
+    const entries = fs_1.default.readdirSync(dirPath);
+    for (const entry of entries) {
+        const filePath = path_1.default.join(dirPath, entry);
+        if (fs_1.default.statSync(filePath).isDirectory()) {
+            files.push(...getAllFilesRecursive(filePath));
+        }
+        else {
+            files.push(filePath);
+        }
+    }
+    return files;
 }
 
 
@@ -417,9 +412,14 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.uploadFileToBucket = uploadFileToBucket;
 exports.downloadConfigFromBucket = downloadConfigFromBucket;
+exports.downloadFolderFromBucket = downloadFolderFromBucket;
+exports.uploadFolderToBucket = uploadFolderToBucket;
 exports.isFolderExists = isFolderExists;
 const core = __importStar(__webpack_require__(659));
+const fs = __importStar(__webpack_require__(896));
+const path = __importStar(__webpack_require__(928));
 const dynamic_module_utils_1 = __webpack_require__(798);
+const fs_utils_1 = __webpack_require__(37);
 async function uploadFileToBucket(bucket, sourcePath, destination, bucketName, description) {
     try {
         const logPrefix = description ? `${description}: ` : '';
@@ -460,6 +460,81 @@ async function downloadConfigFromBucket(bucket, env, game, dynamicModuleSlug) {
         core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
         return null;
     }
+}
+async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles) {
+    const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
+    core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
+    // Get all files in the folder
+    const [files] = await bucket.getFiles({ prefix });
+    // Filter out files that are exactly the prefix (folder markers)
+    let actualFiles = files.filter(file => file.name !== prefix);
+    // Apply file filter if provided
+    if (filterFiles) {
+        actualFiles = actualFiles.filter(file => {
+            const relativePath = file.name.replace(prefix, '');
+            const fileName = path.basename(relativePath);
+            return filterFiles(fileName);
+        });
+    }
+    if (actualFiles.length === 0) {
+        const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+    }
+    core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
+    // Download each file
+    for (const file of actualFiles) {
+        // Get relative path from the folder prefix
+        const relativePath = file.name.replace(prefix, '');
+        const localFilePath = path.join(localFolderPath, relativePath);
+        const localFileDir = path.dirname(localFilePath);
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(localFileDir)) {
+            fs.mkdirSync(localFileDir, { recursive: true });
+        }
+        // Download file
+        await file.download({ destination: localFilePath });
+        core.info(`Downloaded: ${relativePath}`);
+    }
+    core.info(`✓ Successfully downloaded folder ${folderName}`);
+}
+async function uploadFolderToBucket(bucket, bucketName, sourcePath, destinationPrefix, fileTypeDescription, requireExists = true) {
+    if (!fs.existsSync(sourcePath)) {
+        if (requireExists) {
+            const errorMessage = `Directory does not exist: ${sourcePath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        else {
+            core.warning(`Directory does not exist: ${sourcePath}, skipping`);
+            return { uploadedCount: 0, failedCount: 0 };
+        }
+    }
+    const files = (0, fs_utils_1.getAllFilesRecursive)(sourcePath);
+    if (files.length === 0) {
+        core.warning(`No files found in ${sourcePath}`);
+        return { uploadedCount: 0, failedCount: 0 };
+    }
+    core.info(`Uploading ${files.length} file(s) from ${path.relative(process.cwd(), sourcePath)} to ${destinationPrefix}`);
+    let resultUploadedCount = 0;
+    let resultFailedCount = 0;
+    for (const filePath of files) {
+        const relativePath = path.relative(sourcePath, filePath);
+        const gcsPath = relativePath.split(path.sep).join('/');
+        const destination = `${destinationPrefix}${gcsPath}`;
+        const description = `${fileTypeDescription}: ${relativePath}`;
+        const success = await uploadFileToBucket(bucket, filePath, destination, bucketName, description);
+        if (success) {
+            resultUploadedCount++;
+        }
+        else {
+            resultFailedCount++;
+        }
+    }
+    return {
+        uploadedCount: resultUploadedCount,
+        failedCount: resultFailedCount,
+    };
 }
 async function isFolderExists(bucket, folderPath) {
     const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;

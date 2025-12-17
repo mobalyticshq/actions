@@ -2,7 +2,7 @@ import { Bucket } from '@google-cloud/storage';
 import * as core from '@actions/core';
 import * as fs from 'fs';
 import * as path from 'path';
-import { downloadConfigFromBucket } from '@shared/utils/bucket.utils';
+import { downloadConfigFromBucket, downloadFolderFromBucket } from '@shared/utils/bucket.utils';
 import { generateModulePath } from '@shared/utils/dynamic-module.utils';
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 
@@ -14,60 +14,6 @@ export interface DownloadBuildArtifactsOptions {
 
 const filterTypesFiles = (fileName: string) =>
   fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
-
-async function downloadFolderFromBucket(
-  bucket: Bucket,
-  bucketFolderPath: string,
-  localFolderPath: string,
-  folderName: string,
-  filterFiles?: (fileName: string) => boolean,
-): Promise<void> {
-  const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
-
-  core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
-
-  // Get all files in the folder
-  const [files] = await bucket.getFiles({ prefix });
-
-  // Filter out files that are exactly the prefix (folder markers)
-  let actualFiles = files.filter(file => file.name !== prefix);
-
-  // Apply file filter if provided
-  if (filterFiles) {
-    actualFiles = actualFiles.filter(file => {
-      const relativePath = file.name.replace(prefix, '');
-      const fileName = path.basename(relativePath);
-      return filterFiles(fileName);
-    });
-  }
-
-  if (actualFiles.length === 0) {
-    const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
-    core.setFailed(errorMessage);
-    throw new Error(errorMessage);
-  }
-
-  core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
-
-  // Download each file
-  for (const file of actualFiles) {
-    // Get relative path from the folder prefix
-    const relativePath = file.name.replace(prefix, '');
-    const localFilePath = path.join(localFolderPath, relativePath);
-    const localFileDir = path.dirname(localFilePath);
-
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(localFileDir)) {
-      fs.mkdirSync(localFileDir, { recursive: true });
-    }
-
-    // Download file
-    await file.download({ destination: localFilePath });
-    core.info(`Downloaded: ${relativePath}`);
-  }
-
-  core.info(`✓ Successfully downloaded folder ${folderName}`);
-}
 
 export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOptions): Promise<void> {
   try {
