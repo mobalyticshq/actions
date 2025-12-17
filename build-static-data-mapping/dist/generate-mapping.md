@@ -34,7 +34,10 @@ To locate the repository root: look for the directory containing `build-static-d
 ## Output
 
 - **Folder**: build-static-data-mapping/build/mapping
-- **Requirement**: All generated files must be placed in this folder
+- **Requirement**: All mapping code, except SupportedStaticDataKeys enum, must be placed in this folder
+
+- **Folder**: build-static-data-mapping/build/types
+- **Requirement**: Output folder for SupportedStaticDataKeys enum
 
 ---
 
@@ -79,3 +82,8 @@ To locate the repository root: look for the directory containing `build-static-d
     - Import all generated mapping functions.
     - Create an object `staticDataMappers` that maps keys from `[Game]EntitiesEnum` to their corresponding mapping functions.
     - The object `staticDataMappers` should have an export default.
+  
+6. **Create a file `mapping.types.ts`** in the folder `build-static-data-mapping/build/types`.
+
+7. **In `mapping.types.ts`:** make an enum **SupportedStaticDataKeys**, that contains all keys from the `staticDataMappers` object. Key of enum should be in the upper case, the words delimiter is a low dash `_`. Values should be the same as `staticDataMappers` object keys.
+   - An example enum can be found in: `build-static-data-mapping/src/examples/supported-static-data-keys.example.ts`

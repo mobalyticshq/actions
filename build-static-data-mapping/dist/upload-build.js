@@ -190,6 +190,7 @@ const dynamic_modules_types_1 = __webpack_require__(463);
 const dynamic_module_utils_1 = __webpack_require__(798);
 const fs_utils_1 = __webpack_require__(37);
 const buildMappingPath = './build/mapping';
+const buildTypesPath = './build/types';
 const buildDistPath = './build/dist';
 async function uploadFolder(bucket, bucketName, sourcePath, destinationPrefix, fileTypeDescription, requireExists = true) {
     if (!fs.existsSync(sourcePath)) {
@@ -267,14 +268,17 @@ async function uploadBuild(options) {
         core.info(`✓ Module folder ${newVersion} does not exist, proceeding with upload`);
         // Step 5: Resolve build directory paths
         const buildMappingFullPath = path.resolve(process.cwd(), buildMappingPath);
+        const buildTypesFullPath = path.resolve(process.cwd(), buildTypesPath);
         const buildDistFullPath = path.resolve(process.cwd(), buildDistPath);
         // Step 6: Upload files from build/mapping to src/ subfolder
-        const mappingResult = await uploadFolder(bucket, bucketName, buildMappingFullPath, `${moduleFolderPath}/src/`, 'mapping file', true);
-        // Step 7: Upload files from build/dist to root of moduleFolder
+        const mappingResult = await uploadFolder(bucket, bucketName, buildMappingFullPath, `${moduleFolderPath}/src/`, 'mapping files', true);
+        // Step 7: Upload files from build/types to types/ subfolder
+        const typesResult = await uploadFolder(bucket, bucketName, buildTypesFullPath, `${moduleFolderPath}/types/`, 'types files', true);
+        // Step 8: Upload files from build/dist to root of moduleFolder
         const distResult = await uploadFolder(bucket, bucketName, buildDistFullPath, `${moduleFolderPath}/`, 'dist file', true);
         const uploadedCount = mappingResult.uploadedCount + distResult.uploadedCount;
         const failedCount = mappingResult.failedCount + distResult.failedCount;
-        // Step 8: Report results
+        // Step 9: Report results
         core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
         if (failedCount > 0) {
             const errorMessage = `Failed to upload ${failedCount} file(s)`;
@@ -282,7 +286,7 @@ async function uploadBuild(options) {
             throw new Error(errorMessage);
         }
         core.info(`✓ All files successfully uploaded to gs://${bucketName}/${moduleFolderPath}/`);
-        // Step 9: Upload config.json
+        // Step 10: Upload config.json
         try {
             const config = {
                 moduleFolder: `${newVersion}/`,

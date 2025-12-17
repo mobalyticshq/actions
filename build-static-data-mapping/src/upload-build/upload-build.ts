@@ -15,6 +15,7 @@ export interface UploadBuildOptions {
 }
 
 const buildMappingPath = './build/mapping';
+const buildTypesPath = './build/types';
 const buildDistPath = './build/dist';
 
 interface UploadFolderResult {
@@ -126,6 +127,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
 
     // Step 5: Resolve build directory paths
     const buildMappingFullPath = path.resolve(process.cwd(), buildMappingPath);
+    const buildTypesFullPath = path.resolve(process.cwd(), buildTypesPath);
     const buildDistFullPath = path.resolve(process.cwd(), buildDistPath);
 
     // Step 6: Upload files from build/mapping to src/ subfolder
@@ -134,11 +136,21 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       bucketName,
       buildMappingFullPath,
       `${moduleFolderPath}/src/`,
-      'mapping file',
+      'mapping files',
       true,
     );
 
-    // Step 7: Upload files from build/dist to root of moduleFolder
+    // Step 7: Upload files from build/types to types/ subfolder
+    const typesResult = await uploadFolder(
+      bucket,
+      bucketName,
+      buildTypesFullPath,
+      `${moduleFolderPath}/types/`,
+      'types files',
+      true,
+    );
+
+    // Step 8: Upload files from build/dist to root of moduleFolder
     const distResult = await uploadFolder(
       bucket,
       bucketName,
@@ -151,7 +163,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     const uploadedCount = mappingResult.uploadedCount + distResult.uploadedCount;
     const failedCount = mappingResult.failedCount + distResult.failedCount;
 
-    // Step 8: Report results
+    // Step 9: Report results
     core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
 
     if (failedCount > 0) {
@@ -162,7 +174,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
 
     core.info(`✓ All files successfully uploaded to gs://${bucketName}/${moduleFolderPath}/`);
 
-    // Step 9: Upload config.json
+    // Step 10: Upload config.json
     try {
       const config = {
         moduleFolder: `${newVersion}/`,
