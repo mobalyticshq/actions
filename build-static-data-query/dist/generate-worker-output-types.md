@@ -36,6 +36,7 @@ To locate the repository root: look for the directory containing `build-static-d
 1. Analyze the **StaticDataQueryGql** in the GraphQL query file.
 2. Generate a .ts file containing a following types in the output folder:
    - The **WorkerOutputType** interface, where each key corresponds to the name of a node requested inside the groups node in **StaticDataQueryGql**, and the value is an array of the corresponding node type from `gql-types/*fragment.gql.generated.ts` | null.
+   - Interface should have named export.
 
 ---
 
