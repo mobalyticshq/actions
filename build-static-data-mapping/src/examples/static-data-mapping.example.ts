@@ -42,7 +42,6 @@ export function processNocturnalAspects(value: Hades2StaticDataNocturnalAspectsF
     subTitle: value.weapon?.name ?? '',
     icon: value.iconUrl || '',
     color,
-    tooltipColor,
     type: 'nocturnalAspects',
     groupName: 'Nocturnal Aspects',
     iconStyle: 'square-rounded',

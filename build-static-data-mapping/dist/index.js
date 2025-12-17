@@ -482,8 +482,8 @@ async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPat
         throw new Error(errorMessage);
     }
     core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
-    // Download each file
-    for (const file of actualFiles) {
+    // Create promises for all file downloads
+    const downloadPromises = actualFiles.map(async (file) => {
         // Get relative path from the folder prefix
         const relativePath = file.name.replace(prefix, '');
         const localFilePath = path.join(localFolderPath, relativePath);
@@ -495,6 +495,26 @@ async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPat
         // Download file
         await file.download({ destination: localFilePath });
         core.info(`Downloaded: ${relativePath}`);
+    });
+    const results = await Promise.allSettled(downloadPromises);
+    // Check for failures and collect error information
+    const failures = [];
+    for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        if (result.status === 'rejected') {
+            const relativePath = actualFiles[i].name.replace(prefix, '');
+            failures.push({
+                file: relativePath,
+                error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+            });
+        }
+    }
+    // If there are failures, throw an error with details
+    if (failures.length > 0) {
+        const errorDetails = failures.map(f => `  - ${f.file}: ${f.error}`).join('\n');
+        const errorMessage = `Failed to download ${failures.length} file(s) from folder ${folderName}:\n${errorDetails}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
     }
     core.info(`✓ Successfully downloaded folder ${folderName}`);
 }
@@ -516,15 +536,20 @@ async function uploadFolderToBucket(bucket, bucketName, sourcePath, destinationP
         return { uploadedCount: 0, failedCount: 0 };
     }
     core.info(`Uploading ${files.length} file(s) from ${path.relative(process.cwd(), sourcePath)} to ${destinationPrefix}`);
-    let resultUploadedCount = 0;
-    let resultFailedCount = 0;
-    for (const filePath of files) {
+    // Create promises for all file uploads
+    const uploadPromises = files.map(filePath => {
         const relativePath = path.relative(sourcePath, filePath);
         const gcsPath = relativePath.split(path.sep).join('/');
         const destination = `${destinationPrefix}${gcsPath}`;
         const description = `${fileTypeDescription}: ${relativePath}`;
-        const success = await uploadFileToBucket(bucket, filePath, destination, bucketName, description);
-        if (success) {
+        return uploadFileToBucket(bucket, filePath, destination, bucketName, description);
+    });
+    const results = await Promise.allSettled(uploadPromises);
+    // Count successful and failed uploads
+    let resultUploadedCount = 0;
+    let resultFailedCount = 0;
+    for (const result of results) {
+        if (result.status === 'fulfilled' && result.value === true) {
             resultUploadedCount++;
         }
         else {
