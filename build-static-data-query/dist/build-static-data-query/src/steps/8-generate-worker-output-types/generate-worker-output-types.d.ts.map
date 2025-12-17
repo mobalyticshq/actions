@@ -1,0 +1,1 @@
+{"version":3,"file":"generate-worker-output-types.d.ts","sourceRoot":"","sources":["../../../../../src/steps/8-generate-worker-output-types/generate-worker-output-types.ts"],"names":[],"mappings":"AAGA,MAAM,WAAW,gCAAgC;IAC/C,SAAS,EAAE,MAAM,CAAC;CACnB;AAED,wBAAsB,yBAAyB,CAAC,OAAO,EAAE,gCAAgC,GAAG,OAAO,CAAC,IAAI,CAAC,CAOxG"}

@@ -624,18 +624,6 @@ function generateScopes(options) {
 
 /***/ }),
 
-/***/ 86:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.uploadBuild = void 0;
-var upload_build_1 = __webpack_require__(108);
-Object.defineProperty(exports, "uploadBuild", ({ enumerable: true, get: function () { return upload_build_1.uploadBuild; } }));
-
-
-/***/ }),
-
 /***/ 99:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -736,237 +724,6 @@ function spawnWithTimeout(input) {
 
 /***/ }),
 
-/***/ 108:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.uploadBuild = uploadBuild;
-const fs = __importStar(__webpack_require__(896));
-const path = __importStar(__webpack_require__(928));
-const core = __importStar(__webpack_require__(659));
-const bucket_utils_1 = __webpack_require__(328);
-const module_folder_utils_1 = __webpack_require__(994);
-const dynamic_modules_types_1 = __webpack_require__(463);
-const dynamic_module_utils_1 = __webpack_require__(798);
-const fs_utils_1 = __webpack_require__(37);
-const buildPath = './build';
-function getFilesInDirectory(dirPath, extension) {
-    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
-        return [];
-    }
-    const files = [];
-    const entries = fs.readdirSync(dirPath);
-    for (const entry of entries) {
-        const filePath = path.join(dirPath, entry);
-        if (fs.statSync(filePath).isFile() && entry.endsWith(extension)) {
-            files.push(filePath);
-        }
-    }
-    return files;
-}
-function makeModuleEntrypointName(cacheVersion) {
-    return `static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.js`;
-}
-async function uploadBuild(options) {
-    try {
-        const { bucket, env, gameUrlSlug, schemaVersion, cacheVersion } = options;
-        const bucketName = bucket.name;
-        core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
-        // Step 1: Verify bucket exists
-        try {
-            const [exists] = await bucket.exists();
-            if (!exists) {
-                const errorMessage = `Bucket ${bucketName} does not exist`;
-                core.setFailed(errorMessage);
-                throw new Error(errorMessage);
-            }
-            core.info(`✓ Bucket ${bucketName} verified`);
-        }
-        catch (error) {
-            const errorMessage = `Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw error instanceof Error ? error : new Error(errorMessage);
-        }
-        // Step 2: Build GCS paths
-        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, schemaVersion);
-        core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
-        // Step 3: Check if version folder already exists
-        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, schemaVersion);
-        if (moduleFolderExists) {
-            const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
-        core.info(`✓ Version folder does not exist, proceeding with upload`);
-        // Step 4: Resolve build directory paths]
-        const distPath = path.resolve(process.cwd(), buildPath, 'dist');
-        const buildGqlPath = path.resolve(process.cwd(), buildPath, 'gql');
-        const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
-        // Step 5: Upload files according to new structure
-        let uploadedCount = 0;
-        let failedCount = 0;
-        // 6.1: Upload compiled query to root
-        const compiledQueryFile = path.join(distPath, `static-data-query.js`);
-        if (fs.existsSync(compiledQueryFile)) {
-            const destination = `${fullVersionPath}/${makeModuleEntrypointName(cacheVersion)}`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                failedCount++;
-            }
-        }
-        else {
-            core.warning(`Compiled query file not found: ${compiledQueryFile}`);
-        }
-        // 6.2: Upload fragments to fragments/ folder
-        const fragmentFiles = getFilesInDirectory(buildGqlPath, '-fragment.gql.ts');
-        if (fragmentFiles.length > 0) {
-            for (const fragmentFile of fragmentFiles) {
-                const fileName = path.basename(fragmentFile);
-                const destination = `${fullVersionPath}/fragments/${fileName}`;
-                const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, fragmentFile, destination, bucketName, `fragment: ${fileName}`);
-                if (success) {
-                    uploadedCount++;
-                }
-                else {
-                    failedCount++;
-                }
-            }
-        }
-        else {
-            core.warning(`No fragment files found in ${buildGqlPath}`);
-        }
-        // 6.3: Upload ts query file to query/ folder
-        const queryFile = path.join(buildGqlPath, `static-data-query.gql.ts`);
-        if (fs.existsSync(queryFile)) {
-            const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, queryFile, destination, bucketName, 'query file');
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                failedCount++;
-            }
-        }
-        else {
-            core.warning(`Query file not found: ${queryFile}`);
-        }
-        // 6.4: Upload all files from gql-types folders to types/ folder
-        const typeSourcePaths = [{ path: buildTypesPath, name: 'gql-types' }];
-        let hasTypeFiles = false;
-        for (const sourcePath of typeSourcePaths) {
-            const typeFiles = (0, fs_utils_1.getAllFilesRecursive)(sourcePath.path);
-            if (typeFiles.length > 0) {
-                hasTypeFiles = true;
-                for (const typeFile of typeFiles) {
-                    const relativePath = path.relative(sourcePath.path, typeFile);
-                    const gcsPath = relativePath.split(path.sep).join('/');
-                    const destination = `${fullVersionPath}/types/${gcsPath}`;
-                    const description = `type file from ${sourcePath.name}: ${relativePath}`;
-                    const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, typeFile, destination, bucketName, description);
-                    if (success) {
-                        uploadedCount++;
-                    }
-                    else {
-                        failedCount++;
-                    }
-                }
-            }
-        }
-        if (!hasTypeFiles) {
-            core.warning(`No type files found in any of the gql-types directories`);
-        }
-        // 6.5: Upload cleaned schema to cleaned-schema/ folder
-        const cleanedSchemaFile = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
-        if (fs.existsSync(cleanedSchemaFile)) {
-            const destination = `${fullVersionPath}/cleaned-schema/cleaned-schema.graphql`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, cleanedSchemaFile, destination, bucketName, 'cleaned schema');
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                failedCount++;
-            }
-        }
-        else {
-            core.warning(`Cleaned schema file not found: ${cleanedSchemaFile}`);
-        }
-        // Step 6: Report results
-        core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
-        if (failedCount > 0) {
-            const errorMessage = `Failed to upload ${failedCount} file(s)`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
-        // Step 7: Upload config.json
-        try {
-            const config = {
-                moduleFolder: `${moduleFolder}/`,
-                name: `${moduleFolder}/${makeModuleEntrypointName(cacheVersion)}`,
-                version: schemaVersion,
-            };
-            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
-            const configDestination = `${basePath}/config.json`;
-            const configFile = bucket.file(configDestination);
-            const configJson = JSON.stringify(config, null, 2);
-            core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
-            await configFile.save(configJson);
-            core.info(`✓ Config.json successfully uploaded`);
-        }
-        catch (error) {
-            const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw error instanceof Error ? error : new Error(errorMessage);
-        }
-    }
-    catch (error) {
-        const errorMessage = `Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`;
-        core.setFailed(errorMessage);
-        throw error instanceof Error ? error : new Error(errorMessage);
-    }
-}
-
-
-/***/ }),
-
 /***/ 156:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -1015,8 +772,9 @@ const _3_clean_schema_1 = __webpack_require__(922);
 const _4_generate_fragments_1 = __webpack_require__(985);
 const _5_generate_query_1 = __webpack_require__(517);
 const _7_generate_gql_types_1 = __webpack_require__(39);
-const _8_upload_build_1 = __webpack_require__(86);
+const _9_upload_build_1 = __webpack_require__(420);
 const _6_compile_query_1 = __webpack_require__(304);
+const _8_generate_worker_output_types_1 = __webpack_require__(484);
 /**
  * Main function for the GitHub Action
  */
@@ -1101,9 +859,16 @@ async function run() {
         await (0, _7_generate_gql_types_1.generateGqlTypes)();
         core.info(`✓ GraphQL types generation completed`);
         core.endGroup();
-        // Step 8: Upload build to GCS
-        core.startGroup('☁️ Step 8: Uploading build to GCS');
-        await (0, _8_upload_build_1.uploadBuild)({
+        // Step 8: Generate worker output types
+        core.startGroup('🔨 Step 8: Generating worker output types');
+        await (0, _8_generate_worker_output_types_1.generateWorkerOutputTypes)({
+            timeoutMs,
+        });
+        core.info(`✓ Worker output types generation completed`);
+        core.endGroup();
+        // Step 9: Upload build to GCS
+        core.startGroup('☁️ Step 9: Uploading build to GCS');
+        await (0, _9_upload_build_1.uploadBuild)({
             bucket,
             env: dynamicModulesEnv,
             gameUrlSlug,
@@ -3123,6 +2888,18 @@ async function generateQuery(options) {
 
 /***/ }),
 
+/***/ 420:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.uploadBuild = void 0;
+var upload_build_1 = __webpack_require__(903);
+Object.defineProperty(exports, "uploadBuild", ({ enumerable: true, get: function () { return upload_build_1.uploadBuild; } }));
+
+
+/***/ }),
+
 /***/ 463:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -3134,6 +2911,18 @@ var DynamicModuleSlug;
     DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
     DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
 })(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
+
+
+/***/ }),
+
+/***/ 484:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateWorkerOutputTypes = void 0;
+var generate_worker_output_types_1 = __webpack_require__(584);
+Object.defineProperty(exports, "generateWorkerOutputTypes", ({ enumerable: true, get: function () { return generate_worker_output_types_1.generateWorkerOutputTypes; } }));
 
 
 /***/ }),
@@ -3281,6 +3070,29 @@ module.exports = require("babel-plugin-graphql-tag");
 
 /***/ }),
 
+/***/ 584:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateWorkerOutputTypes = generateWorkerOutputTypes;
+const run_cursor_generation_1 = __webpack_require__(550);
+const path_1 = __importDefault(__webpack_require__(928));
+async function generateWorkerOutputTypes(options) {
+    const { timeoutMs } = options;
+    const promptFilePath = path_1.default.resolve(__dirname, 'generate-worker-output-types.md');
+    return await (0, run_cursor_generation_1.runCursorGeneration)({
+        timeoutMs,
+        prompt: `"Implement instructions in the file ${promptFilePath}"`,
+    });
+}
+
+
+/***/ }),
+
 /***/ 659:
 /***/ ((module) => {
 
@@ -3323,6 +3135,237 @@ module.exports = require("@google-cloud/storage");
 /***/ ((module) => {
 
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 903:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.uploadBuild = uploadBuild;
+const fs = __importStar(__webpack_require__(896));
+const path = __importStar(__webpack_require__(928));
+const core = __importStar(__webpack_require__(659));
+const bucket_utils_1 = __webpack_require__(328);
+const module_folder_utils_1 = __webpack_require__(994);
+const dynamic_modules_types_1 = __webpack_require__(463);
+const dynamic_module_utils_1 = __webpack_require__(798);
+const fs_utils_1 = __webpack_require__(37);
+const buildPath = './build';
+function getFilesInDirectory(dirPath, extension) {
+    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
+        return [];
+    }
+    const files = [];
+    const entries = fs.readdirSync(dirPath);
+    for (const entry of entries) {
+        const filePath = path.join(dirPath, entry);
+        if (fs.statSync(filePath).isFile() && entry.endsWith(extension)) {
+            files.push(filePath);
+        }
+    }
+    return files;
+}
+function makeModuleEntrypointName(cacheVersion) {
+    return `static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.js`;
+}
+async function uploadBuild(options) {
+    try {
+        const { bucket, env, gameUrlSlug, schemaVersion, cacheVersion } = options;
+        const bucketName = bucket.name;
+        core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
+        // Step 1: Verify bucket exists
+        try {
+            const [exists] = await bucket.exists();
+            if (!exists) {
+                const errorMessage = `Bucket ${bucketName} does not exist`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
+            }
+            core.info(`✓ Bucket ${bucketName} verified`);
+        }
+        catch (error) {
+            const errorMessage = `Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
+        }
+        // Step 2: Build GCS paths
+        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, schemaVersion);
+        core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
+        // Step 3: Check if version folder already exists
+        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, schemaVersion);
+        if (moduleFolderExists) {
+            const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
+        core.info(`✓ Version folder does not exist, proceeding with upload`);
+        // Step 4: Resolve build directory paths]
+        const distPath = path.resolve(process.cwd(), buildPath, 'dist');
+        const buildGqlPath = path.resolve(process.cwd(), buildPath, 'gql');
+        const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
+        // Step 5: Upload files according to new structure
+        let uploadedCount = 0;
+        let failedCount = 0;
+        // 6.1: Upload compiled query to root
+        const compiledQueryFile = path.join(distPath, `static-data-query.js`);
+        if (fs.existsSync(compiledQueryFile)) {
+            const destination = `${fullVersionPath}/${makeModuleEntrypointName(cacheVersion)}`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                failedCount++;
+            }
+        }
+        else {
+            core.warning(`Compiled query file not found: ${compiledQueryFile}`);
+        }
+        // 6.2: Upload fragments to fragments/ folder
+        const fragmentFiles = getFilesInDirectory(buildGqlPath, '-fragment.gql.ts');
+        if (fragmentFiles.length > 0) {
+            for (const fragmentFile of fragmentFiles) {
+                const fileName = path.basename(fragmentFile);
+                const destination = `${fullVersionPath}/fragments/${fileName}`;
+                const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, fragmentFile, destination, bucketName, `fragment: ${fileName}`);
+                if (success) {
+                    uploadedCount++;
+                }
+                else {
+                    failedCount++;
+                }
+            }
+        }
+        else {
+            core.warning(`No fragment files found in ${buildGqlPath}`);
+        }
+        // 6.3: Upload ts query file to query/ folder
+        const queryFile = path.join(buildGqlPath, `static-data-query.gql.ts`);
+        if (fs.existsSync(queryFile)) {
+            const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, queryFile, destination, bucketName, 'query file');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                failedCount++;
+            }
+        }
+        else {
+            core.warning(`Query file not found: ${queryFile}`);
+        }
+        // 6.4: Upload all files from gql-types folders to types/ folder
+        const typeSourcePaths = [{ path: buildTypesPath, name: 'gql-types' }];
+        let hasTypeFiles = false;
+        for (const sourcePath of typeSourcePaths) {
+            const typeFiles = (0, fs_utils_1.getAllFilesRecursive)(sourcePath.path);
+            if (typeFiles.length > 0) {
+                hasTypeFiles = true;
+                for (const typeFile of typeFiles) {
+                    const relativePath = path.relative(sourcePath.path, typeFile);
+                    const gcsPath = relativePath.split(path.sep).join('/');
+                    const destination = `${fullVersionPath}/types/${gcsPath}`;
+                    const description = `type file from ${sourcePath.name}: ${relativePath}`;
+                    const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, typeFile, destination, bucketName, description);
+                    if (success) {
+                        uploadedCount++;
+                    }
+                    else {
+                        failedCount++;
+                    }
+                }
+            }
+        }
+        if (!hasTypeFiles) {
+            core.warning(`No type files found in any of the gql-types directories`);
+        }
+        // 6.5: Upload cleaned schema to cleaned-schema/ folder
+        const cleanedSchemaFile = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
+        if (fs.existsSync(cleanedSchemaFile)) {
+            const destination = `${fullVersionPath}/cleaned-schema/cleaned-schema.graphql`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, cleanedSchemaFile, destination, bucketName, 'cleaned schema');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                failedCount++;
+            }
+        }
+        else {
+            core.warning(`Cleaned schema file not found: ${cleanedSchemaFile}`);
+        }
+        // Step 6: Report results
+        core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
+        if (failedCount > 0) {
+            const errorMessage = `Failed to upload ${failedCount} file(s)`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
+        // Step 7: Upload config.json
+        try {
+            const config = {
+                moduleFolder: `${moduleFolder}/`,
+                name: `${moduleFolder}/${makeModuleEntrypointName(cacheVersion)}`,
+                version: schemaVersion,
+            };
+            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+            const configDestination = `${basePath}/config.json`;
+            const configFile = bucket.file(configDestination);
+            const configJson = JSON.stringify(config, null, 2);
+            core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
+            await configFile.save(configJson);
+            core.info(`✓ Config.json successfully uploaded`);
+        }
+        catch (error) {
+            const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
+        }
+    }
+    catch (error) {
+        const errorMessage = `Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
+    }
+}
+
 
 /***/ }),
 

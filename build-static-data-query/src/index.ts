@@ -7,8 +7,9 @@ import { cleanSchema } from './steps/3-clean-schema';
 import { generateFragments } from './steps/4-generate-fragments';
 import { generateQuery } from './steps/5-generate-query';
 import { generateGqlTypes } from './steps/7-generate-gql-types';
-import { uploadBuild } from './steps/8-upload-build';
+import { uploadBuild } from './steps/9-upload-build';
 import { compileQuery } from './steps/6-compile-query';
+import { generateWorkerOutputTypes } from './steps/8-generate-worker-output-types';
 
 /**
  * Main function for the GitHub Action
@@ -107,8 +108,16 @@ export async function run(): Promise<void> {
     core.info(`✓ GraphQL types generation completed`);
     core.endGroup();
 
-    // Step 8: Upload build to GCS
-    core.startGroup('☁️ Step 8: Uploading build to GCS');
+    // Step 8: Generate worker output types
+    core.startGroup('🔨 Step 8: Generating worker output types');
+    await generateWorkerOutputTypes({
+      timeoutMs,
+    });
+    core.info(`✓ Worker output types generation completed`);
+    core.endGroup();
+
+    // Step 9: Upload build to GCS
+    core.startGroup('☁️ Step 9: Uploading build to GCS');
     await uploadBuild({
       bucket,
       env: dynamicModulesEnv,
