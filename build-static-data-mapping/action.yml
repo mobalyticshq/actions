@@ -9,6 +9,9 @@ inputs:
   game-url-slug:
     description: 'The url slug of the current game. In some cases (for example 2xko) url slug may be different from the game slug. If not provided, the "game" input will be used.'
     required: false
+  graphql-endpoint:
+    description: 'GraphQL endpoint URL'
+    required: true
   timeout:
     description: 'Timeout for cursor-agent execution in milliseconds'
     required: false
@@ -64,6 +67,13 @@ runs:
       run: npm run build:mapping
       shell: bash
       working-directory: ${{ github.action_path }}
+
+    - name: Run tests
+      run: npm test
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        GRAPHQL_ENDPOINT: ${{ inputs.graphql-endpoint }}
 
     - name: Run upload build script
       run: node dist/upload-build.js

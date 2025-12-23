@@ -3,7 +3,10 @@ import RiftboundStaticDataQueryGql from '../../build/downloaded/query/static-dat
 import staticDataMappers from '../../build/mapping/index';
 import { type RiftboundQuery } from '../../build/downloaded/types/types';
 
-const GRAPHQL_ENDPOINT = 'https://stg.mobalytics.gg/api/riftbound/v1/graphql/query';
+const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT;
+if (!GRAPHQL_ENDPOINT) {
+  throw new Error('GRAPHQL_ENDPOINT environment variable is required');
+}
 
 interface GraphQLResponse<T> {
   data?: T;

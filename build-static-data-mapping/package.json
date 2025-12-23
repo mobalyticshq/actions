@@ -10,6 +10,7 @@
     "build": "webpack --mode production",
     "build:mapping": "webpack --config webpack.mapping.config.js --mode production",
     "test": "jest",
+    "test:dev": "IS_DEV=true jest",
     "test:watch": "jest --watch",
     "clean": "rm -rf dist && rm -rf build && rm -rf _generated"
   },
