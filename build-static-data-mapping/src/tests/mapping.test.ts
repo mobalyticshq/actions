@@ -1,5 +1,5 @@
-import { print } from 'graphql';
-import StaticDataQueryGql from '../../build/downloaded/query/static-data-query.gql';
+import { print, type DocumentNode } from 'graphql';
+import StaticDataQuery from '../../build/downloaded/query';
 import staticDataMappers from '../../build/mapping/index';
 
 const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT;
@@ -19,7 +19,7 @@ interface GraphQLResponse<T> {
 describe('Static Data Mapping Integration Test', () => {
   it('should fetch static data and map it without runtime errors', async () => {
     // Convert GraphQL DocumentNode to query string
-    const queryString = print(StaticDataQueryGql);
+    const queryString = print(StaticDataQuery as unknown as DocumentNode);
 
     // Execute GraphQL request
     let response: Response;

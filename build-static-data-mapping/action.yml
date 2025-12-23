@@ -68,12 +68,12 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
 
-#    - name: Run tests
-#      run: npm test
-#      shell: bash
-#      working-directory: ${{ github.action_path }}
-#      env:
-#        GRAPHQL_ENDPOINT: ${{ inputs.graphql-endpoint }}
+    - name: Run tests
+      run: npm test
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        GRAPHQL_ENDPOINT: ${{ inputs.graphql-endpoint }}
 
     - name: Run upload build script
       run: node dist/upload-build.js

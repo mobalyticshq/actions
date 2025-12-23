@@ -80,7 +80,26 @@ async function downloadBuildArtifacts(options) {
         else {
             core.info(`Build directory already exists: ${buildPath}`);
         }
-        // Step 5: Download required folders
+        // Step 5: Download root file from moduleFolder
+        if (!config.name) {
+            const errorMessage = `Config file does not contain name field for game: ${gameUrlSlug}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        const compiledQueryBucketFilePath = `${baseModulePath}/${config.name}`;
+        const compiledQueryLocalFilePath = path.join(buildPath, 'query.js');
+        core.info(`Downloading query.js from gs://${bucketName}/${compiledQueryBucketFilePath}`);
+        try {
+            const file = bucket.file(compiledQueryBucketFilePath);
+            await file.download({ destination: compiledQueryLocalFilePath });
+            core.info(`✓ Successfully downloaded query.js`);
+        }
+        catch (error) {
+            const errorMessage = `Failed to download query.js from gs://${bucketName}/${compiledQueryBucketFilePath}: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Step 6: Download required folders
         const requiredFolders = ['cleaned-schema', 'fragments', 'types', 'query'];
         for (const folderName of requiredFolders) {
             const bucketFolderPath = `${baseBucketPath}${folderName}`;
