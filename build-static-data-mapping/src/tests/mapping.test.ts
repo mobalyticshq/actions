@@ -1,7 +1,6 @@
 import { print } from 'graphql';
-import RiftboundStaticDataQueryGql from '../../build/downloaded/query/static-data-query.gql';
+import StaticDataQueryGql from '../../build/downloaded/query/static-data-query.gql';
 import staticDataMappers from '../../build/mapping/index';
-import { type RiftboundQuery } from '../../build/downloaded/types/types';
 
 const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT;
 if (!GRAPHQL_ENDPOINT) {
@@ -20,7 +19,7 @@ interface GraphQLResponse<T> {
 describe('Static Data Mapping Integration Test', () => {
   it('should fetch static data and map it without runtime errors', async () => {
     // Convert GraphQL DocumentNode to query string
-    const queryString = print(RiftboundStaticDataQueryGql);
+    const queryString = print(StaticDataQueryGql);
 
     // Execute GraphQL request
     let response: Response;
@@ -46,9 +45,9 @@ describe('Static Data Mapping Integration Test', () => {
     }
 
     // Parse response
-    let result: GraphQLResponse<{ game: RiftboundQuery }>;
+    let result: GraphQLResponse<{ game: any }>;
     try {
-      result = (await response.json()) as GraphQLResponse<{ game: RiftboundQuery }>;
+      result = (await response.json()) as GraphQLResponse<{ game: any }>;
     } catch (error) {
       throw new Error(`Failed to parse GraphQL response: ${error instanceof Error ? error.message : String(error)}`);
     }
