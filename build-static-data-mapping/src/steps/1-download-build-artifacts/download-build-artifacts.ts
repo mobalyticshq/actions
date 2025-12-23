@@ -55,7 +55,7 @@ export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOpti
     }
 
     // Step 5: Download required folders
-    const requiredFolders = ['cleaned-schema', 'fragments', 'types'];
+    const requiredFolders = ['cleaned-schema', 'fragments', 'types', 'query'];
 
     for (const folderName of requiredFolders) {
       const bucketFolderPath = `${baseBucketPath}${folderName}`;

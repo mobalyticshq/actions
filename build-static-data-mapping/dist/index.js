@@ -81,7 +81,7 @@ async function downloadBuildArtifacts(options) {
             core.info(`Build directory already exists: ${buildPath}`);
         }
         // Step 5: Download required folders
-        const requiredFolders = ['cleaned-schema', 'fragments', 'types'];
+        const requiredFolders = ['cleaned-schema', 'fragments', 'types', 'query'];
         for (const folderName of requiredFolders) {
             const bucketFolderPath = `${baseBucketPath}${folderName}`;
             const localFolderPath = path.join(buildPath, folderName);
