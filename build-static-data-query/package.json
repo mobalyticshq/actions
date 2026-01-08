@@ -8,7 +8,7 @@
     "build": "webpack --mode production",
     "test": "jest",
     "test:watch": "jest --watch",
-    "clean": "rm -rf dist && rm -rf build && rm -rf _generated"
+    "clean": "rm -rf build && rm -rf _generated"
   },
   "keywords": [
     "github-action",

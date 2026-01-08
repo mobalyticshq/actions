@@ -1,4 +1,4 @@
-import { Bucket, SaveOptions } from '@google-cloud/storage';
+import { Bucket } from '@google-cloud/storage';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as core from '@actions/core';
@@ -10,13 +10,13 @@ import {
 import { DynamicModuleConfig, DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import { generateModuleFolderName, generateModulePath } from '@shared/utils/dynamic-module.utils';
 import { getAllFilesRecursive } from '@shared/utils/fs.utils';
+import { computeMd5Hash } from '@shared/utils/hash.utils';
 
 export interface UploadBuildOptions {
   bucket: Bucket;
   env: string;
   gameUrlSlug: string;
   schemaVersion: string;
-  cacheVersion: string;
 }
 
 const buildPath = './build';
@@ -39,13 +39,13 @@ function getFilesInDirectory(dirPath: string, extension: string): string[] {
   return files;
 }
 
-function makeModuleEntrypointName(cacheVersion: string): string {
-  return `static-data-query${cacheVersion ? `-${cacheVersion}` : ''}.js`;
+function makeModuleEntrypointName(hash: string): string {
+  return `static-data-query.${hash}.js`;
 }
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, gameUrlSlug, schemaVersion, cacheVersion } = options;
+    const { bucket, env, gameUrlSlug, schemaVersion } = options;
     const bucketName = bucket.name;
 
     core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
@@ -88,20 +88,26 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
 
     // Step 5: Upload files according to new structure
     let uploadedCount = 0;
-    let failedCount = 0;
+    let entrypointName = '';
 
     // 6.1: Upload compiled query to root
     const compiledQueryFile = path.join(distPath, `static-data-query.js`);
     if (fs.existsSync(compiledQueryFile)) {
-      const destination = `${fullVersionPath}/${makeModuleEntrypointName(cacheVersion)}`;
+      const compiledQueryHash = computeMd5Hash(compiledQueryFile);
+      entrypointName = makeModuleEntrypointName(compiledQueryHash);
+      const destination = `${fullVersionPath}/${entrypointName}`;
       const success = await uploadFileToBucket(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
       if (success) {
         uploadedCount++;
       } else {
-        failedCount++;
+        const errorMessage = `Compiled query file hasn't been uploaded`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
       }
     } else {
-      core.warning(`Compiled query file not found: ${compiledQueryFile}`);
+      const errorMessage = `Compiled query file not found: ${compiledQueryFile}`;
+      core.setFailed(errorMessage);
+      throw new Error(errorMessage);
     }
 
     // 6.2: Upload fragments to fragments/ folder
@@ -120,7 +126,9 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
         if (success) {
           uploadedCount++;
         } else {
-          failedCount++;
+          const errorMessage = `Fragment file ${fileName} hasn't been uploaded`;
+          core.setFailed(errorMessage);
+          throw new Error(errorMessage);
         }
       }
     } else {
@@ -135,7 +143,9 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       if (success) {
         uploadedCount++;
       } else {
-        failedCount++;
+        const errorMessage = `Query file hasn't been uploaded`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
       }
     } else {
       core.warning(`Query file not found: ${queryFile}`);
@@ -158,7 +168,9 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
           if (success) {
             uploadedCount++;
           } else {
-            failedCount++;
+            const errorMessage = `Type file ${relativePath} hasn't been uploaded`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
           }
         }
       }
@@ -176,20 +188,16 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       if (success) {
         uploadedCount++;
       } else {
-        failedCount++;
+        const errorMessage = `Cleaned schema file hasn't been uploaded`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
       }
     } else {
       core.warning(`Cleaned schema file not found: ${cleanedSchemaFile}`);
     }
 
     // Step 6: Report results
-    core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
-
-    if (failedCount > 0) {
-      const errorMessage = `Failed to upload ${failedCount} file(s)`;
-      core.setFailed(errorMessage);
-      throw new Error(errorMessage);
-    }
+    core.info(`✓ Upload completed: ${uploadedCount} files uploaded`);
 
     core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
 
@@ -197,7 +205,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     try {
       const config: DynamicModuleConfig = {
         moduleFolder: `${moduleFolder}/`,
-        name: `${moduleFolder}/${makeModuleEntrypointName(cacheVersion)}`,
+        name: `${moduleFolder}/${entrypointName}`,
         version: schemaVersion,
       };
 

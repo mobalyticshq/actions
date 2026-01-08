@@ -21,7 +21,6 @@ export async function run(): Promise<void> {
     const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
     const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
     const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
-    const cacheVersion = core.getInput('cache-version') || '';
     const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
@@ -123,7 +122,6 @@ export async function run(): Promise<void> {
       env: dynamicModulesEnv,
       gameUrlSlug,
       schemaVersion: schemaVersionCheck.currentSchemaVersion,
-      cacheVersion,
     });
     core.info(`✓ Build upload completed`);
     core.endGroup();

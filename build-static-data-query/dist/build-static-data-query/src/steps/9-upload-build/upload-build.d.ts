@@ -4,7 +4,6 @@ export interface UploadBuildOptions {
     env: string;
     gameUrlSlug: string;
     schemaVersion: string;
-    cacheVersion: string;
 }
 export declare function uploadBuild(options: UploadBuildOptions): Promise<void>;
 //# sourceMappingURL=upload-build.d.ts.map
