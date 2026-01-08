@@ -13,6 +13,7 @@ export async function run(): Promise<void> {
     const game = core.getInput('game', { required: true });
     const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
     const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
+    const model = core.getInput('model-version', { required: false });
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
@@ -44,6 +45,7 @@ export async function run(): Promise<void> {
     core.startGroup('🔨 Step 3: Generating mapping');
     await generateMapping({
       timeoutMs,
+      model,
     });
     core.info(`✓ Mapping generation completed`);
     core.endGroup();

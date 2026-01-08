@@ -786,6 +786,7 @@ async function run() {
         const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
         const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
         const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
+        const model = core.getInput('model-version', { required: false });
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
@@ -838,6 +839,7 @@ async function run() {
         core.startGroup('🔨 Step 4: Generating fragments');
         await (0, _4_generate_fragments_1.generateFragments)({
             timeoutMs,
+            model,
         });
         core.info(`✓ Fragments generation completed`);
         core.endGroup();
@@ -845,6 +847,7 @@ async function run() {
         core.startGroup('🔨 Step 5: Generating query');
         await (0, _5_generate_query_1.generateQuery)({
             timeoutMs,
+            model,
         });
         core.info(`✓ Query generation completed`);
         core.endGroup();
@@ -862,6 +865,7 @@ async function run() {
         core.startGroup('🔨 Step 8: Generating worker output types');
         await (0, _8_generate_worker_output_types_1.generateWorkerOutputTypes)({
             timeoutMs,
+            model,
         });
         core.info(`✓ Worker output types generation completed`);
         core.endGroup();
@@ -910,11 +914,12 @@ exports.generateFragments = generateFragments;
 const run_cursor_generation_1 = __webpack_require__(550);
 const path_1 = __importDefault(__webpack_require__(928));
 async function generateFragments(options) {
-    const { timeoutMs } = options;
+    const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-fragments.md');
     return await (0, run_cursor_generation_1.runCursorGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
+        model,
     });
 }
 
@@ -2980,11 +2985,12 @@ exports.generateQuery = generateQuery;
 const run_cursor_generation_1 = __webpack_require__(550);
 const path_1 = __importDefault(__webpack_require__(928));
 async function generateQuery(options) {
-    const { timeoutMs } = options;
+    const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-query.md');
     return await (0, run_cursor_generation_1.runCursorGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
+        model,
     });
 }
 
@@ -3185,11 +3191,12 @@ exports.generateWorkerOutputTypes = generateWorkerOutputTypes;
 const run_cursor_generation_1 = __webpack_require__(550);
 const path_1 = __importDefault(__webpack_require__(928));
 async function generateWorkerOutputTypes(options) {
-    const { timeoutMs } = options;
+    const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-worker-output-types.md');
     return await (0, run_cursor_generation_1.runCursorGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
+        model,
     });
 }
 

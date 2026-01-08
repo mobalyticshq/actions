@@ -1,2 +1,2 @@
-export { generateQuery, type GenerateQueryOptions } from './generate-query';
+export { generateQuery } from './generate-query';
 //# sourceMappingURL=index.d.ts.map

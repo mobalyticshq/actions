@@ -16,6 +16,10 @@ inputs:
     description: 'Timeout for cursor-agent execution in milliseconds'
     required: false
     default: '600000'
+  model-version:
+    description: 'LLM model version to use'
+    required: false
+    default: 'sonnet-4.5'
   gcs-bucket-name:
     description: 'Google Cloud Storage bucket name for uploading build files'
     required: true
@@ -59,6 +63,7 @@ runs:
         INPUT_GAME: ${{ inputs.game }}
         INPUT_GAME-URL-SLUG: ${{ inputs.game-url-slug }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
+        INPUT_MODEL-VERSION: ${{ inputs.model-version }}
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}

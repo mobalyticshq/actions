@@ -22,6 +22,7 @@ export async function run(): Promise<void> {
     const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
     const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
     const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
+    const model = core.getInput('model-version', { required: false });
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
@@ -83,6 +84,7 @@ export async function run(): Promise<void> {
     core.startGroup('🔨 Step 4: Generating fragments');
     await generateFragments({
       timeoutMs,
+      model,
     });
     core.info(`✓ Fragments generation completed`);
     core.endGroup();
@@ -91,6 +93,7 @@ export async function run(): Promise<void> {
     core.startGroup('🔨 Step 5: Generating query');
     await generateQuery({
       timeoutMs,
+      model,
     });
     core.info(`✓ Query generation completed`);
     core.endGroup();
@@ -111,6 +114,7 @@ export async function run(): Promise<void> {
     core.startGroup('🔨 Step 8: Generating worker output types');
     await generateWorkerOutputTypes({
       timeoutMs,
+      model,
     });
     core.info(`✓ Worker output types generation completed`);
     core.endGroup();

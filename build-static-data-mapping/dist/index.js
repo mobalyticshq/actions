@@ -163,11 +163,12 @@ exports.generateMapping = generateMapping;
 const run_cursor_generation_1 = __webpack_require__(550);
 const path_1 = __importDefault(__webpack_require__(928));
 async function generateMapping(options) {
-    const { timeoutMs } = options;
+    const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-mapping.md');
     return await (0, run_cursor_generation_1.runCursorGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
+        model,
     });
 }
 
@@ -327,6 +328,7 @@ async function run() {
         const game = core.getInput('game', { required: true });
         const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
         const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
+        const model = core.getInput('model-version', { required: false });
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
@@ -353,6 +355,7 @@ async function run() {
         core.startGroup('🔨 Step 3: Generating mapping');
         await (0, _3_generate_mapping_1.generateMapping)({
             timeoutMs,
+            model,
         });
         core.info(`✓ Mapping generation completed`);
         core.endGroup();

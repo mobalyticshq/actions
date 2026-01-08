@@ -1,5 +1,3 @@
-export interface GenerateQueryOptions {
-    timeoutMs: number;
-}
-export declare function generateQuery(options: GenerateQueryOptions): Promise<void>;
+import { CursorGenerationStepType } from '@shared/types/cursor-generation-step.types';
+export declare function generateQuery(options: CursorGenerationStepType): Promise<void>;
 //# sourceMappingURL=generate-query.d.ts.map

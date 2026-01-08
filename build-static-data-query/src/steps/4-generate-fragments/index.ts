@@ -1,2 +1,1 @@
-export { generateFragments, type GenerateFragmentsOptions } from './generate-fragments';
-
+export { generateFragments } from './generate-fragments';
