@@ -40,7 +40,7 @@ function getFilesInDirectory(dirPath: string, extension: string): string[] {
 }
 
 function makeModuleEntrypointName(hash: string): string {
-  return `static-data-query.${hash}.js`;
+  return `entrypoint.${hash}.js`;
 }
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
@@ -90,22 +90,22 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     let uploadedCount = 0;
     let entrypointName = '';
 
-    // 6.1: Upload compiled query to root
-    const compiledQueryFile = path.join(distPath, `static-data-query.js`);
-    if (fs.existsSync(compiledQueryFile)) {
-      const compiledQueryHash = computeMd5Hash(compiledQueryFile);
-      entrypointName = makeModuleEntrypointName(compiledQueryHash);
+    // 6.1: Upload entrypoint query to root
+    const entrypointFile = path.join(distPath, `entrypoint.js`);
+    if (fs.existsSync(entrypointFile)) {
+      const compiledEntrypointHash = computeMd5Hash(entrypointFile);
+      entrypointName = makeModuleEntrypointName(compiledEntrypointHash);
       const destination = `${fullVersionPath}/${entrypointName}`;
-      const success = await uploadFileToBucket(bucket, compiledQueryFile, destination, bucketName, 'compiled query');
+      const success = await uploadFileToBucket(bucket, entrypointFile, destination, bucketName, 'entrypoint');
       if (success) {
         uploadedCount++;
       } else {
-        const errorMessage = `Compiled query file hasn't been uploaded`;
+        const errorMessage = `Entrypoint file hasn't been uploaded`;
         core.setFailed(errorMessage);
         throw new Error(errorMessage);
       }
     } else {
-      const errorMessage = `Compiled query file not found: ${compiledQueryFile}`;
+      const errorMessage = `Entrypoint file not found: ${entrypointFile}`;
       core.setFailed(errorMessage);
       throw new Error(errorMessage);
     }
@@ -135,7 +135,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       core.warning(`No fragment files found in ${buildGqlPath}`);
     }
 
-    // 6.3: Upload ts query file to query/ folder
+    // 6.3: Upload ts static data query file to query/ folder
     const queryFile = path.join(buildGqlPath, `static-data-query.gql.ts`);
     if (fs.existsSync(queryFile)) {
       const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
@@ -149,6 +149,22 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
       }
     } else {
       core.warning(`Query file not found: ${queryFile}`);
+    }
+
+    // 6.4: Upload ts static data meta query file to query/ folder
+    const metaQueryFile = path.join(buildGqlPath, `static-data-meta-query.gql.ts`);
+    if (fs.existsSync(queryFile)) {
+      const destination = `${fullVersionPath}/query/static-data-meta-query.gql.ts`;
+      const success = await uploadFileToBucket(bucket, metaQueryFile, destination, bucketName, 'query file');
+      if (success) {
+        uploadedCount++;
+      } else {
+        const errorMessage = `Meta Query file hasn't been uploaded`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+      }
+    } else {
+      core.warning(`Meta Query file not found: ${metaQueryFile}`);
     }
 
     // 6.4: Upload all files from gql-types folders to types/ folder
