@@ -45,14 +45,13 @@ To locate the repository root: look for the directory containing `build-static-d
    - For data fields use fragments from the folder - `build-static-data-query/build/gql`
    - Additionally, you need to query `dataVersion` field of the *metadata* node in the [Game]StaticDataQuery type. This node should have the "meta: metadata" and "version: dataVersion" aliases. You must **always** request the following part as a **separate node**, not combined with game data queries. Refer to example in the file - build-static-data-query/src/examples/gql-query.example.gql.ts 
    - Query should have default export.
+   - **File name convention** - format: static-data-query.gql.ts
+3. Generate the new file containing a GraphQL query in the output folder that:
+   - Contains `dataVersion` field of the *metadata* node in the [Game]StaticDataQuery type. This node should have the "meta: metadata" and "version: dataVersion" aliases.
+   - This query should contain **ONLY** the *metadata* node and dataVersion inside.
+   - Query should have default export.
+   - **File name convention** - format: static-data-meta-query.gql.ts
 
----
-
-## File Naming Convention
-
-- Format: static-data-query.gql.ts
-
----
 
 ## File Content Example
 

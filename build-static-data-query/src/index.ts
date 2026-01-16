@@ -8,7 +8,7 @@ import { generateFragments } from './steps/4-generate-fragments';
 import { generateQuery } from './steps/5-generate-query';
 import { generateGqlTypes } from './steps/7-generate-gql-types';
 import { uploadBuild } from './steps/9-upload-build';
-import { compileQuery } from './steps/6-compile-query';
+import { compileQueries } from './steps/6-compile-query';
 import { generateWorkerOutputTypes } from './steps/8-generate-worker-output-types';
 
 /**
@@ -99,9 +99,9 @@ export async function run(): Promise<void> {
     core.endGroup();
 
     // Step 6: Compile query
-    core.startGroup('🔨 Step 6: Compiling query');
-    await compileQuery();
-    core.info(`✓ Query Compiling completed`);
+    core.startGroup('🔨 Step 6: Compiling queries');
+    await compileQueries();
+    core.info(`✓ Queries Compiling completed`);
     core.endGroup();
 
     // Step 7: Generate GraphQL types

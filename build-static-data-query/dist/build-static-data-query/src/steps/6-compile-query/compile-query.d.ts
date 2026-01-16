@@ -1,2 +1,2 @@
-export declare function compileQuery(): Promise<void>;
+export declare function compileQueries(): Promise<void>;
 //# sourceMappingURL=compile-query.d.ts.map
