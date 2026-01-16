@@ -852,9 +852,9 @@ async function run() {
         core.info(`✓ Query generation completed`);
         core.endGroup();
         // Step 6: Compile query
-        core.startGroup('🔨 Step 6: Compiling query');
-        await (0, _6_compile_query_1.compileQuery)();
-        core.info(`✓ Query Compiling completed`);
+        core.startGroup('🔨 Step 6: Compiling queries');
+        await (0, _6_compile_query_1.compileQueries)();
+        core.info(`✓ Queries Compiling completed`);
         core.endGroup();
         // Step 7: Generate GraphQL types
         core.startGroup('📝 Step 7: Generating GraphQL types');
@@ -931,9 +931,9 @@ async function generateFragments(options) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compileQuery = void 0;
+exports.compileQueries = void 0;
 var compile_query_1 = __webpack_require__(380);
-Object.defineProperty(exports, "compileQuery", ({ enumerable: true, get: function () { return compile_query_1.compileQuery; } }));
+Object.defineProperty(exports, "compileQueries", ({ enumerable: true, get: function () { return compile_query_1.compileQueries; } }));
 
 
 /***/ }),
@@ -1271,199 +1271,18 @@ async function isFolderExists(bucket, folderPath) {
 /***/ }),
 
 /***/ 380:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compileQuery = compileQuery;
-const fs = __importStar(__webpack_require__(896));
-const path = __importStar(__webpack_require__(928));
-const core = __importStar(__webpack_require__(659));
-const webpack_1 = __importDefault(__webpack_require__(807));
-const graphqlTagPlugin = __webpack_require__(561);
-const nodeExternals = __webpack_require__(523);
+exports.compileQueries = compileQueries;
+const compile_utils_1 = __webpack_require__(756);
 const queryDir = 'build/gql';
 const outputDir = 'build/dist';
-const entryFileName = 'static-data-query.gql.ts';
-const outputFileName = 'static-data-query.js';
-async function compileQuery() {
-    const absoluteQueryDir = path.resolve(process.cwd(), queryDir);
-    const absoluteOutputDir = path.resolve(process.cwd(), outputDir);
-    const entryFile = path.join(absoluteQueryDir, entryFileName);
-    if (!fs.existsSync(absoluteQueryDir)) {
-        throw new Error(`Query directory does not exist: ${absoluteQueryDir}`);
-    }
-    if (!fs.existsSync(entryFile)) {
-        const errorMessage = `Entry file does not exist: ${entryFile}`;
-        core.setFailed(errorMessage);
-        throw new Error(errorMessage);
-    }
-    core.info(`Bundling query file: ${path.relative(process.cwd(), entryFile)}`);
-    // Create output directory if it doesn't exist
-    if (!fs.existsSync(absoluteOutputDir)) {
-        fs.mkdirSync(absoluteOutputDir, { recursive: true });
-        core.info(`Created output directory: ${absoluteOutputDir}`);
-    }
-    // Webpack configuration
-    const webpackConfig = {
-        mode: 'production',
-        entry: entryFile,
-        target: 'node',
-        output: {
-            path: absoluteOutputDir,
-            filename: outputFileName,
-            chunkFormat: 'module',
-            library: {
-                type: 'module',
-                export: 'default',
-            },
-        },
-        experiments: {
-            outputModule: true,
-        },
-        resolve: {
-            extensions: ['.ts', '.js', '.gql.ts'],
-            modules: ['node_modules', path.resolve(process.cwd(), 'build/gql')],
-        },
-        module: {
-            rules: [
-                {
-                    test: /\.gql\.ts$/,
-                    use: [
-                        {
-                            loader: 'babel-loader',
-                            options: {
-                                presets: [
-                                    [
-                                        '@babel/preset-env',
-                                        {
-                                            modules: false,
-                                            targets: {
-                                                node: 'current',
-                                            },
-                                        },
-                                    ],
-                                    [
-                                        '@babel/preset-typescript',
-                                        {
-                                            isTSX: false,
-                                            allExtensions: false,
-                                        },
-                                    ],
-                                ],
-                                plugins: [[graphqlTagPlugin]],
-                            },
-                        },
-                    ],
-                    exclude: /node_modules/,
-                },
-                {
-                    test: /\.ts$/,
-                    use: [
-                        {
-                            loader: 'babel-loader',
-                            options: {
-                                presets: [
-                                    [
-                                        '@babel/preset-env',
-                                        {
-                                            modules: false,
-                                            targets: {
-                                                node: 'current',
-                                            },
-                                        },
-                                    ],
-                                    [
-                                        '@babel/preset-typescript',
-                                        {
-                                            isTSX: false,
-                                            allExtensions: false,
-                                        },
-                                    ],
-                                ],
-                            },
-                        },
-                    ],
-                    exclude: /node_modules/,
-                },
-            ],
-        },
-        optimization: {
-            minimize: true,
-        },
-        externals: [
-            nodeExternals({
-                allowlist: [],
-            }),
-        ],
-    };
-    // Run webpack
-    return new Promise((resolve, reject) => {
-        (0, webpack_1.default)(webpackConfig, (err, stats) => {
-            if (err) {
-                const errorMessage = `Webpack compilation failed: ${err.message}`;
-                core.setFailed(errorMessage);
-                reject(new Error(errorMessage));
-                return;
-            }
-            if (!stats) {
-                const errorMessage = 'Webpack compilation returned no stats';
-                core.setFailed(errorMessage);
-                reject(new Error(errorMessage));
-                return;
-            }
-            if (stats.hasErrors()) {
-                const errors = stats.compilation.errors.map(e => e.message).join('\n');
-                const errorMessage = `Webpack compilation errors:\n${errors}`;
-                core.setFailed(errorMessage);
-                reject(new Error(errorMessage));
-                return;
-            }
-            if (stats.hasWarnings()) {
-                const warnings = stats.compilation.warnings.map(w => w.message).join('\n');
-                core.warning(`Webpack compilation warnings:\n${warnings}`);
-            }
-            const outputPath = path.join(absoluteOutputDir, outputFileName);
-            core.info(`✓ Successfully bundled query to: ${path.relative(process.cwd(), outputPath)}`);
-            resolve();
-        });
-    });
+const entryFileName = 'entrypoint.ts';
+const outputFileName = 'entrypoint.js';
+async function compileQueries() {
+    await (0, compile_utils_1.compileCode)(queryDir, outputDir, entryFileName, outputFileName);
 }
 
 
@@ -2984,14 +2803,26 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateQuery = generateQuery;
 const run_cursor_generation_1 = __webpack_require__(550);
 const path_1 = __importDefault(__webpack_require__(928));
+const promises_1 = __webpack_require__(943);
+const entrypointFileTemplate = `
+import staticDataQuery from './static-data-query.gql.ts';
+import staticDataMetaQuery from './static-data-meta-query.gql.ts';
+
+export default {
+  staticDataQuery,
+  staticDataMetaQuery,
+}
+`;
+const outputDir = 'build/gql';
 async function generateQuery(options) {
     const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-query.md');
-    return await (0, run_cursor_generation_1.runCursorGeneration)({
+    await (0, run_cursor_generation_1.runCursorGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
         model,
     });
+    await (0, promises_1.writeFile)(path_1.default.join(outputDir, 'entrypoint.ts'), entrypointFileTemplate);
 }
 
 
@@ -3207,6 +3038,201 @@ async function generateWorkerOutputTypes(options) {
 /***/ ((module) => {
 
 module.exports = require("@actions/core");
+
+/***/ }),
+
+/***/ 756:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.compileCode = compileCode;
+const path_1 = __importDefault(__webpack_require__(928));
+const fs_1 = __importDefault(__webpack_require__(896));
+const core = __importStar(__webpack_require__(659));
+const webpack_1 = __importDefault(__webpack_require__(807));
+const graphqlTagPlugin = __webpack_require__(561);
+const nodeExternals = __webpack_require__(523);
+async function compileCode(queryDir, outputDir, entryFileName, outputFileName) {
+    const absoluteQueryDir = path_1.default.resolve(process.cwd(), queryDir);
+    const absoluteOutputDir = path_1.default.resolve(process.cwd(), outputDir);
+    const entryFile = path_1.default.join(absoluteQueryDir, entryFileName);
+    if (!fs_1.default.existsSync(absoluteQueryDir)) {
+        throw new Error(`Query directory does not exist: ${absoluteQueryDir}`);
+    }
+    if (!fs_1.default.existsSync(entryFile)) {
+        const errorMessage = `Entry file does not exist: ${entryFile}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+    }
+    core.info(`Bundling query file: ${path_1.default.relative(process.cwd(), entryFile)}`);
+    // Create output directory if it doesn't exist
+    if (!fs_1.default.existsSync(absoluteOutputDir)) {
+        fs_1.default.mkdirSync(absoluteOutputDir, { recursive: true });
+        core.info(`Created output directory: ${absoluteOutputDir}`);
+    }
+    // Webpack configuration
+    const webpackConfig = {
+        mode: 'production',
+        entry: entryFile,
+        target: 'node',
+        output: {
+            path: absoluteOutputDir,
+            filename: outputFileName,
+            chunkFormat: 'module',
+            library: {
+                type: 'module',
+                export: 'default',
+            },
+        },
+        experiments: {
+            outputModule: true,
+        },
+        resolve: {
+            extensions: ['.ts', '.js', '.gql.ts'],
+            modules: ['node_modules', path_1.default.resolve(process.cwd(), 'build/gql')],
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.gql\.ts$/,
+                    use: [
+                        {
+                            loader: 'babel-loader',
+                            options: {
+                                presets: [
+                                    [
+                                        '@babel/preset-env',
+                                        {
+                                            modules: false,
+                                            targets: {
+                                                node: 'current',
+                                            },
+                                        },
+                                    ],
+                                    [
+                                        '@babel/preset-typescript',
+                                        {
+                                            isTSX: false,
+                                            allExtensions: false,
+                                        },
+                                    ],
+                                ],
+                                plugins: [[graphqlTagPlugin]],
+                            },
+                        },
+                    ],
+                    exclude: /node_modules/,
+                },
+                {
+                    test: /\.ts$/,
+                    use: [
+                        {
+                            loader: 'babel-loader',
+                            options: {
+                                presets: [
+                                    [
+                                        '@babel/preset-env',
+                                        {
+                                            modules: false,
+                                            targets: {
+                                                node: 'current',
+                                            },
+                                        },
+                                    ],
+                                    [
+                                        '@babel/preset-typescript',
+                                        {
+                                            isTSX: false,
+                                            allExtensions: false,
+                                        },
+                                    ],
+                                ],
+                            },
+                        },
+                    ],
+                    exclude: /node_modules/,
+                },
+            ],
+        },
+        optimization: {
+            minimize: true,
+        },
+        externals: [
+            nodeExternals({
+                allowlist: [],
+            }),
+        ],
+    };
+    // Run webpack
+    return new Promise((resolve, reject) => {
+        (0, webpack_1.default)(webpackConfig, (err, stats) => {
+            if (err) {
+                const errorMessage = `Webpack compilation failed: ${err.message}`;
+                core.setFailed(errorMessage);
+                reject(new Error(errorMessage));
+                return;
+            }
+            if (!stats) {
+                const errorMessage = 'Webpack compilation returned no stats';
+                core.setFailed(errorMessage);
+                reject(new Error(errorMessage));
+                return;
+            }
+            if (stats.hasErrors()) {
+                const errors = stats.compilation.errors.map(e => e.message).join('\n');
+                const errorMessage = `Webpack compilation errors:\n${errors}`;
+                core.setFailed(errorMessage);
+                reject(new Error(errorMessage));
+                return;
+            }
+            if (stats.hasWarnings()) {
+                const warnings = stats.compilation.warnings.map(w => w.message).join('\n');
+                core.warning(`Webpack compilation warnings:\n${warnings}`);
+            }
+            const outputPath = path_1.default.join(absoluteOutputDir, outputFileName);
+            core.info(`✓ Successfully bundled query to: ${path_1.default.relative(process.cwd(), outputPath)}`);
+            resolve();
+        });
+    });
+}
+
 
 /***/ }),
 
@@ -3536,6 +3562,13 @@ Object.defineProperty(exports, "cleanSchema", ({ enumerable: true, get: function
 /***/ ((module) => {
 
 module.exports = require("path");
+
+/***/ }),
+
+/***/ 943:
+/***/ ((module) => {
+
+module.exports = require("fs/promises");
 
 /***/ }),
 

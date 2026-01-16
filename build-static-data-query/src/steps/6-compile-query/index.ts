@@ -1,1 +1,1 @@
-export { compileQuery } from './compile-query';
+export { compileQueries } from './compile-query';
