@@ -130,4 +130,60 @@ describe('Static Data Mapping Integration Test', () => {
       }
     }
   }, 30000); // 30 second timeout for network request
+
+  it('should fetch static data meta and verify version exists', async () => {
+    // Convert GraphQL DocumentNode to query string
+    const { staticDataMetaQuery } = queryObject;
+
+    const queryString = print(staticDataMetaQuery as unknown as DocumentNode);
+
+    // Execute GraphQL request
+    let response: Response;
+    try {
+      response = await fetch(GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xmoba-no-cache': '1',
+        },
+        body: JSON.stringify({
+          query: queryString,
+          variables: {},
+        }),
+      });
+    } catch (error) {
+      throw new Error(`Failed to execute GraphQL request: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    // Check HTTP response status
+    if (!response.ok) {
+      throw new Error(`GraphQL request failed with status ${response.status}: ${response.statusText}`);
+    }
+
+    // Parse response
+    let result: GraphQLResponse<{ game: { staticData: { meta: { version: string } } } }>;
+    try {
+      result = (await response.json()) as GraphQLResponse<{ game: { staticData: { meta: { version: string } } } }>;
+    } catch (error) {
+      throw new Error(`Failed to parse GraphQL response: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    // Check for GraphQL errors
+    if (result.errors && result.errors.length > 0) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+    }
+
+    // Verify data exists
+    if (!result.data) {
+      throw new Error('GraphQL response contains no data');
+    }
+
+    // Verify version field exists
+    const version = result.data.game?.staticData?.meta?.version;
+    if (!version) {
+      throw new Error('Version not found in GraphQL response at data.game.staticData.meta.version');
+    }
+
+    console.log(`✓ Successfully fetched static data meta with version: ${version}`);
+  }, 30000); // 30 second timeout for network request
 });
