@@ -9,6 +9,9 @@ inputs:
   game-url-slug:
     description: 'The url slug of the current game. In some cases (for example 2xko) url slug may be different from the game slug. If not provided, the "game" input will be used.'
     required: false
+  configuration-game-slug:
+    description: 'The root folder in the ngf-configurations repository. Optional. If not provided, the "game" input will be used'
+    required: false
   graphql-endpoint:
     description: 'GraphQL endpoint URL'
     required: true
@@ -62,6 +65,7 @@ runs:
       env:
         INPUT_GAME: ${{ inputs.game }}
         INPUT_GAME-URL-SLUG: ${{ inputs.game-url-slug }}
+        INPUT_CONFIGURATION-GAME-SLUG: ${{ inputs.configuration-game-slug }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
         INPUT_MODEL-VERSION: ${{ inputs.model-version }}
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
