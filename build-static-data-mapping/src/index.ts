@@ -12,7 +12,6 @@ export async function run(): Promise<void> {
     // Get inputs
     const game = core.getInput('game', { required: true });
     const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
-    const configurationGameSlug = core.getInput('configuration-game-slug', { required: false }) || game;
     const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
     const model = core.getInput('model-version', { required: false });
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
@@ -37,7 +36,7 @@ export async function run(): Promise<void> {
     // Step 2: Copy user prompts from repository
     core.startGroup('📋 Step 2: Copying user prompts from repository');
     await copyUserPrompts({
-      game: configurationGameSlug,
+      game,
       dynamicModulesEnv,
     });
     core.endGroup();
