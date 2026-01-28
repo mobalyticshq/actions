@@ -136,6 +136,10 @@ export const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schem
         result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
 
+    // Always copy geckMode from existing schema if it's enabled
+    if (existingSchema.geckMode) {
+        result.geckMode = existingSchema.geckMode;
+    }
     const groupNames: string[] = allGroupNames(newSchema, existingSchema, ignoreDeleted);
     // First, merge groups that exist in new schema
     Object.keys(result.groups).forEach(groupName => {

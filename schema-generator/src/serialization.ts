@@ -29,6 +29,9 @@ export const serializeToJson = (cfg: Schema): string => {
     lines.push('{');
     lines.push(`${indent(1)}"namespace": "${cfg.namespace}",`);
     lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
+    if (cfg.geckMode) {
+        lines.push(`${indent(1)}"geckMode": true,`);
+    }
     
     // Add gqlTypesOverrides if it exists
     if (cfg.gqlTypesOverrides && Object.keys(cfg.gqlTypesOverrides).length > 0) {

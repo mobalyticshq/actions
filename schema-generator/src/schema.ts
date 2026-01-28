@@ -21,6 +21,7 @@ export interface GroupConfig {
 export interface Schema {
     namespace: string;
     typePrefix: string;
+    geckMode?: boolean;
     gqlTypesOverrides?: Record<string, string>;
     groups: Record<string, GroupConfig>;
 }

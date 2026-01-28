@@ -1308,6 +1308,10 @@ const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = fals
     if (existingSchema.gqlTypesOverrides) {
         result.gqlTypesOverrides = existingSchema.gqlTypesOverrides;
     }
+    // Always copy geckMode from existing schema if it's enabled
+    if (existingSchema.geckMode) {
+        result.geckMode = existingSchema.geckMode;
+    }
     const groupNames = allGroupNames(newSchema, existingSchema, ignoreDeleted);
     // First, merge groups that exist in new schema
     Object.keys(result.groups).forEach(groupName => {
@@ -1449,6 +1453,9 @@ const serializeToJson = (cfg) => {
     lines.push('{');
     lines.push(`${indent(1)}"namespace": "${cfg.namespace}",`);
     lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
+    if (cfg.geckMode) {
+        lines.push(`${indent(1)}"geckMode": true,`);
+    }
     // Add gqlTypesOverrides if it exists
     if (cfg.gqlTypesOverrides && Object.keys(cfg.gqlTypesOverrides).length > 0) {
         const gqlTypesOverridesJson = JSON.stringify(cfg.gqlTypesOverrides, null, 2);
