@@ -162,7 +162,6 @@ Examples:
         
         const result = processSchemaGeneration(config);
         console.log('Schema generation completed successfully!');
-        console.log(`Output written to: ${outputFile}`);
     } catch (error) {
         console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         process.exit(1);
