@@ -1,0 +1,54 @@
+{
+  "items": [
+    {
+      "id": "item1",
+      "name": "Item 1",
+      "price": 99.99,
+      "quantity": 42,
+      "setSlug": "set1",
+      "tagsSlugs": ["tag1", "tag2"],
+      "stats": {
+        "health": 100,
+        "mana": 50.5,
+        "level": 5
+      }
+    },
+    {
+      "id": "item2",
+      "name": "Item 2",
+      "price": 199.50,
+      "quantity": 10,
+      "setSlug": "set2",
+      "tagsSlugs": ["tag3"],
+      "stats": {
+        "health": 200,
+        "mana": 100.0,
+        "level": 10
+      }
+    }
+  ],
+  "sets": [
+    {
+      "id": "set1",
+      "name": "Set 1"
+    },
+    {
+      "id": "set2",
+      "name": "Set 2"
+    }
+  ],
+  "tags": [
+    {
+      "id": "tag1",
+      "name": "Tag 1"
+    },
+    {
+      "id": "tag2",
+      "name": "Tag 2"
+    },
+    {
+      "id": "tag3",
+      "name": "Tag 3"
+    }
+  ]
+}

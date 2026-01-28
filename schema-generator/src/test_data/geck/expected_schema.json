@@ -1,0 +1,38 @@
+{
+  "namespace": "@@@ TO BE FILLED MANUALLY @@@",
+  "typePrefix": "@@@ TO BE FILLED MANUALLY @@@",
+  "groups": {
+    "items": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "filter": true, "required": true },
+        "price": { "type": "Float" },
+        "quantity": { "type": "Int" },
+        "setSlug": { "type": "Ref", "refTo": "sets" },
+        "stats": { "type": "Object", "objName": "stats" },
+        "tagsSlugs": { "type": "Ref", "array": true, "refTo": "tags" }
+      },
+      "objects": {
+        "stats": {
+          "fields": {
+            "health": { "type": "Int" },
+            "level": { "type": "Int" },
+            "mana": { "type": "Float" }
+          }
+        }
+      }
+    },
+    "sets": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "filter": true, "required": true }
+      }
+    },
+    "tags": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "filter": true, "required": true }
+      }
+    }
+  }
+}

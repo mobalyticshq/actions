@@ -93,7 +93,7 @@ export const processSchemaGeneration = (config: SchemaGenerationConfig): string 
     const jsonData = readJsonFile(inputFilePath);
     
     // Generate schema
-    let schema = generateSchemaFromData(jsonData);
+    let schema = generateSchemaFromData(jsonData, !!config.geckMode);
     
     // Merge with existing schema if available
     if (config.existingSchemaPath && fs.existsSync(config.existingSchemaPath)) {

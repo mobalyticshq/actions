@@ -23,7 +23,7 @@ export {
     REQUIRED_FIELD_NAMES,
     MANUAL_FILL_PLACEHOLDER,
     REFERENCE_SUFFIX,
-    REF_FIELD_NAME_SUFFIX,
+    GECK_REFERENCE_SUFFIXES,
     applyRefConfig
 } from './schema';
 
@@ -74,6 +74,7 @@ Options:
   --existing, -e <file>     Path to existing schema file to merge with
   --ref-config, -r <file>   Path to ref-config file
   --ignore-deleted          Ignore deleted fields/groups from existing schema (keeps metadata & refTo)
+  --geck                    Enable geck mode
   --help, -h                Show this help message
 
 Examples:
@@ -97,6 +98,7 @@ Examples:
     let existingSchemaFile: string | undefined;
     let refConfigFile: string | undefined;
     let ignoreDeleted = false;
+    let geckMode = false;
     
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
@@ -136,6 +138,9 @@ Examples:
             case '--ignore-deleted':
                 ignoreDeleted = true;
                 break;
+            case '--geck':
+                geckMode = true;
+                break;
         }
     }
     
@@ -151,7 +156,8 @@ Examples:
             outputFilePath: outputFile,
             existingSchemaPath: existingSchemaFile,
             refConfigPath: refConfigFile,
-            ignoreDeleted: ignoreDeleted
+            ignoreDeleted: ignoreDeleted,
+            geckMode: geckMode
         };
         
         const result = processSchemaGeneration(config);

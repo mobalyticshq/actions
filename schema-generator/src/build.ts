@@ -8,7 +8,7 @@ import {
     REQUIRED_FIELD_NAMES,
     MANUAL_FILL_PLACEHOLDER,
     REFERENCE_SUFFIX,
-    REF_FIELD_NAME_SUFFIX
+    GECK_REFERENCE_SUFFIXES
 } from './schema';
 
 // Internal interfaces for builder
@@ -50,7 +50,7 @@ const buildObjectName = (parentPath: string, objFieldName: string): string => {
     return parentPath + capitalize(objFieldName);
 };
 
-const detectArrayType = (arr: any[]): ArrayTypeResult => {
+const detectArrayType = (arr: any[], geckMode: boolean = false): ArrayTypeResult => {
     if (arr.length === 0) {
         return { type: FIELD_TYPES.STRING, valid: false };
     }
@@ -73,6 +73,14 @@ const detectArrayType = (arr: any[]): ArrayTypeResult => {
             return { type: FIELD_TYPES.BOOLEAN, valid: true };
         case 'string':
             return { type: FIELD_TYPES.STRING, valid: true };
+        case 'number':
+            if (geckMode) {
+                return { type: FIELD_TYPES.STRING, valid: false };
+            }
+            return { 
+                  type: Number.isInteger(firstValidItem) ? FIELD_TYPES.INT : FIELD_TYPES.FLOAT,
+                  valid: true,
+                };
         case 'object':
             if (!Array.isArray(firstValidItem)) {
                 return { type: FIELD_TYPES.OBJECT, valid: true };
@@ -102,8 +110,14 @@ const createGroupConfBuilder = (source: any, groupName: string): GroupConfBuilde
     objects: {},
 });
 
-const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string): string => {
-    let refGroupName = fieldName.replace(new RegExp(REF_FIELD_NAME_SUFFIX + '$'), '');
+const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string, geckMode: boolean = false): string => {
+    let refGroupName: string;
+    
+    if (geckMode) {
+        refGroupName = fieldName.replace(new RegExp(`(${GECK_REFERENCE_SUFFIXES.join('|')})$`), '');
+    } else {
+        refGroupName = fieldName.replace(new RegExp(REFERENCE_SUFFIX + '$'), '');
+    }
     
     let refGroupNamePlural = refGroupName;
     if (pluralize.isSingular(refGroupNamePlural)) {
@@ -119,7 +133,7 @@ const resolveRefTarget = (builder: GroupConfBuilder, fieldName: string): string 
     return MANUAL_FILL_PLACEHOLDER;
 };
 
-const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): FieldConfig => {
+const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string, geckMode: boolean = false): FieldConfig => {
     const fieldConfig: FieldConfig = { type: FIELD_TYPES.STRING };
    
     switch (typeof value) {
@@ -128,6 +142,13 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
             break;
         case 'string':
             fieldConfig.type = FIELD_TYPES.STRING;
+            break;
+        case 'number':
+            if (!geckMode) {
+                fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
+                return fieldConfig;
+            }
+            fieldConfig.type = Number.isInteger(value) ? FIELD_TYPES.INT : FIELD_TYPES.FLOAT;
             break;
         case 'object':
             if (value === null) {
@@ -140,7 +161,7 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
                     fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
                     return fieldConfig;
                 }
-                const arrayTypeResult = detectArrayType(value);
+                const arrayTypeResult = detectArrayType(value, geckMode);
                 if (!arrayTypeResult.valid) {
                     fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
                     return fieldConfig;
@@ -158,14 +179,24 @@ const detectFieldConfig = (builder: GroupConfBuilder, fieldName: string, value: 
             fieldConfig.type = MANUAL_FILL_PLACEHOLDER;
             return fieldConfig;
     }
-    if (fieldName.endsWith(REFERENCE_SUFFIX)) {
-        fieldConfig.type = FIELD_TYPES.REF;
-        fieldConfig.refTo = resolveRefTarget(builder, fieldName);
+    
+    // Check for ref fields
+    if (geckMode) {
+        if (GECK_REFERENCE_SUFFIXES.some(suffix => fieldName.endsWith(suffix))) {
+            fieldConfig.type = FIELD_TYPES.REF;
+            fieldConfig.refTo = resolveRefTarget(builder, fieldName, geckMode);
+        }
+    } else {
+        if (fieldName.endsWith(REFERENCE_SUFFIX)) {
+            fieldConfig.type = FIELD_TYPES.REF;
+            fieldConfig.refTo = resolveRefTarget(builder, fieldName, geckMode);
+        }
     }
+    
     return fieldConfig;
 };
 
-const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: any): void => {
+const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: any, geckMode: boolean = false): void => {
     // Exclude specified fields
     if (isExcludedField(fieldName)) {
         return;
@@ -184,7 +215,7 @@ const detectGroupFields = (builder: GroupConfBuilder, fieldName: string, value: 
         return;
     }
     
-    const fieldConfig = detectFieldConfig(builder, fieldName, value, '');
+    const fieldConfig = detectFieldConfig(builder, fieldName, value, '', geckMode);
     
     // Skip fields with undetectable types (null, empty arrays, etc.)
     if (fieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
@@ -203,7 +234,7 @@ const addDeprecatedField = (builder: GroupConfBuilder): void => {
     builder.fields["deprecated"] = { type: FIELD_TYPES.BOOLEAN, required: true };
 };
 
-const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string, obj: any, parentPath: string): ObjectConfig => {
+const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string, obj: any, parentPath: string, geckMode: boolean = false): ObjectConfig => {
     const objConfig: ObjectConfig = {
         fields: {},
     };
@@ -220,7 +251,7 @@ const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string,
             continue;
         }
         
-        const fieldConfig = detectFieldConfig(builder, fieldName, value, currentObjectPath);
+        const fieldConfig = detectFieldConfig(builder, fieldName, value, currentObjectPath, geckMode);
         
         // Skip fields with undetectable types (null, empty arrays, etc.)
         if (fieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
@@ -232,19 +263,19 @@ const analyzeObjectStructure = (builder: GroupConfBuilder, objFieldName: string,
     return objConfig;
 };
 
-const analyzeObjectStructureFromArray = (builder: GroupConfBuilder, fieldName: string, arr: any[], parentPath: string): ObjectConfig => {
+const analyzeObjectStructureFromArray = (builder: GroupConfBuilder, fieldName: string, arr: any[], parentPath: string, geckMode: boolean = false): ObjectConfig => {
     let accumulated: ObjectConfig = { fields: {} };
     for (const item of arr) {
         if (typeof item !== 'object' || item === null || Array.isArray(item)) {
             continue;
         }
-        const objStruct = analyzeObjectStructure(builder, fieldName, item, parentPath);
+        const objStruct = analyzeObjectStructure(builder, fieldName, item, parentPath, geckMode);
         accumulated = mergeObjectConfigs(accumulated, objStruct);
     }
     return accumulated;
 };
 
-const detectObjectConfig = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): ObjectConfigResult => {
+const detectObjectConfig = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string, geckMode: boolean = false): ObjectConfigResult => {
     if (typeof value !== 'object' || value === null || value === undefined) {
         return { config: { fields: {} }, valid: false };
     }
@@ -267,23 +298,23 @@ const detectObjectConfig = (builder: GroupConfBuilder, fieldName: string, value:
         }
         
         return {
-            config: analyzeObjectStructureFromArray(builder, fieldName, value, parentPath),
+            config: analyzeObjectStructureFromArray(builder, fieldName, value, parentPath, geckMode),
             valid: true,
         };
     }
 
     return {
-        config: analyzeObjectStructure(builder, fieldName, value, parentPath),
+        config: analyzeObjectStructure(builder, fieldName, value, parentPath, geckMode),
         valid: true,
     };
 };
 
-const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string): void => {
+const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value: any, parentPath: string, geckMode: boolean = false): void => {
     if (typeof value !== 'object' || value === null || value === undefined) {
         return;
     }
 
-    const result = detectObjectConfig(builder, fieldName, value, parentPath);
+    const result = detectObjectConfig(builder, fieldName, value, parentPath, geckMode);
     if (!result.valid) {
         return;
     }
@@ -303,19 +334,19 @@ const detectGroupObjects = (builder: GroupConfBuilder, fieldName: string, value:
                 continue;
             }
             for (const [k, vv] of Object.entries(item)) {
-                detectGroupObjects(builder, k, vv, fullObjName);
+                detectGroupObjects(builder, k, vv, fullObjName, geckMode);
             }
         }
         return;
     }
 
     for (const [k, vv] of Object.entries(value)) {
-        detectGroupObjects(builder, k, vv, fullObjName);
+        detectGroupObjects(builder, k, vv, fullObjName, geckMode);
     }
     return;
 };
 
-const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[]): boolean => {
+const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[], geckMode: boolean = false): boolean => {
     if (groupEntries.length === 0) {
         return false;
     }
@@ -330,17 +361,19 @@ const buildGroupConfig = (builder: GroupConfBuilder, groupEntries: any[]): boole
         }
 
         for (const [fieldName, value] of Object.entries(gEntry)) {
-            detectGroupFields(builder, fieldName, value);
-            detectGroupObjects(builder, fieldName, value, '');
+            detectGroupFields(builder, fieldName, value, geckMode);
+            detectGroupObjects(builder, fieldName, value, '', geckMode);
         }
 
-        addDeprecatedField(builder);
+        if (!geckMode) {
+            addDeprecatedField(builder);
+        }
     }
     
     return true;
 };
 
-export const generateSchemaFromData = (source: any): Schema => {
+export const generateSchemaFromData = (source: any, geckMode: boolean = false): Schema => {
     const schema: Schema = {
         namespace: MANUAL_FILL_PLACEHOLDER,
         typePrefix: MANUAL_FILL_PLACEHOLDER,
@@ -351,7 +384,7 @@ export const generateSchemaFromData = (source: any): Schema => {
             continue;
         }
         const builder = createGroupConfBuilder(source, groupName);
-        const success = buildGroupConfig(builder, groupEntries);
+        const success = buildGroupConfig(builder, groupEntries, geckMode);
         if (!success) {
             continue;
         }

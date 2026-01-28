@@ -83,4 +83,24 @@ describe('processSchemaGeneration', () => {
     // Compare the exact string output (including formatting)
     expect(result.trim()).toBe(expectedSchemaContent.trim());
   });
+
+  it('should generate schema in geck mode', () => {
+    // Arrange
+    const staticDataPath = path.join(__dirname, 'test_data', "geck");
+    const expectedSchemaPath = path.join(__dirname, 'test_data', "geck", 'expected_schema.json');
+    
+    const config: SchemaGenerationConfig = {
+      staticDataPath,
+      geckMode: true
+    };
+    
+    // Act
+    const result = processSchemaGeneration(config);
+    
+    // Assert
+    const expectedSchemaContent = fs.readFileSync(expectedSchemaPath, 'utf8');
+    
+    // Compare the exact string output (including formatting)
+    expect(result.trim()).toBe(expectedSchemaContent.trim());
+  });
 });

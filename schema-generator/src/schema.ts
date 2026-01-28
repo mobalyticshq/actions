@@ -46,6 +46,7 @@ export interface SchemaGenerationConfig {
     existingSchemaPath?: string;
     refConfigPath?: string;
     ignoreDeleted?: boolean;
+    geckMode?: boolean;
 }
 
 // Constants
@@ -54,12 +55,14 @@ export const FIELD_TYPES = {
     BOOLEAN: 'Boolean',
     OBJECT: 'Object',
     REF: 'Ref',
+    INT: 'Int',
+    FLOAT: 'Float',
 } as const;
 
 export const REQUIRED_FIELD_NAMES = ['id', 'slug', 'name'];
 export const MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
 export const REFERENCE_SUFFIX = 'Ref';
-export const REF_FIELD_NAME_SUFFIX = 'Ref';
+export const GECK_REFERENCE_SUFFIXES = ['Slug', 'Slugs'];
 
 // Function to apply ref-config mappings
 export const applyRefConfig = (schema: Schema, refConfig: RefConfig): Schema => {

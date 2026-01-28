@@ -534,7 +534,7 @@ const buildObjectName = (parentPath, objFieldName) => {
     }
     return parentPath + capitalize(objFieldName);
 };
-const detectArrayType = (arr) => {
+const detectArrayType = (arr, geckMode = false) => {
     if (arr.length === 0) {
         return { type: schema_1.FIELD_TYPES.STRING, valid: false };
     }
@@ -554,6 +554,14 @@ const detectArrayType = (arr) => {
             return { type: schema_1.FIELD_TYPES.BOOLEAN, valid: true };
         case 'string':
             return { type: schema_1.FIELD_TYPES.STRING, valid: true };
+        case 'number':
+            if (geckMode) {
+                return { type: schema_1.FIELD_TYPES.STRING, valid: false };
+            }
+            return {
+                type: Number.isInteger(firstValidItem) ? schema_1.FIELD_TYPES.INT : schema_1.FIELD_TYPES.FLOAT,
+                valid: true,
+            };
         case 'object':
             if (!Array.isArray(firstValidItem)) {
                 return { type: schema_1.FIELD_TYPES.OBJECT, valid: true };
@@ -580,8 +588,14 @@ const createGroupConfBuilder = (source, groupName) => ({
     fields: {},
     objects: {},
 });
-const resolveRefTarget = (builder, fieldName) => {
-    let refGroupName = fieldName.replace(new RegExp(schema_1.REF_FIELD_NAME_SUFFIX + '$'), '');
+const resolveRefTarget = (builder, fieldName, geckMode = false) => {
+    let refGroupName;
+    if (geckMode) {
+        refGroupName = fieldName.replace(new RegExp(`(${schema_1.GECK_REFERENCE_SUFFIXES.join('|')})$`), '');
+    }
+    else {
+        refGroupName = fieldName.replace(new RegExp(schema_1.REFERENCE_SUFFIX + '$'), '');
+    }
     let refGroupNamePlural = refGroupName;
     if (pluralize_1.default.isSingular(refGroupNamePlural)) {
         refGroupNamePlural = pluralize_1.default.plural(refGroupName);
@@ -594,7 +608,7 @@ const resolveRefTarget = (builder, fieldName) => {
     }
     return schema_1.MANUAL_FILL_PLACEHOLDER;
 };
-const detectFieldConfig = (builder, fieldName, value, parentPath) => {
+const detectFieldConfig = (builder, fieldName, value, parentPath, geckMode = false) => {
     const fieldConfig = { type: schema_1.FIELD_TYPES.STRING };
     switch (typeof value) {
         case 'boolean':
@@ -602,6 +616,13 @@ const detectFieldConfig = (builder, fieldName, value, parentPath) => {
             break;
         case 'string':
             fieldConfig.type = schema_1.FIELD_TYPES.STRING;
+            break;
+        case 'number':
+            if (!geckMode) {
+                fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
+                return fieldConfig;
+            }
+            fieldConfig.type = Number.isInteger(value) ? schema_1.FIELD_TYPES.INT : schema_1.FIELD_TYPES.FLOAT;
             break;
         case 'object':
             if (value === null) {
@@ -614,7 +635,7 @@ const detectFieldConfig = (builder, fieldName, value, parentPath) => {
                     fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
                     return fieldConfig;
                 }
-                const arrayTypeResult = detectArrayType(value);
+                const arrayTypeResult = detectArrayType(value, geckMode);
                 if (!arrayTypeResult.valid) {
                     fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
                     return fieldConfig;
@@ -633,13 +654,22 @@ const detectFieldConfig = (builder, fieldName, value, parentPath) => {
             fieldConfig.type = schema_1.MANUAL_FILL_PLACEHOLDER;
             return fieldConfig;
     }
-    if (fieldName.endsWith(schema_1.REFERENCE_SUFFIX)) {
-        fieldConfig.type = schema_1.FIELD_TYPES.REF;
-        fieldConfig.refTo = resolveRefTarget(builder, fieldName);
+    // Check for ref fields
+    if (geckMode) {
+        if (schema_1.GECK_REFERENCE_SUFFIXES.some(suffix => fieldName.endsWith(suffix))) {
+            fieldConfig.type = schema_1.FIELD_TYPES.REF;
+            fieldConfig.refTo = resolveRefTarget(builder, fieldName, geckMode);
+        }
+    }
+    else {
+        if (fieldName.endsWith(schema_1.REFERENCE_SUFFIX)) {
+            fieldConfig.type = schema_1.FIELD_TYPES.REF;
+            fieldConfig.refTo = resolveRefTarget(builder, fieldName, geckMode);
+        }
     }
     return fieldConfig;
 };
-const detectGroupFields = (builder, fieldName, value) => {
+const detectGroupFields = (builder, fieldName, value, geckMode = false) => {
     // Exclude specified fields
     if (isExcludedField(fieldName)) {
         return;
@@ -654,7 +684,7 @@ const detectGroupFields = (builder, fieldName, value) => {
     if (value === null || value === undefined) {
         return;
     }
-    const fieldConfig = detectFieldConfig(builder, fieldName, value, '');
+    const fieldConfig = detectFieldConfig(builder, fieldName, value, '', geckMode);
     // Skip fields with undetectable types (null, empty arrays, etc.)
     if (fieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
         return;
@@ -668,7 +698,7 @@ const detectGroupFields = (builder, fieldName, value) => {
 const addDeprecatedField = (builder) => {
     builder.fields["deprecated"] = { type: schema_1.FIELD_TYPES.BOOLEAN, required: true };
 };
-const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
+const analyzeObjectStructure = (builder, objFieldName, obj, parentPath, geckMode = false) => {
     const objConfig = {
         fields: {},
     };
@@ -682,7 +712,7 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
         if (value === null || value === undefined) {
             continue;
         }
-        const fieldConfig = detectFieldConfig(builder, fieldName, value, currentObjectPath);
+        const fieldConfig = detectFieldConfig(builder, fieldName, value, currentObjectPath, geckMode);
         // Skip fields with undetectable types (null, empty arrays, etc.)
         if (fieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
             continue;
@@ -691,18 +721,18 @@ const analyzeObjectStructure = (builder, objFieldName, obj, parentPath) => {
     }
     return objConfig;
 };
-const analyzeObjectStructureFromArray = (builder, fieldName, arr, parentPath) => {
+const analyzeObjectStructureFromArray = (builder, fieldName, arr, parentPath, geckMode = false) => {
     let accumulated = { fields: {} };
     for (const item of arr) {
         if (typeof item !== 'object' || item === null || Array.isArray(item)) {
             continue;
         }
-        const objStruct = analyzeObjectStructure(builder, fieldName, item, parentPath);
+        const objStruct = analyzeObjectStructure(builder, fieldName, item, parentPath, geckMode);
         accumulated = mergeObjectConfigs(accumulated, objStruct);
     }
     return accumulated;
 };
-const detectObjectConfig = (builder, fieldName, value, parentPath) => {
+const detectObjectConfig = (builder, fieldName, value, parentPath, geckMode = false) => {
     if (typeof value !== 'object' || value === null || value === undefined) {
         return { config: { fields: {} }, valid: false };
     }
@@ -722,20 +752,20 @@ const detectObjectConfig = (builder, fieldName, value, parentPath) => {
             return { config: { fields: {} }, valid: false };
         }
         return {
-            config: analyzeObjectStructureFromArray(builder, fieldName, value, parentPath),
+            config: analyzeObjectStructureFromArray(builder, fieldName, value, parentPath, geckMode),
             valid: true,
         };
     }
     return {
-        config: analyzeObjectStructure(builder, fieldName, value, parentPath),
+        config: analyzeObjectStructure(builder, fieldName, value, parentPath, geckMode),
         valid: true,
     };
 };
-const detectGroupObjects = (builder, fieldName, value, parentPath) => {
+const detectGroupObjects = (builder, fieldName, value, parentPath, geckMode = false) => {
     if (typeof value !== 'object' || value === null || value === undefined) {
         return;
     }
-    const result = detectObjectConfig(builder, fieldName, value, parentPath);
+    const result = detectObjectConfig(builder, fieldName, value, parentPath, geckMode);
     if (!result.valid) {
         return;
     }
@@ -755,17 +785,17 @@ const detectGroupObjects = (builder, fieldName, value, parentPath) => {
                 continue;
             }
             for (const [k, vv] of Object.entries(item)) {
-                detectGroupObjects(builder, k, vv, fullObjName);
+                detectGroupObjects(builder, k, vv, fullObjName, geckMode);
             }
         }
         return;
     }
     for (const [k, vv] of Object.entries(value)) {
-        detectGroupObjects(builder, k, vv, fullObjName);
+        detectGroupObjects(builder, k, vv, fullObjName, geckMode);
     }
     return;
 };
-const buildGroupConfig = (builder, groupEntries) => {
+const buildGroupConfig = (builder, groupEntries, geckMode = false) => {
     if (groupEntries.length === 0) {
         return false;
     }
@@ -777,14 +807,16 @@ const buildGroupConfig = (builder, groupEntries) => {
             continue;
         }
         for (const [fieldName, value] of Object.entries(gEntry)) {
-            detectGroupFields(builder, fieldName, value);
-            detectGroupObjects(builder, fieldName, value, '');
+            detectGroupFields(builder, fieldName, value, geckMode);
+            detectGroupObjects(builder, fieldName, value, '', geckMode);
         }
-        addDeprecatedField(builder);
+        if (!geckMode) {
+            addDeprecatedField(builder);
+        }
     }
     return true;
 };
-const generateSchemaFromData = (source) => {
+const generateSchemaFromData = (source, geckMode = false) => {
     const schema = {
         namespace: schema_1.MANUAL_FILL_PLACEHOLDER,
         typePrefix: schema_1.MANUAL_FILL_PLACEHOLDER,
@@ -795,7 +827,7 @@ const generateSchemaFromData = (source) => {
             continue;
         }
         const builder = createGroupConfBuilder(source, groupName);
-        const success = buildGroupConfig(builder, groupEntries);
+        const success = buildGroupConfig(builder, groupEntries, geckMode);
         if (!success) {
             continue;
         }
@@ -940,7 +972,7 @@ const processSchemaGeneration = (config) => {
     // Read input data
     const jsonData = (0, exports.readJsonFile)(inputFilePath);
     // Generate schema
-    let schema = (0, build_1.generateSchemaFromData)(jsonData);
+    let schema = (0, build_1.generateSchemaFromData)(jsonData, !!config.geckMode);
     // Merge with existing schema if available
     if (config.existingSchemaPath && fs.existsSync(config.existingSchemaPath)) {
         console.log(`Merging with existing schema: ${config.existingSchemaPath}`);
@@ -1013,7 +1045,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = exports.generateSchemaFromData = exports.serializeToJson = exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = exports.applyRefConfig = exports.REF_FIELD_NAME_SUFFIX = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
+exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = exports.generateSchemaFromData = exports.serializeToJson = exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = exports.applyRefConfig = exports.GECK_REFERENCE_SUFFIXES = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
 const fs = __importStar(__nccwpck_require__(896));
 const path = __importStar(__nccwpck_require__(928));
 // Re-export types and schema operations from schema.ts
@@ -1022,7 +1054,7 @@ Object.defineProperty(exports, "FIELD_TYPES", ({ enumerable: true, get: function
 Object.defineProperty(exports, "REQUIRED_FIELD_NAMES", ({ enumerable: true, get: function () { return schema_1.REQUIRED_FIELD_NAMES; } }));
 Object.defineProperty(exports, "MANUAL_FILL_PLACEHOLDER", ({ enumerable: true, get: function () { return schema_1.MANUAL_FILL_PLACEHOLDER; } }));
 Object.defineProperty(exports, "REFERENCE_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REFERENCE_SUFFIX; } }));
-Object.defineProperty(exports, "REF_FIELD_NAME_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REF_FIELD_NAME_SUFFIX; } }));
+Object.defineProperty(exports, "GECK_REFERENCE_SUFFIXES", ({ enumerable: true, get: function () { return schema_1.GECK_REFERENCE_SUFFIXES; } }));
 Object.defineProperty(exports, "applyRefConfig", ({ enumerable: true, get: function () { return schema_1.applyRefConfig; } }));
 // Re-export merge functions from merge.ts
 var merge_1 = __nccwpck_require__(107);
@@ -1063,6 +1095,7 @@ Options:
   --existing, -e <file>     Path to existing schema file to merge with
   --ref-config, -r <file>   Path to ref-config file
   --ignore-deleted          Ignore deleted fields/groups from existing schema (keeps metadata & refTo)
+  --geck                    Enable geck mode
   --help, -h                Show this help message
 
 Examples:
@@ -1083,6 +1116,7 @@ Examples:
     let existingSchemaFile;
     let refConfigFile;
     let ignoreDeleted = false;
+    let geckMode = false;
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
         const nextArg = args[i + 1];
@@ -1123,6 +1157,9 @@ Examples:
             case '--ignore-deleted':
                 ignoreDeleted = true;
                 break;
+            case '--geck':
+                geckMode = true;
+                break;
         }
     }
     // Set default output file if not specified
@@ -1136,7 +1173,8 @@ Examples:
             outputFilePath: outputFile,
             existingSchemaPath: existingSchemaFile,
             refConfigPath: refConfigFile,
-            ignoreDeleted: ignoreDeleted
+            ignoreDeleted: ignoreDeleted,
+            geckMode: geckMode
         };
         const result = (0, generator_2.processSchemaGeneration)(config);
         console.log('Schema generation completed successfully!');
@@ -1308,18 +1346,20 @@ exports.mergeWithExistingSchema = mergeWithExistingSchema;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.applyRefConfig = exports.REF_FIELD_NAME_SUFFIX = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
+exports.applyRefConfig = exports.GECK_REFERENCE_SUFFIXES = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
 // Constants
 exports.FIELD_TYPES = {
     STRING: 'String',
     BOOLEAN: 'Boolean',
     OBJECT: 'Object',
     REF: 'Ref',
+    INT: 'Int',
+    FLOAT: 'Float',
 };
 exports.REQUIRED_FIELD_NAMES = ['id', 'slug', 'name'];
 exports.MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
 exports.REFERENCE_SUFFIX = 'Ref';
-exports.REF_FIELD_NAME_SUFFIX = 'Ref';
+exports.GECK_REFERENCE_SUFFIXES = ['Slug', 'Slugs'];
 // Function to apply ref-config mappings
 const applyRefConfig = (schema, refConfig) => {
     if (!refConfig || !refConfig.refs)
