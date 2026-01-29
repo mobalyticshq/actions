@@ -1362,7 +1362,7 @@ exports.FIELD_TYPES = {
 exports.REQUIRED_FIELD_NAMES = ['id', 'slug', 'name'];
 exports.MANUAL_FILL_PLACEHOLDER = '@@@ TO BE FILLED MANUALLY @@@';
 exports.REFERENCE_SUFFIX = 'Ref';
-exports.GECK_REFERENCE_SUFFIXES = ['Slug', 'Slugs'];
+exports.GECK_REFERENCE_SUFFIXES = ['Ref', 'Slug', 'Slugs'];
 // Function to apply ref-config mappings
 const applyRefConfig = (schema, refConfig) => {
     if (!refConfig || !refConfig.refs)
