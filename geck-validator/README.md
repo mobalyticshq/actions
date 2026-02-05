@@ -86,7 +86,7 @@ geck-validator validate --help
 | SS17 | objName reference valid | If field has `objName`, it must exist in the group's objects |
 | SS18 | refTo reference valid | If field has `refTo`, it must exist in schema groups |
 | SS19 | Filter only on String | `filter: true` only allowed on String type fields |
-| SS20 | Ref field name conflict | Field names ending with "Ref", "Slug", "Slugs" cannot conflict with base field names |
+| SS20 | Ref field name conflict | For Ref fields: if `geckRefFieldName` is set, check it doesn't conflict with other fields; otherwise check field name suffixes (Ref/Slug/Slugs) don't conflict with base field names |
 
 ### Schema Compatibility Validation (Backward Compatibility)
 
@@ -103,6 +103,7 @@ geck-validator validate --help
 | SC09 | Object not deleted | Objects from reference schema cannot be deleted |
 | SC10 | Object field not deleted | Object fields from reference schema cannot be deleted |
 | SC11 | Object field type unchanged | Object field types cannot be changed |
+| SC12 | geckRefFieldName unchanged | If `geckRefFieldName` was set, it cannot be changed or removed |
 
 ## Development
 

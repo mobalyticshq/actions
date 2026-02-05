@@ -98,7 +98,7 @@ func validateFieldRules(fieldName string, field *types.SchemaField, path string,
 	errors = append(errors, validateSS17_ObjNameReferenceValid(field, path, group)...)
 	errors = append(errors, validateSS18_RefToReferenceValid(field, path, schema)...)
 	errors = append(errors, validateSS19_FilterOnlyOnString(field, path)...)
-	errors = append(errors, validateSS20_RefFieldNameConflict(fieldName, path, group)...)
+	errors = append(errors, validateSS20_RefFieldNameConflict(fieldName, field, path, group)...)
 	return errors
 }
 
@@ -358,8 +358,26 @@ func validateSS19_FilterOnlyOnString(field *types.SchemaField, path string) []ty
 	return nil
 }
 
-// SS20: Ref field name conflict
-func validateSS20_RefFieldNameConflict(fieldName, path string, group *types.SchemaGroup) []types.ValidationError {
+// SS20: Ref field name conflict (only applies to Ref type fields)
+func validateSS20_RefFieldNameConflict(fieldName string, field *types.SchemaField, path string, group *types.SchemaGroup) []types.ValidationError {
+	// Only apply to Ref type fields
+	if field.Type != "Ref" {
+		return nil
+	}
+
+	// If geckRefFieldName is set, check that name doesn't conflict with other fields
+	if field.GeckRefFieldName != "" {
+		if _, exists := group.Fields[field.GeckRefFieldName]; exists {
+			return []types.ValidationError{{
+				Type:    "error",
+				Message: fmt.Sprintf("geckRefFieldName %q conflicts with existing field in the group", field.GeckRefFieldName),
+				Path:    path + ".geckRefFieldName",
+			}}
+		}
+		return nil
+	}
+
+	// Fall back to suffix-based check if geckRefFieldName is not set
 	for _, suffix := range refSuffixes {
 		if strings.HasSuffix(fieldName, suffix) {
 			baseFieldName := strings.TrimSuffix(fieldName, suffix)

@@ -9,13 +9,14 @@ type ValidationError struct {
 
 // SchemaField represents a field definition in the schema
 type SchemaField struct {
-	Type       string   `json:"type"`
-	Array      bool     `json:"array,omitempty"`
-	Required   bool     `json:"required,omitempty"`
-	Filter     bool     `json:"filter,omitempty"`
-	RefTo      string   `json:"refTo,omitempty"`
-	ObjName    string   `json:"objName,omitempty"`
-	RefFilters []string `json:"refFilters,omitempty"`
+	Type             string   `json:"type"`
+	Array            bool     `json:"array,omitempty"`
+	Required         bool     `json:"required,omitempty"`
+	Filter           bool     `json:"filter,omitempty"`
+	RefTo            string   `json:"refTo,omitempty"`
+	ObjName          string   `json:"objName,omitempty"`
+	RefFilters       []string `json:"refFilters,omitempty"`
+	GeckRefFieldName string   `json:"geckRefFieldName,omitempty"`
 }
 
 // SchemaObject represents an object definition within a group

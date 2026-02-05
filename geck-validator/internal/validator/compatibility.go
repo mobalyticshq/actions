@@ -64,6 +64,7 @@ func ValidateCompatibilityData(newSchema, currentSchema *types.Schema) []types.V
 			errors = append(errors, validateSC06_RequiredModifierKept(&newField, &currentField, path)...)
 			errors = append(errors, validateSC07_FilterModifierKept(&newField, &currentField, path)...)
 			errors = append(errors, validateSC08_ArrayModifierKept(&newField, &currentField, path)...)
+			errors = append(errors, validateSC12_GeckRefFieldNameUnchanged(&newField, &currentField, path)...)
 		}
 
 		// Object-level validations
@@ -211,6 +212,19 @@ func validateSC11_ObjectFieldTypeUnchanged(newField, currentField *types.SchemaF
 			Type:    "error",
 			Message: fmt.Sprintf("object field type cannot be changed from %q to %q", currentField.Type, newField.Type),
 			Path:    path + ".type",
+		}}
+	}
+	return nil
+}
+
+// SC12: geckRefFieldName unchanged (if it was set)
+func validateSC12_GeckRefFieldNameUnchanged(newField, currentField *types.SchemaField, path string) []types.ValidationError {
+	// Only check if geckRefFieldName was set in the current schema
+	if currentField.GeckRefFieldName != "" && newField.GeckRefFieldName != currentField.GeckRefFieldName {
+		return []types.ValidationError{{
+			Type:    "error",
+			Message: fmt.Sprintf("geckRefFieldName cannot be changed from %q to %q", currentField.GeckRefFieldName, newField.GeckRefFieldName),
+			Path:    path + ".geckRefFieldName",
 		}}
 	}
 	return nil

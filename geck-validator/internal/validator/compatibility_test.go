@@ -246,3 +246,49 @@ func TestSC11_ObjectFieldTypeUnchanged(t *testing.T) {
 		t.Errorf("expected 1 error, got %d", len(errors))
 	}
 }
+
+func TestSC12_GeckRefFieldNameUnchanged(t *testing.T) {
+	t.Run("changing geckRefFieldName is error", func(t *testing.T) {
+		currentField := &types.SchemaField{Type: "Ref", GeckRefFieldName: "original"}
+		newField := &types.SchemaField{Type: "Ref", GeckRefFieldName: "changed"}
+
+		errors := validateSC12_GeckRefFieldNameUnchanged(newField, currentField, "test.path")
+
+		if len(errors) != 1 {
+			t.Errorf("expected 1 error, got %d", len(errors))
+		}
+	})
+
+	t.Run("removing geckRefFieldName is error", func(t *testing.T) {
+		currentField := &types.SchemaField{Type: "Ref", GeckRefFieldName: "original"}
+		newField := &types.SchemaField{Type: "Ref", GeckRefFieldName: ""}
+
+		errors := validateSC12_GeckRefFieldNameUnchanged(newField, currentField, "test.path")
+
+		if len(errors) != 1 {
+			t.Errorf("expected 1 error, got %d", len(errors))
+		}
+	})
+
+	t.Run("adding geckRefFieldName is ok", func(t *testing.T) {
+		currentField := &types.SchemaField{Type: "Ref", GeckRefFieldName: ""}
+		newField := &types.SchemaField{Type: "Ref", GeckRefFieldName: "newValue"}
+
+		errors := validateSC12_GeckRefFieldNameUnchanged(newField, currentField, "test.path")
+
+		if len(errors) != 0 {
+			t.Errorf("expected no errors when adding geckRefFieldName, got %d", len(errors))
+		}
+	})
+
+	t.Run("keeping same geckRefFieldName is ok", func(t *testing.T) {
+		currentField := &types.SchemaField{Type: "Ref", GeckRefFieldName: "same"}
+		newField := &types.SchemaField{Type: "Ref", GeckRefFieldName: "same"}
+
+		errors := validateSC12_GeckRefFieldNameUnchanged(newField, currentField, "test.path")
+
+		if len(errors) != 0 {
+			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+}

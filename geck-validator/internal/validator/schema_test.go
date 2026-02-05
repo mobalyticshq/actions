@@ -256,24 +256,61 @@ func TestSS20_RefFieldNameConflict(t *testing.T) {
 		},
 	}
 
+	t.Run("only applies to Ref type", func(t *testing.T) {
+		field := &types.SchemaField{Type: "String"}
+		errors := validateSS20_RefFieldNameConflict("itemRef", field, "test.path", group)
+		if len(errors) != 0 {
+			t.Errorf("expected no errors for non-Ref type, got %d", len(errors))
+		}
+	})
+
 	t.Run("conflict with Ref suffix", func(t *testing.T) {
-		errors := validateSS20_RefFieldNameConflict("itemRef", "test.path", group)
+		field := &types.SchemaField{Type: "Ref", RefTo: "items"}
+		errors := validateSS20_RefFieldNameConflict("itemRef", field, "test.path", group)
 		if len(errors) != 1 {
 			t.Errorf("expected 1 error, got %d", len(errors))
 		}
 	})
 
 	t.Run("conflict with Slug suffix", func(t *testing.T) {
-		errors := validateSS20_RefFieldNameConflict("categorySlug", "test.path", group)
+		field := &types.SchemaField{Type: "Ref", RefTo: "categories"}
+		errors := validateSS20_RefFieldNameConflict("categorySlug", field, "test.path", group)
 		if len(errors) != 1 {
 			t.Errorf("expected 1 error, got %d", len(errors))
 		}
 	})
 
-	t.Run("no conflict", func(t *testing.T) {
-		errors := validateSS20_RefFieldNameConflict("otherRef", "test.path", group)
+	t.Run("no conflict with suffix", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "other"}
+		errors := validateSS20_RefFieldNameConflict("otherRef", field, "test.path", group)
 		if len(errors) != 0 {
 			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+
+	t.Run("geckRefFieldName conflict", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "items", GeckRefFieldName: "item"}
+		errors := validateSS20_RefFieldNameConflict("someRef", field, "test.path", group)
+		if len(errors) != 1 {
+			t.Errorf("expected 1 error for geckRefFieldName conflict, got %d", len(errors))
+		}
+	})
+
+	t.Run("geckRefFieldName no conflict", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "items", GeckRefFieldName: "nonexistent"}
+		errors := validateSS20_RefFieldNameConflict("someRef", field, "test.path", group)
+		if len(errors) != 0 {
+			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+
+	t.Run("geckRefFieldName skips suffix check", func(t *testing.T) {
+		// Even though field name has Ref suffix and "item" exists,
+		// geckRefFieldName takes precedence and doesn't conflict
+		field := &types.SchemaField{Type: "Ref", RefTo: "items", GeckRefFieldName: "nonexistent"}
+		errors := validateSS20_RefFieldNameConflict("itemRef", field, "test.path", group)
+		if len(errors) != 0 {
+			t.Errorf("expected no errors when geckRefFieldName is set (skips suffix check), got %d", len(errors))
 		}
 	})
 }
