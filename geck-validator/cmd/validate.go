@@ -11,11 +11,13 @@ var validateCmd = &cobra.Command{
 GECK data source files and schema files.
 
 Available subcommands:
-  data-source  Validate a static data source file
-  schema       Validate a schema file`,
+  data-source    Validate a static data source file
+  schema         Validate a schema file
+  compatibility  Validate schema backward compatibility`,
 }
 
 func init() {
 	validateCmd.AddCommand(dataSourceCmd)
 	validateCmd.AddCommand(schemaCmd)
+	validateCmd.AddCommand(compatibilityCmd)
 }

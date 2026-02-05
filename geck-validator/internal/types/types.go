@@ -31,11 +31,11 @@ type SchemaGroup struct {
 
 // Schema represents the complete schema structure
 type Schema struct {
-	Namespace        string                 `json:"namespace"`
-	TypePrefix       string                 `json:"typePrefix"`
-	GeckMode         bool                   `json:"geckMode,omitempty"`
-	GqlTypesOverride map[string]string      `json:"gqlTypesOverrides,omitempty"`
-	Groups           map[string]SchemaGroup `json:"groups"`
+	Namespace          string                 `json:"namespace"`
+	TypePrefix         string                 `json:"typePrefix"`
+	DeprecatedGeckMode bool                   `json:"deprecatedGeckMode,omitempty"`
+	GqlTypesOverride   map[string]string      `json:"gqlTypesOverrides,omitempty"`
+	Groups             map[string]SchemaGroup `json:"groups"`
 }
 
 // DataSource represents a static data source file structure
