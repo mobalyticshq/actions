@@ -39,6 +39,7 @@ To locate the repository root: look for the directory containing `build-static-d
    - Node *groups* contains multiple nested nodes.
    - Node *metadata* contains node *dataVersion* and node *schemaVersion*.
 2. Generate a file containing a GraphQL query in the output folder that:
+   - has an alias for the game node - the top level node in the query should be aliased as "game". Refer to the example in the file - build-static-data-query/src/examples/gql-query.example.gql.ts
    - uses **all fields of the `groups` node**.
    - For each field, the filter must be the object: { page: { all: true } }.
    - Query only data field, ignore all other fields in the type.
