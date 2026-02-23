@@ -483,13 +483,11 @@ export async function validate(
         if (ent.gameId !== ent.id) {
           // entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
           entityReport.errors[ReportMessages.justMsg].add(`wrong id, expected:${ent.gameId}`);
-          entityReport.errors[ReportMessages.justColor].add(`${group}.id`);
         }
       } else if (ent.name && ent.id && isValidationBeforeOverride) {
         if (slugify(ent.name) !== ent.id) {
           // entityReport.errors[ReportMessages.mismatchedIds].add(`${group}.id`);
           entityReport.errors[ReportMessages.justMsg].add(`wrong id, expected:${slugify(ent.name)}`);
-          entityReport.errors[ReportMessages.justColor].add(`${group}.id`);
         }
       }
 
