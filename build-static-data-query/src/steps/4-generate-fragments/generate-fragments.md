@@ -38,7 +38,8 @@ To locate the repository root: look for the directory containing `build-static-d
 
 2. For **each entity type** found inside the data fields:
    - Generate a **GraphQL fragment**.
-   - The fragment must include **all possible fields** defined in the schema for that entity type, including all the nested fields recursively.
+   - The fragment must include **all possible fields** defined in the schema for that entity type, expanding nested object types recursively.
+   - **Circular reference handling**: while expanding nested fields, keep track of the chain of entity types visited from the root of the current fragment. If a nested field's type is an entity type that **already appears in the current ancestor chain**, do NOT expand that field — include only its **scalar fields** (i.e., fields with scalar/enum types such as `String`, `Boolean`, `Int`, `Float`, `ID`, or any enum), omitting any further nested object-type fields. This prevents infinite recursion while still fetching useful identifying data (like `id`, `slug`, `name`) from the back-referenced entity.
 
 ---
 
