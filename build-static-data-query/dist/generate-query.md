@@ -48,6 +48,7 @@ To locate the repository root: look for the directory containing `build-static-d
    - Query should have default export.
    - **File name convention** - format: static-data-query.gql.ts
 3. Generate the new file containing a GraphQL query in the output folder that:
+   - has an alias for the game node - the top level node in the query should be aliased as "game". Refer to the example in the file - build-static-data-query/src/examples/gql-meta-data-query.example.gql.ts
    - Contains `dataVersion` field of the *metadata* node in the [Game]StaticDataQuery type. This node should have the "meta: metadata" and "version: dataVersion" aliases.
    - This query should contain **ONLY** the *metadata* node and dataVersion inside.
    - Query should have default export.
@@ -56,4 +57,4 @@ To locate the repository root: look for the directory containing `build-static-d
 
 ## File Content Example
 
-Use as an example this file - build-static-data-query/src/examples/gql-query.example.gql.ts
+Use as an example these files - build-static-data-query/src/examples/gql-query.example.gql.ts, build-static-data-query/src/examples/gql-meta-data-query.example.gql.ts
