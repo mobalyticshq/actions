@@ -151,30 +151,6 @@ function getAllFilesRecursive(dirPath) {
 
 /***/ }),
 
-/***/ 89:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateMapping = generateMapping;
-const run_cursor_generation_1 = __webpack_require__(550);
-const path_1 = __importDefault(__webpack_require__(928));
-async function generateMapping(options) {
-    const { timeoutMs, model } = options;
-    const promptFilePath = path_1.default.resolve(__dirname, 'generate-mapping.md');
-    return await (0, run_cursor_generation_1.runCursorGeneration)({
-        timeoutMs,
-        prompt: `"Implement instructions in the file ${promptFilePath}"`,
-        model,
-    });
-}
-
-
-/***/ }),
-
 /***/ 99:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -317,8 +293,9 @@ exports.run = run;
 const core = __importStar(__webpack_require__(659));
 const storage_1 = __webpack_require__(869);
 const _1_download_build_artifacts_1 = __webpack_require__(244);
-const _2_copy_user_prompts_1 = __webpack_require__(797);
-const _3_generate_mapping_1 = __webpack_require__(821);
+const _2_extract_entities_enum_1 = __webpack_require__(779);
+const _3_copy_user_prompts_1 = __webpack_require__(330);
+const _4_generate_mapping_1 = __webpack_require__(606);
 /**
  * Main function for the GitHub Action
  */
@@ -338,23 +315,27 @@ async function run() {
         const storage = new storage_1.Storage({ projectId: gcsProjectId });
         const bucket = storage.bucket(gcsBucketName);
         // Step 1: Check schema version
-        core.startGroup('🔍 Step 0: Checking schema version');
+        core.startGroup('🔍 Step 1: Checking schema version');
         await (0, _1_download_build_artifacts_1.downloadBuildArtifacts)({
             bucket,
             env: dynamicModulesEnv,
             gameUrlSlug,
         });
         core.endGroup();
-        // Step 2: Copy user prompts from repository
-        core.startGroup('📋 Step 2: Copying user prompts from repository');
-        await (0, _2_copy_user_prompts_1.copyUserPrompts)({
+        // Step 2: Extract entities enum
+        core.startGroup('🔍 Step 2: Extracting entities enum');
+        await (0, _2_extract_entities_enum_1.extractEntitiesEnum)();
+        core.endGroup();
+        // Step 3: Copy user prompts from repository
+        core.startGroup('📋 Step 3: Copying user prompts from repository');
+        await (0, _3_copy_user_prompts_1.copyUserPrompts)({
             game: configurationGameSlug,
             dynamicModulesEnv,
         });
         core.endGroup();
-        // Step 3: Generate mapping
-        core.startGroup('🔨 Step 3: Generating mapping');
-        await (0, _3_generate_mapping_1.generateMapping)({
+        // Step 4: Generate mapping
+        core.startGroup('🔨 Step 4: Generating mapping');
+        await (0, _4_generate_mapping_1.generateMapping)({
             timeoutMs,
             model,
         });
@@ -372,6 +353,30 @@ async function run() {
     }
 }
 run();
+
+
+/***/ }),
+
+/***/ 208:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateMapping = generateMapping;
+const run_cursor_generation_1 = __webpack_require__(550);
+const path_1 = __importDefault(__webpack_require__(928));
+async function generateMapping(options) {
+    const { timeoutMs, model } = options;
+    const promptFilePath = path_1.default.resolve(__dirname, 'generate-mapping.md');
+    return await (0, run_cursor_generation_1.runCursorGeneration)({
+        timeoutMs,
+        prompt: `"Implement instructions in the file ${promptFilePath}"`,
+        model,
+    });
+}
 
 
 /***/ }),
@@ -593,6 +598,18 @@ async function isFolderExists(bucket, folderPath) {
 
 /***/ }),
 
+/***/ 330:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.copyUserPrompts = void 0;
+var copy_user_prompts_1 = __webpack_require__(995);
+Object.defineProperty(exports, "copyUserPrompts", ({ enumerable: true, get: function () { return copy_user_prompts_1.copyUserPrompts; } }));
+
+
+/***/ }),
+
 /***/ 463:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -706,6 +723,18 @@ async function runCursorGeneration(input) {
 
 /***/ }),
 
+/***/ 606:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateMapping = void 0;
+var generate_mapping_1 = __webpack_require__(208);
+Object.defineProperty(exports, "generateMapping", ({ enumerable: true, get: function () { return generate_mapping_1.generateMapping; } }));
+
+
+/***/ }),
+
 /***/ 659:
 /***/ ((module) => {
 
@@ -713,14 +742,77 @@ module.exports = require("@actions/core");
 
 /***/ }),
 
-/***/ 797:
+/***/ 748:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.extractEntitiesEnum = extractEntitiesEnum;
+const core = __importStar(__webpack_require__(659));
+const fs = __importStar(__webpack_require__(896));
+const path = __importStar(__webpack_require__(928));
+async function extractEntitiesEnum() {
+    try {
+        const schemaPath = path.resolve(process.cwd(), 'build', 'downloaded', 'cleaned-schema', 'cleaned-schema.graphql');
+        const outputPath = path.resolve(process.cwd(), 'build', 'downloaded', 'cleaned-schema', 'entities.graphql');
+        const schema = fs.readFileSync(schemaPath, 'utf-8');
+        const match = schema.match(/enum\s+\w+EntitiesEnum\s*\{[^}]*\}/);
+        if (!match) {
+            throw new Error('EntitiesEnum not found in cleaned-schema.graphql');
+        }
+        fs.writeFileSync(outputPath, match[0], 'utf-8');
+        core.info(`✓ Extracted entities enum to ${outputPath}`);
+    }
+    catch (error) {
+        core.setFailed(`Error in extractEntitiesEnum: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
+    }
+}
+
+
+/***/ }),
+
+/***/ 779:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.copyUserPrompts = void 0;
-var copy_user_prompts_1 = __webpack_require__(832);
-Object.defineProperty(exports, "copyUserPrompts", ({ enumerable: true, get: function () { return copy_user_prompts_1.copyUserPrompts; } }));
+exports.extractEntitiesEnum = void 0;
+var extract_entities_enum_1 = __webpack_require__(748);
+Object.defineProperty(exports, "extractEntitiesEnum", ({ enumerable: true, get: function () { return extract_entities_enum_1.extractEntitiesEnum; } }));
 
 
 /***/ }),
@@ -742,19 +834,28 @@ function generateModuleFolderName(version) {
 
 /***/ }),
 
-/***/ 821:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ 869:
+/***/ ((module) => {
 
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateMapping = void 0;
-var generate_mapping_1 = __webpack_require__(89);
-Object.defineProperty(exports, "generateMapping", ({ enumerable: true, get: function () { return generate_mapping_1.generateMapping; } }));
-
+module.exports = require("@google-cloud/storage");
 
 /***/ }),
 
-/***/ 832:
+/***/ 896:
+/***/ ((module) => {
+
+module.exports = require("fs");
+
+/***/ }),
+
+/***/ 928:
+/***/ ((module) => {
+
+module.exports = require("path");
+
+/***/ }),
+
+/***/ 995:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -874,27 +975,6 @@ async function copyUserPrompts(options) {
     }
 }
 
-
-/***/ }),
-
-/***/ 869:
-/***/ ((module) => {
-
-module.exports = require("@google-cloud/storage");
-
-/***/ }),
-
-/***/ 896:
-/***/ ((module) => {
-
-module.exports = require("fs");
-
-/***/ }),
-
-/***/ 928:
-/***/ ((module) => {
-
-module.exports = require("path");
 
 /***/ })
 

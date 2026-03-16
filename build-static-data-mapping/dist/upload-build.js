@@ -34,6 +34,141 @@ function getAllFilesRecursive(dirPath) {
 
 /***/ }),
 
+/***/ 89:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.uploadBuild = uploadBuild;
+const path = __importStar(__webpack_require__(928));
+const core = __importStar(__webpack_require__(659));
+const bucket_utils_1 = __webpack_require__(328);
+const module_folder_utils_1 = __webpack_require__(994);
+const dynamic_modules_types_1 = __webpack_require__(463);
+const dynamic_module_utils_1 = __webpack_require__(798);
+const buildMappingPath = './build/mapping';
+const buildTypesPath = './build/types';
+const buildDistPath = './build/dist';
+async function uploadBuild(options) {
+    try {
+        const { bucket, env, gameUrlSlug } = options;
+        const bucketName = bucket.name;
+        core.info(`Starting upload of mapping files to GCS bucket: ${bucketName}`);
+        // Step 1: Verify bucket exists
+        try {
+            const [exists] = await bucket.exists();
+            if (!exists) {
+                const errorMessage = `Bucket ${bucketName} does not exist`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
+            }
+            core.info(`✓ Bucket ${bucketName} verified`);
+        }
+        catch (error) {
+            const errorMessage = `Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
+        }
+        // Step 2: Get current version and increment
+        const existingConfig = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
+        const currentVersion = existingConfig?.version || null;
+        const newVersion = (0, module_folder_utils_1.incrementVersion)(currentVersion);
+        core.info(`Current version: ${currentVersion || 'none'}, new version: ${newVersion}`);
+        // Step 3: Build GCS paths
+        const moduleFolderPath = (0, module_folder_utils_1.buildStaticDataMappingModulePath)(env, gameUrlSlug, newVersion);
+        core.info(`Target path: gs://${bucketName}/${moduleFolderPath}`);
+        // Step 4: Check if module folder already exists
+        const moduleFolderExists = await (0, bucket_utils_1.isFolderExists)(bucket, moduleFolderPath);
+        if (moduleFolderExists) {
+            const errorMessage = `Folder ${moduleFolderPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        core.info(`✓ Module folder ${newVersion} does not exist, proceeding with upload`);
+        // Step 5: Resolve build directory paths
+        const buildMappingFullPath = path.resolve(process.cwd(), buildMappingPath);
+        const buildTypesFullPath = path.resolve(process.cwd(), buildTypesPath);
+        const buildDistFullPath = path.resolve(process.cwd(), buildDistPath);
+        // Step 6: Upload files from build/mapping to src/ subfolder
+        const mappingResult = await (0, bucket_utils_1.uploadFolderToBucket)(bucket, bucketName, buildMappingFullPath, `${moduleFolderPath}/src/`, 'mapping files', true);
+        // Step 7: Upload files from build/types to types/ subfolder
+        const typesResult = await (0, bucket_utils_1.uploadFolderToBucket)(bucket, bucketName, buildTypesFullPath, `${moduleFolderPath}/types/`, 'types files', true);
+        // Step 8: Upload files from build/dist to root of moduleFolder
+        const distResult = await (0, bucket_utils_1.uploadFolderToBucket)(bucket, bucketName, buildDistFullPath, `${moduleFolderPath}/`, 'dist file', true);
+        const uploadedCount = mappingResult.uploadedCount + distResult.uploadedCount + typesResult.uploadedCount;
+        const failedCount = mappingResult.failedCount + distResult.failedCount + typesResult.failedCount;
+        // Step 9: Report results
+        core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
+        if (failedCount > 0) {
+            const errorMessage = `Failed to upload ${failedCount} file(s)`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        core.info(`✓ All files successfully uploaded to gs://${bucketName}/${moduleFolderPath}/`);
+        // Step 10: Upload config.json
+        try {
+            const config = {
+                moduleFolder: `${newVersion}/`,
+                name: `${newVersion}/index.js`,
+                version: newVersion,
+            };
+            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
+            const configDestination = `${basePath}/config.json`;
+            const configFile = bucket.file(configDestination);
+            const configJson = JSON.stringify(config, null, 2);
+            core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
+            await configFile.save(configJson);
+            core.info(`✓ Config.json successfully uploaded`);
+        }
+        catch (error) {
+            const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
+        }
+    }
+    catch (error) {
+        const errorMessage = `Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
+    }
+}
+
+
+/***/ }),
+
 /***/ 328:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -247,141 +382,6 @@ var DynamicModuleSlug;
 
 /***/ }),
 
-/***/ 470:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.uploadBuild = uploadBuild;
-const path = __importStar(__webpack_require__(928));
-const core = __importStar(__webpack_require__(659));
-const bucket_utils_1 = __webpack_require__(328);
-const module_folder_utils_1 = __webpack_require__(994);
-const dynamic_modules_types_1 = __webpack_require__(463);
-const dynamic_module_utils_1 = __webpack_require__(798);
-const buildMappingPath = './build/mapping';
-const buildTypesPath = './build/types';
-const buildDistPath = './build/dist';
-async function uploadBuild(options) {
-    try {
-        const { bucket, env, gameUrlSlug } = options;
-        const bucketName = bucket.name;
-        core.info(`Starting upload of mapping files to GCS bucket: ${bucketName}`);
-        // Step 1: Verify bucket exists
-        try {
-            const [exists] = await bucket.exists();
-            if (!exists) {
-                const errorMessage = `Bucket ${bucketName} does not exist`;
-                core.setFailed(errorMessage);
-                throw new Error(errorMessage);
-            }
-            core.info(`✓ Bucket ${bucketName} verified`);
-        }
-        catch (error) {
-            const errorMessage = `Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw error instanceof Error ? error : new Error(errorMessage);
-        }
-        // Step 2: Get current version and increment
-        const existingConfig = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
-        const currentVersion = existingConfig?.version || null;
-        const newVersion = (0, module_folder_utils_1.incrementVersion)(currentVersion);
-        core.info(`Current version: ${currentVersion || 'none'}, new version: ${newVersion}`);
-        // Step 3: Build GCS paths
-        const moduleFolderPath = (0, module_folder_utils_1.buildStaticDataMappingModulePath)(env, gameUrlSlug, newVersion);
-        core.info(`Target path: gs://${bucketName}/${moduleFolderPath}`);
-        // Step 4: Check if module folder already exists
-        const moduleFolderExists = await (0, bucket_utils_1.isFolderExists)(bucket, moduleFolderPath);
-        if (moduleFolderExists) {
-            const errorMessage = `Folder ${moduleFolderPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        core.info(`✓ Module folder ${newVersion} does not exist, proceeding with upload`);
-        // Step 5: Resolve build directory paths
-        const buildMappingFullPath = path.resolve(process.cwd(), buildMappingPath);
-        const buildTypesFullPath = path.resolve(process.cwd(), buildTypesPath);
-        const buildDistFullPath = path.resolve(process.cwd(), buildDistPath);
-        // Step 6: Upload files from build/mapping to src/ subfolder
-        const mappingResult = await (0, bucket_utils_1.uploadFolderToBucket)(bucket, bucketName, buildMappingFullPath, `${moduleFolderPath}/src/`, 'mapping files', true);
-        // Step 7: Upload files from build/types to types/ subfolder
-        const typesResult = await (0, bucket_utils_1.uploadFolderToBucket)(bucket, bucketName, buildTypesFullPath, `${moduleFolderPath}/types/`, 'types files', true);
-        // Step 8: Upload files from build/dist to root of moduleFolder
-        const distResult = await (0, bucket_utils_1.uploadFolderToBucket)(bucket, bucketName, buildDistFullPath, `${moduleFolderPath}/`, 'dist file', true);
-        const uploadedCount = mappingResult.uploadedCount + distResult.uploadedCount + typesResult.uploadedCount;
-        const failedCount = mappingResult.failedCount + distResult.failedCount + typesResult.failedCount;
-        // Step 9: Report results
-        core.info(`✓ Upload completed: ${uploadedCount} files uploaded, ${failedCount} files failed`);
-        if (failedCount > 0) {
-            const errorMessage = `Failed to upload ${failedCount} file(s)`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        core.info(`✓ All files successfully uploaded to gs://${bucketName}/${moduleFolderPath}/`);
-        // Step 10: Upload config.json
-        try {
-            const config = {
-                moduleFolder: `${newVersion}/`,
-                name: `${newVersion}/index.js`,
-                version: newVersion,
-            };
-            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
-            const configDestination = `${basePath}/config.json`;
-            const configFile = bucket.file(configDestination);
-            const configJson = JSON.stringify(config, null, 2);
-            core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
-            await configFile.save(configJson);
-            core.info(`✓ Config.json successfully uploaded`);
-        }
-        catch (error) {
-            const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw error instanceof Error ? error : new Error(errorMessage);
-        }
-    }
-    catch (error) {
-        const errorMessage = `Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`;
-        core.setFailed(errorMessage);
-        throw error instanceof Error ? error : new Error(errorMessage);
-    }
-}
-
-
-/***/ }),
-
 /***/ 577:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -422,7 +422,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(659));
 const storage_1 = __webpack_require__(869);
-const upload_build_1 = __webpack_require__(470);
+const upload_build_1 = __webpack_require__(89);
 /**
  * Entry point for upload-build script
  * This script is called separately from the main action
