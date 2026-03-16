@@ -787,7 +787,7 @@ const path = __importStar(__webpack_require__(928));
 async function extractEntitiesEnum() {
     try {
         const schemaPath = path.resolve(process.cwd(), 'build', 'downloaded', 'cleaned-schema', 'cleaned-schema.graphql');
-        const outputPath = path.resolve(process.cwd(), 'build', 'downloaded', 'cleaned-schema', 'entities.gql');
+        const outputPath = path.resolve(process.cwd(), 'build', 'downloaded', 'cleaned-schema', 'entities.graphql');
         const schema = fs.readFileSync(schemaPath, 'utf-8');
         const match = schema.match(/enum\s+\w+EntitiesEnum\s*\{[^}]*\}/);
         if (!match) {

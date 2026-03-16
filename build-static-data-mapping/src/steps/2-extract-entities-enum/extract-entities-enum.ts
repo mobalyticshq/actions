@@ -4,20 +4,8 @@ import * as path from 'path';
 
 export async function extractEntitiesEnum(): Promise<void> {
   try {
-    const schemaPath = path.resolve(
-      process.cwd(),
-      'build',
-      'downloaded',
-      'cleaned-schema',
-      'cleaned-schema.graphql',
-    );
-    const outputPath = path.resolve(
-      process.cwd(),
-      'build',
-      'downloaded',
-      'cleaned-schema',
-      'entities.gql',
-    );
+    const schemaPath = path.resolve(process.cwd(), 'build', 'downloaded', 'cleaned-schema', 'cleaned-schema.graphql');
+    const outputPath = path.resolve(process.cwd(), 'build', 'downloaded', 'cleaned-schema', 'entities.graphql');
 
     const schema = fs.readFileSync(schemaPath, 'utf-8');
 

@@ -6,8 +6,8 @@ To locate the repository root: look for the directory containing `build-static-d
 
 ## Input
 
-- **File**: build-static-data-mapping/build/downloaded/cleaned-schema/cleaned-schema.graphql
-- **Content**: GraphQL schema
+- **File**: build-static-data-mapping/build/downloaded/cleaned-schema/entities.graphql
+- **Content**: Game entities enum
 
 ---
 
@@ -51,7 +51,7 @@ To locate the repository root: look for the directory containing `build-static-d
 
 ## Task
 
-1. **Analyze the enum `[Game]EntitiesEnum`** in the GraphQL schema.
+1. **Analyze the enum `[Game]EntitiesEnum`** in the entities.graphql file.
     - It contains a set of keys that correspond to the entities for which gql fragments have been generated.
 2. **Analyze the folder `src/static-data-mapping-prompts`**
     - It contains a set of prompts, each designed to generate a mapping function for a specific entity.
