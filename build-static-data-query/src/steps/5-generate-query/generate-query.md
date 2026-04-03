@@ -41,7 +41,7 @@ To locate the repository root: look for the directory containing `build-static-d
 2. Generate a file containing a GraphQL query in the output folder that:
    - has an alias for the game node - the top level node in the query should be aliased as "game". Refer to the example in the file - build-static-data-query/src/examples/gql-query.example.gql.ts
    - uses **all fields of the `groups` node**.
-   - For each field, the filter must be the object: { page: { all: true, status: "ACTIVE" } }.
+   - For each field, the filter must be the object: { page: { all: true } }.
    - Query only data field, ignore all other fields in the type.
    - For data fields use fragments from the folder - `build-static-data-query/build/gql`
    - Additionally, you need to query `dataVersion` field of the *metadata* node in the [Game]StaticDataQuery type. This node should have the "meta: metadata" and "version: dataVersion" aliases. You must **always** request the following part as a **separate node**, not combined with game data queries. Refer to example in the file - build-static-data-query/src/examples/gql-query.example.gql.ts 
