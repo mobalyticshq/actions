@@ -15,8 +15,6 @@ jobs:
     env:
       GOOGLE_CLIENT_EMAIL: ${{ secrets.GOOGLE_CLIENT_EMAIL }}
       GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}    
-      GOOGLE_SPREADSHEET_REPORT_EMAIL: ${{ secrets.GOOGLE_SPREADSHEET_REPORT_EMAIL }}
-      GOOGLE_SPREADSHEET_REPORT_KEY: ${{ secrets.GOOGLE_SPREADSHEET_REPORT_KEY }}        
       GCP_BUCKET_NAME: ${{ vars.GCP_BUCKET_NAME }}     
       CF_AUTH_TOKEN: ${{ secrets.CF_AUTH_TOKEN }}     
       CF_CLIENT_ID: ${{ secrets.CF_CLIENT_ID }}  
@@ -75,8 +73,6 @@ jobs:
 - secrets.ACTION_ACCESS_TOKEN - can be created in https://github.com/settings/tokens
 - secrets.GOOGLE_CLIENT_EMAIL - email for **spreadsheets-sync**  service account
 - secrets.GOOGLE_PRIVATE_KEY - private key for **spreadsheets-sync**  service account
-- secrets.GOOGLE_SPREADSHEET_REPORT_EMAIL - email for **spreadsheets-sync-report**  service account
-- secrets.GOOGLE_SPREADSHEET_REPORT_KEY - private key for **spreadsheets-sync-report**  service account
 - secrets.GCP_BUCKET_NAME - bucket name ex: ngf
 - secrets.CF_AUTH_TOKEN - token for reset **Cloudflare**
 - secrets.CF_CLIENT_ID - client ID for reset **Cloudflare**
