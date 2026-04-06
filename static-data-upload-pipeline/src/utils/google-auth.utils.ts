@@ -4,6 +4,24 @@ import * as fs from 'fs';
 export const SPREADSHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 
+export function getServiceAccountEmail(): string {
+  if (process.env.GOOGLE_CLIENT_EMAIL) {
+    return process.env.GOOGLE_CLIENT_EMAIL;
+  }
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const keyFile = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'));
+    if (!keyFile.client_email) {
+      throw new Error(
+        `No client_email found in GOOGLE_APPLICATION_CREDENTIALS file: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`,
+      );
+    }
+    return keyFile.client_email;
+  }
+  throw new Error(
+    'Cannot resolve service account email: neither GOOGLE_CLIENT_EMAIL nor GOOGLE_APPLICATION_CREDENTIALS is set.',
+  );
+}
+
 export function buildGoogleAuth(scopes: string[]): GoogleAuth {
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     const keyFile = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'));

@@ -3,7 +3,7 @@ import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
 import { isImage, stringify, tryParse } from './common.utils';
-import { buildGoogleAuth, SPREADSHEETS_SCOPE } from './google-auth.utils';
+import { buildGoogleAuth, getServiceAccountEmail, SPREADSHEETS_SCOPE } from './google-auth.utils';
 import { ApiSchema } from '../pipeline-steps/schema-validation/types';
 import { SlackMessageManagerV2 } from './slack-manager-v2.utils';
 import { applySpreadsheetsDataV2 } from './spreadsheets-apply-v2.utils';
@@ -733,7 +733,7 @@ export async function updateSpreadsheets(
     clearSheets(newSpreadsheetData, spreadsheetId, auth);
 
     console.log(`## Update metadata`);
-    await setMetadata(spreadsheetId, auth, jsonData, newSpreadsheetData, process.env.GOOGLE_CLIENT_EMAIL);
+    await setMetadata(spreadsheetId, auth, jsonData, newSpreadsheetData, getServiceAccountEmail());
 
     console.log(`## Spreadsheets https://docs.google.com/spreadsheets/d/${spreadsheetId} updated`);
   } else {
