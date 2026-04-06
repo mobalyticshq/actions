@@ -658,7 +658,7 @@ export async function updateSpreadsheets(
   oldSpreadsheetsData: { [key: string]: Array<Array<string>> },
   apiSchema: ApiSchema | null,
 ) {
-  if (process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  if (process.env.GOOGLE_CLIENT_EMAIL) {
     console.log(`## Update spreadsheets ${spreadsheetId}`);
     const auth = buildGoogleAuth([SPREADSHEETS_SCOPE]);
 

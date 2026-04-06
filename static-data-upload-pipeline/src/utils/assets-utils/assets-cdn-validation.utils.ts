@@ -33,10 +33,7 @@ export async function processUrlsInChunks(
         : undefined,
   };
 
-  // Initialize GCS client — prefer key file (avoids OpenSSL key parsing issues on Node 17+)
-  const storage = process.env.GOOGLE_APPLICATION_CREDENTIALS
-    ? new Storage({ keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS })
-    : new Storage({ credentials: gcsOptions.credentials });
+  const storage = new Storage({ credentials: gcsOptions.credentials });
 
   const bucket = storage.bucket(gcsOptions.bucketName);
 

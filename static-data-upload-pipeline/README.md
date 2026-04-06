@@ -101,12 +101,6 @@ jobs:
 | `GCP_ASSETS_BUCKET_NAME` | GCS bucket for asset URL validation. Uses the faster GCS listing strategy instead of CDN HEAD requests | `cdn.mobalytics.gg` |
 | `REPORT_DOC_URL` | Full URL to the report spreadsheet, included as a link in Slack notifications | — |
 
-### Local development only
-
-| Variable | Description |
-|---|---|
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to a service account JSON key file. When set, takes precedence over `GOOGLE_CLIENT_EMAIL`/`GOOGLE_PRIVATE_KEY`. Preferred for local runs to avoid key escaping issues. |
-
 ## Add a new game
 
 Add an entry to the `matrix.include` list in your workflow file:
@@ -128,7 +122,7 @@ Make sure the service account (`GOOGLE_CLIENT_EMAIL`) has **Contributor** access
 
 ## Testing locally
 
-Copy `.env.example` to `.env` and fill in the values. The easiest local auth setup is to use `GOOGLE_APPLICATION_CREDENTIALS` pointing to a downloaded service account JSON key file rather than setting `GOOGLE_CLIENT_EMAIL`/`GOOGLE_PRIVATE_KEY` individually.
+Copy `.env.example` to `.env` and fill in `GOOGLE_CLIENT_EMAIL` and `GOOGLE_PRIVATE_KEY` from the service account JSON key file downloaded from GCP Console.
 
 ```bash
 cp .env.example .env
