@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import * as core from '@actions/core';
 import { existsSync, readdirSync } from 'fs';
 import * as path from 'path';
