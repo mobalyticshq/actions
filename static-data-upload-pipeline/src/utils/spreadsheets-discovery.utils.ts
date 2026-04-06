@@ -17,8 +17,70 @@ export function parseFolderIdFromUrl(folderUrl: string): string {
   return match[1];
 }
 
-export const buildOverrideSpreadsheetName = (slug: string) => `${slug}/${slug} overrides sheet`;
-export const buildReportSpreadsheetName = (slug: string) => `${slug}/${slug} report sheet`;
+export const buildOverrideSpreadsheetName = (slug: string) => `${slug} overrides sheet`;
+export const buildReportSpreadsheetName = (slug: string) => `${slug} report sheet`;
+
+async function findFolderInFolder(
+  drive: drive_v3.Drive,
+  parentFolderId: string,
+  name: string,
+): Promise<string | null> {
+  console.log(`🔍 Searching for subfolder "${name}" in folder ${parentFolderId}...`);
+  const res = await drive.files.list({
+    q: `name='${name}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    fields: 'files(id, name)',
+  });
+  const folder = res.data.files?.[0];
+  if (folder?.id) {
+    console.log(`✅ Found subfolder "${name}" → ID: ${folder.id}`);
+    return folder.id;
+  }
+  console.log(`ℹ️ No subfolder named "${name}" found in folder ${parentFolderId}.`);
+  return null;
+}
+
+async function createFolderInFolder(
+  drive: drive_v3.Drive,
+  parentFolderId: string,
+  name: string,
+): Promise<string> {
+  console.log(`📁 Creating subfolder "${name}" in folder ${parentFolderId}...`);
+  const res = await drive.files.create({
+    supportsAllDrives: true,
+    requestBody: {
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentFolderId],
+    },
+    fields: 'id, name',
+  });
+  if (!res.data.id) {
+    throw new Error(
+      `Drive API returned no ID after creating subfolder "${name}" in folder "${parentFolderId}".`,
+    );
+  }
+  console.log(`✅ Created subfolder "${name}" → ID: ${res.data.id}`);
+  return res.data.id;
+}
+
+async function resolveOrCreateFolder(
+  drive: drive_v3.Drive,
+  parentFolderId: string,
+  name: string,
+): Promise<string> {
+  try {
+    return (
+      (await findFolderInFolder(drive, parentFolderId, name)) ??
+      (await createFolderInFolder(drive, parentFolderId, name))
+    );
+  } catch (err) {
+    throw new Error(
+      `Failed to resolve/create subfolder "${name}" in folder "${parentFolderId}": ${err}`,
+    );
+  }
+}
 
 async function findSpreadsheetInFolder(
   drive: drive_v3.Drive,
@@ -90,21 +152,25 @@ export async function discoverSpreadsheetIds(
     `🗂 Discovering spreadsheets for gameEnvSlug="${gameEnvSlug}", folderUrl="${spreadsheetsFolderUrl}"`,
   );
 
-  const folderId = parseFolderIdFromUrl(spreadsheetsFolderUrl);
-  console.log(`📁 Folder ID: ${folderId}`);
+  const rootFolderId = parseFolderIdFromUrl(spreadsheetsFolderUrl);
+  console.log(`📁 Root folder ID: ${rootFolderId}`);
 
   const auth = buildGoogleAuth([SPREADSHEETS_SCOPE, DRIVE_SCOPE]);
   const drive = google.drive({ version: 'v3', auth });
 
+  // Resolve or create the gameEnvSlug subfolder inside the root folder
+  const subFolderId = await resolveOrCreateFolder(drive, rootFolderId, gameEnvSlug);
+  console.log(`📁 Subfolder "${gameEnvSlug}" ID: ${subFolderId}`);
+
   const overrideSpreadsheetId = await resolveOrCreateSpreadsheet(
     drive,
-    folderId,
+    subFolderId,
     buildOverrideSpreadsheetName(gameEnvSlug),
   );
 
   const reportSpreadsheetId = await resolveOrCreateSpreadsheet(
     drive,
-    folderId,
+    subFolderId,
     buildReportSpreadsheetName(gameEnvSlug),
   );
 
