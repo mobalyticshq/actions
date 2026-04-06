@@ -19,6 +19,7 @@
     "slugify": "^1.6.6"
   },
   "devDependencies": {
+    "dotenv": "^16.0.0",
     "@types/google-cloud__storage": "^1.7.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.1",

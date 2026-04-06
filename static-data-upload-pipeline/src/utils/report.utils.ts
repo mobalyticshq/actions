@@ -7,6 +7,7 @@ import { stringify } from './common.utils';
 
 import { ReportMessages } from '../pipeline-steps/validate-static-data/utils';
 import { addSheet, clearSheets, setColor } from './spreadsheets.utils';
+import { buildGoogleAuth, SPREADSHEETS_SCOPE } from './google-auth.utils';
 
 const sheets = google.sheets('v4');
 
@@ -405,13 +406,7 @@ async function fillPages(
 
 export async function createReport(reports: ValidationReport[], spreadsheetId: string, schemaValidationErrors: any[] = []) {
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    const auth = buildGoogleAuth([SPREADSHEETS_SCOPE]);
     console.log('## prepare sheets');
     // await prepareSheets(spreadsheetId,auth);
 

@@ -8,6 +8,7 @@ import { logger } from './utils/logger.utils';
 import { ApiSchema } from './pipeline-steps/schema-validation/types';
 import { runPipeline } from './run-pipeline';
 import { SlackMessageManagerV2 } from './utils/slack-manager-v2.utils';
+import { discoverSpreadsheetIds } from './utils/spreadsheets-discovery.utils';
 
 const execAsync = promisify(exec);
 
@@ -16,14 +17,23 @@ initSlugify();
 async function run() {
   // Collectd data from action inputs
   const staticDataPath = core.getInput('static_data_path');
-  const overrideSpreadsheetId = core.getInput('override_spreadsheet_id');
-  const reportSpreadsheetId = core.getInput('report_spreadsheet_id');
+  const gameEnvSlug = core.getInput('game_env_slug');
+  const spreadsheetsFolderUrl = core.getInput('spreadsheets_folder_url');
   const tmpAssetFolder = core.getInput('tmp_assets_folder');
   const prodAssetFolder = core.getInput('prod_assets_folder');
   const dryRun = core.getInput('dry_run')?.toLowerCase() === 'true';
   const skipSchemaValidation = core.getInput('skip_schema_validation')?.toLowerCase() === 'true';
   const tests = core.getInput('game_specific_tests');
   const chanelId = core.getInput('slack_channel_id');
+
+  if (!gameEnvSlug) {
+    core.setFailed('Required input "game_env_slug" is not set.');
+    return;
+  }
+  if (!spreadsheetsFolderUrl) {
+    core.setFailed('Required input "spreadsheets_folder_url" is not set.');
+    return;
+  }
 
   // Create Slack message manager for this run
   // const slackManager = new SlackMessageManager();
@@ -33,10 +43,8 @@ async function run() {
 
   //log header
   console.log('ℹ️ bucket for static data:', process.env.GCP_BUCKET_NAME);
-  console.log(`ℹ️ [Override Spreadsheet](https://docs.google.com/spreadsheets/d/${overrideSpreadsheetId}/edit)`);
-  // console.log('ℹ️ spreadsheetId for override:', overrideSpreadsheetId);
-  console.log(`ℹ️ [Spreadsheet for report](https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}/edit)`);
-  // console.log('ℹ️ spreadsheetId for report:', reportSpreadsheetId);
+  console.log(`ℹ️ gameEnvSlug: ${gameEnvSlug}`);
+  console.log(`ℹ️ spreadsheets folder: ${spreadsheetsFolderUrl}`);
   console.log('ℹ️ folder with game specific tests:', tests);
   console.log('ℹ️ folder for tmp assets:', tmpAssetFolder);
   console.log('ℹ️ folder for prod assets:', prodAssetFolder);
@@ -69,6 +77,18 @@ async function run() {
   }
 
   logger.endGroup();
+
+  let overrideSpreadsheetId: string;
+  let reportSpreadsheetId: string;
+  try {
+    ({ overrideSpreadsheetId, reportSpreadsheetId } = await discoverSpreadsheetIds(
+      gameEnvSlug,
+      spreadsheetsFolderUrl,
+    ));
+  } catch (error) {
+    core.setFailed(`Spreadsheet discovery failed: ${error}`);
+    return;
+  }
 
   await runPipeline({
     versions: sortedFiles,

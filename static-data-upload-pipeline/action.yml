@@ -1,10 +1,17 @@
 name: 'static-data-upload-pipeline'
 description: 'Merge new static data, validating and upload to the bucket'
-author: 'Evgeniy'
+author: 'Mobalytics'
 inputs:
   token:
     required: true
     default: ${{ github.token }}
+    description: 'GitHub token used for GitHub API authentication. Defaults to the built-in repository token.'
+  game_env_slug:
+    description: 'Game environment slug is combination of game abbreviation and environment, it is used to derive spreadsheet names (e.g. ovw_prod, exg_dev, etc)'
+    required: true
+  spreadsheets_folder_url:
+    description: 'URL of the Google Drive folder where spreadsheets are stored or will be created'
+    required: true
 
 runs:
   using: 'node16'

@@ -3,6 +3,7 @@ import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
 import { isImage, stringify, tryParse } from './common.utils';
+import { buildGoogleAuth, SPREADSHEETS_SCOPE } from './google-auth.utils';
 import { ApiSchema } from '../pipeline-steps/schema-validation/types';
 import { SlackMessageManagerV2 } from './slack-manager-v2.utils';
 import { applySpreadsheetsDataV2 } from './spreadsheets-apply-v2.utils';
@@ -657,15 +658,9 @@ export async function updateSpreadsheets(
   oldSpreadsheetsData: { [key: string]: Array<Array<string>> },
   apiSchema: ApiSchema | null,
 ) {
-  if (process.env.GOOGLE_CLIENT_EMAIL) {
+  if (process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     console.log(`## Update spreadsheets ${spreadsheetId}`);
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    const auth = buildGoogleAuth([SPREADSHEETS_SCOPE]);
 
     console.log('## Remove all protections');
     //remove all protections from pages
@@ -758,13 +753,7 @@ export async function mergeWithSpreadsheets(actionUrl: string, slackManager: Sla
     pagesWidthUnprocessedCells: {} as { [key: string]: Array<{ row: number; column: number }> },
   };
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    const auth = buildGoogleAuth([SPREADSHEETS_SCOPE]);
 
     //get all data from spreadsheet
     console.log(`##Load spreadsheets ${spreadsheetId}`);
