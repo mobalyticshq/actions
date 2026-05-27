@@ -1,6 +1,7 @@
 import { print, type DocumentNode } from 'graphql';
 import queryObject from '../../build/downloaded/query';
 import staticDataMappers from '../../build/mapping/index';
+import { fetchGqlShemaUserAgent } from '../../../shared/constants/user-agent';
 
 const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT;
 if (!GRAPHQL_ENDPOINT) {
@@ -31,6 +32,7 @@ describe('Static Data Mapping Integration Test', () => {
         headers: {
           'Content-Type': 'application/json',
           'xmoba-no-cache': '1',
+          'User-Agent': fetchGqlShemaUserAgent,
         },
         body: JSON.stringify({
           query: queryString,
