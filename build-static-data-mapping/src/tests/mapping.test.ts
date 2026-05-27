@@ -17,6 +17,12 @@ interface GraphQLResponse<T> {
   }>;
 }
 
+const headers = {
+  'Content-Type': 'application/json',
+  'xmoba-no-cache': '1',
+  'User-Agent': fetchGqlShemaUserAgent,
+};
+
 describe('Static Data Mapping Integration Test', () => {
   it('should fetch static data and map it without runtime errors', async () => {
     // Convert GraphQL DocumentNode to query string
@@ -29,11 +35,7 @@ describe('Static Data Mapping Integration Test', () => {
     try {
       response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'xmoba-no-cache': '1',
-          'User-Agent': fetchGqlShemaUserAgent,
-        },
+        headers,
         body: JSON.stringify({
           query: queryString,
           variables: {},
@@ -144,10 +146,7 @@ describe('Static Data Mapping Integration Test', () => {
     try {
       response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'xmoba-no-cache': '1',
-        },
+        headers,
         body: JSON.stringify({
           query: queryString,
           variables: {},
