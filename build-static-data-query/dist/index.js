@@ -217,6 +217,7 @@ const core = __importStar(__webpack_require__(659));
 const outputPath = '_generated/schema.graphql';
 const headers = {
     'xmoba-no-cache': '1',
+    'User-Agent': 'moba-frontend-gql-schema-downloader',
 };
 async function downloadSchema(options) {
     try {

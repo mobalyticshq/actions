@@ -11,6 +11,7 @@ export interface DownloadSchemaOptions {
 const outputPath = '_generated/schema.graphql';
 const headers = {
   'xmoba-no-cache': '1',
+  'User-Agent': 'moba-frontend-gql-schema-downloader',
 };
 
 export async function downloadSchema(options: DownloadSchemaOptions): Promise<string> {
