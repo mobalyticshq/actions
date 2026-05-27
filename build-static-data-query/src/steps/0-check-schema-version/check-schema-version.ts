@@ -6,6 +6,7 @@ import {
 } from '../../utils/module-folder.utils';
 import { downloadConfigFromBucket } from '@shared/utils/bucket.utils';
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
+import { fetchGqlShemaUserAgent } from '@shared/constants/user-agent';
 
 export interface CheckSchemaVersionOptions {
   graphqlEndpoint: string;
@@ -39,6 +40,7 @@ interface SchemaVersionData {
 const headers = {
   'xmoba-no-cache': '1',
   'Content-Type': 'application/json',
+  'User-Agent': fetchGqlShemaUserAgent,
 };
 
 async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Promise<string> {

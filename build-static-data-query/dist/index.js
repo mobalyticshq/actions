@@ -214,10 +214,11 @@ const rimraf_1 = __webpack_require__(485);
 const path = __importStar(__webpack_require__(928));
 const fs = __importStar(__webpack_require__(896));
 const core = __importStar(__webpack_require__(659));
+const user_agent_1 = __webpack_require__(998);
 const outputPath = '_generated/schema.graphql';
 const headers = {
     'xmoba-no-cache': '1',
-    'User-Agent': 'moba-frontend-gql-schema-downloader',
+    'User-Agent': user_agent_1.fetchGqlShemaUserAgent,
 };
 async function downloadSchema(options) {
     try {
@@ -377,9 +378,11 @@ const core = __importStar(__webpack_require__(659));
 const module_folder_utils_1 = __webpack_require__(994);
 const bucket_utils_1 = __webpack_require__(328);
 const dynamic_modules_types_1 = __webpack_require__(463);
+const user_agent_1 = __webpack_require__(998);
 const headers = {
     'xmoba-no-cache': '1',
     'Content-Type': 'application/json',
+    'User-Agent': user_agent_1.fetchGqlShemaUserAgent,
 };
 async function fetchSchemaVersionFromGraphQL(endpoint, game) {
     const query = `
@@ -3628,6 +3631,17 @@ async function checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaV
     const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion);
     return (0, bucket_utils_1.isFolderExists)(bucket, versionFolderPath);
 }
+
+
+/***/ }),
+
+/***/ 998:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fetchGqlShemaUserAgent = void 0;
+exports.fetchGqlShemaUserAgent = 'moba-frontend-gql-schema-downloader';
 
 
 /***/ })

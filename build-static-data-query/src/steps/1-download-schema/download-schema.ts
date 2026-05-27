@@ -3,6 +3,7 @@ import { rimraf } from 'rimraf';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as core from '@actions/core';
+import { fetchGqlShemaUserAgent } from '@shared/constants/user-agent';
 
 export interface DownloadSchemaOptions {
   endpoint: string;
@@ -11,7 +12,7 @@ export interface DownloadSchemaOptions {
 const outputPath = '_generated/schema.graphql';
 const headers = {
   'xmoba-no-cache': '1',
-  'User-Agent': 'moba-frontend-gql-schema-downloader',
+  'User-Agent': fetchGqlShemaUserAgent,
 };
 
 export async function downloadSchema(options: DownloadSchemaOptions): Promise<string> {
