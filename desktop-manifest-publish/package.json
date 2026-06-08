@@ -1,0 +1,20 @@
+{
+  "name": "desktop-manifest-publish",
+  "private": true,
+  "description": "Composite action: build (merge per-game), validate (jest) & publish the desktop game manifest to the CDN.",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "jest": "^29.7.0",
+    "typescript": "^5.6.0"
+  },
+  "jest": {
+    "testMatch": [
+      "**/*.test.mjs"
+    ],
+    "transform": {}
+  }
+}

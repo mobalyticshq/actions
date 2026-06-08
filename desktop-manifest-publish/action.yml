@@ -1,0 +1,66 @@
+name: 'Desktop manifest publish'
+description: 'Build (merge per-game), validate, and publish ONE environment of the desktop game manifest to the CDN.'
+author: 'Mobalytics'
+
+inputs:
+  environment:
+    description: 'Target environment: dev | stg | prod'
+    required: true
+  games-dir:
+    description: 'Path (relative to the workspace) to the games tree: <games-dir>/<game>/<env>/desktop/manifest.json'
+    required: true
+  bucket:
+    description: 'GCS bucket base for the desktop manifests (gsutil URL, without the /<env> suffix)'
+    required: true
+  cf-zone-id:
+    description: 'Cloudflare zone id fronting the CDN'
+    required: true
+  cf-purge-prefix:
+    description: 'CDN host/path base for the manifest URL to purge (without the <env>/ suffix)'
+    required: true
+  cf-token:
+    description: 'Cloudflare API token (purge_cache).'
+    required: true
+  gcp-service-account-json:
+    description: 'GCP service account JSON key used by gsutil to upload to the bucket.'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-node@v5
+      with:
+        node-version: 20
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: ${{ inputs.gcp-service-account-json }}
+
+    - uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Build
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/build-manifest.mjs"
+      env:
+        DESKTOP_ENV: ${{ inputs.environment }}
+        GAMES_DIR: ${{ github.workspace }}/${{ inputs.games-dir }}
+        DIST_DIR: ${{ runner.temp }}/desktop-dist
+
+    - name: Validate
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/validate-manifest.mjs"
+      env:
+        DESKTOP_ENV: ${{ inputs.environment }}
+        GAMES_DIR: ${{ github.workspace }}/${{ inputs.games-dir }}
+
+    - name: Deploy
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/publish-manifest.mjs"
+      env:
+        DESKTOP_ENV: ${{ inputs.environment }}
+        DIST_DIR: ${{ runner.temp }}/desktop-dist
+        DESKTOP_BUCKET: ${{ inputs.bucket }}
+        CF_ZONE_ID: ${{ inputs.cf-zone-id }}
+        CF_PURGE_PREFIX: ${{ inputs.cf-purge-prefix }}
+        CF_AUTH_TOKEN: ${{ inputs.cf-token }}
