@@ -314,3 +314,45 @@ func TestSS20_RefFieldNameConflict(t *testing.T) {
 		}
 	})
 }
+
+func TestSS21_RefFieldSuffix(t *testing.T) {
+	t.Run("Ref suffix is valid", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "items"}
+		errors := validateSS21_RefFieldSuffix("itemRef", field, "test.path")
+		if len(errors) != 0 {
+			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+
+	t.Run("Slug suffix is valid", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "categories"}
+		errors := validateSS21_RefFieldSuffix("categorySlug", field, "test.path")
+		if len(errors) != 0 {
+			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+
+	t.Run("Slugs suffix is valid", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "tags", Array: true}
+		errors := validateSS21_RefFieldSuffix("tagSlugs", field, "test.path")
+		if len(errors) != 0 {
+			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+
+	t.Run("missing suffix on Ref type", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "items"}
+		errors := validateSS21_RefFieldSuffix("item", field, "test.path")
+		if len(errors) != 1 {
+			t.Errorf("expected 1 error, got %d", len(errors))
+		}
+	})
+
+	t.Run("only applies to Ref type", func(t *testing.T) {
+		field := &types.SchemaField{Type: "String"}
+		errors := validateSS21_RefFieldSuffix("item", field, "test.path")
+		if len(errors) != 0 {
+			t.Errorf("expected no errors for non-Ref type, got %d", len(errors))
+		}
+	})
+}

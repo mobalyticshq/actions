@@ -27,7 +27,6 @@ var allowedFieldTypes = map[string]bool{
 	"Object":  true,
 }
 
-// Reference suffixes that can cause conflicts
 var refSuffixes = []string{"Ref", "Slug", "Slugs"}
 
 // ValidateSchema validates a schema file and returns validation errors
@@ -95,6 +94,7 @@ func validateFieldRules(fieldName string, field *types.SchemaField, path string,
 	errors = append(errors, validateSS13_FieldNameFormat(fieldName, path)...)
 	errors = append(errors, validateSS15_FieldTypeFormat(field, path)...)
 	errors = append(errors, validateSS16_FieldTypeAllowed(field, path)...)
+	errors = append(errors, validateSS21_RefFieldSuffix(fieldName, field, path)...)
 	errors = append(errors, validateSS17_ObjNameReferenceValid(field, path, group)...)
 	errors = append(errors, validateSS18_RefToReferenceValid(field, path, schema)...)
 	errors = append(errors, validateSS19_FilterOnlyOnString(field, path)...)
@@ -393,4 +393,21 @@ func validateSS20_RefFieldNameConflict(fieldName string, field *types.SchemaFiel
 		}
 	}
 	return nil
+}
+
+// SS21: Ref type fields must end with a ref suffix
+func validateSS21_RefFieldSuffix(fieldName string, field *types.SchemaField, path string) []types.ValidationError {
+	if field.Type != "Ref" {
+		return nil
+	}
+	for _, suffix := range refSuffixes {
+		if strings.HasSuffix(fieldName, suffix) {
+			return nil
+		}
+	}
+	return []types.ValidationError{{
+		Type:    "error",
+		Message: fmt.Sprintf("field %q has Ref type and must end with one of the suffixes: %s", fieldName, strings.Join(refSuffixes, ", ")),
+		Path:    path,
+	}}
 }
