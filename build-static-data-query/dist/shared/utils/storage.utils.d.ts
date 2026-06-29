@@ -1,7 +1,7 @@
 import { Storage } from '@google-cloud/storage';
 /**
- * Creates a GCS Storage client whose **auth/token** requests go through Node's
- * native `fetch` (undici) instead of `node-fetch`.
+ * Creates a GCS Storage client whose HTTP requests go through Node's native
+ * `fetch` (undici) instead of `node-fetch`.
  *
  * Why: `@google-cloud/storage@7` pins `google-auth-library@9`, which ships
  * `gaxios@6`. gaxios 6 always uses `node-fetch` in Node (it only picks the
@@ -12,8 +12,8 @@ import { Storage } from '@google-cloud/storage';
  * transporter with `fetchImplementation` set to the native fetch, gtoken/JWT
  * mint tokens via undici and the failure disappears.
  *
- * Only token requests use this transporter; object up/downloads keep their own
- * transport, so response-stream semantics are unaffected.
+ * The same transporter is reused by `@google-cloud/storage` for JSON-API
+ * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
  */
 export declare function createStorage(projectId: string): Storage;
 //# sourceMappingURL=storage.utils.d.ts.map

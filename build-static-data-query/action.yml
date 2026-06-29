@@ -59,39 +59,6 @@ runs:
     - name: Set up Google Cloud SDK
       uses: 'google-github-actions/setup-gcloud@v2'
 
-    - name: Probe Google auth/storage connectivity
-      shell: bash
-      working-directory: ${{ github.action_path }}
-      run: |
-        echo "::group::Runtime"
-        node --version
-        echo "global fetch type: $(node -e 'console.log(typeof fetch)')"
-        echo "::endgroup::"
-
-        echo "::group::curl probes (http_code != 000 means the host is reachable)"
-        for url in \
-          https://www.googleapis.com/oauth2/v4/token \
-          https://oauth2.googleapis.com/token \
-          https://storage.googleapis.com ; do
-          echo "--- $url"
-          curl -sS -o /dev/null -w "http_code=%{http_code} dns=%{time_namelookup}s connect=%{time_connect}s tls=%{time_appconnect}s total=%{time_total}s\n" \
-            -m 20 "$url" -d '' || echo "curl FAILED for $url"
-        done
-        echo "::endgroup::"
-
-        echo "::group::node fetch probe (same URL gtoken/gaxios uses)"
-        node -e '
-          const url = "https://www.googleapis.com/oauth2/v4/token";
-          fetch(url, { method: "POST" })
-            .then(async r => { console.log("node fetch status:", r.status); await r.text().catch(() => {}); })
-            .catch(e => {
-              console.log("node fetch FAILED:", e && e.name, e && e.message);
-              let c = e && e.cause, depth = 0;
-              while (c && depth < 5) { console.log("  caused by:", c.name, c.message, c.code || ""); c = c.cause; depth++; }
-            });
-        ' || true
-        echo "::endgroup::"
-
     - name: Run build script
       run: node dist/index.js
       shell: bash

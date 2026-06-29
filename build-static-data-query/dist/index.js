@@ -3619,8 +3619,21 @@ const STORAGE_SCOPES = [
     'https://www.googleapis.com/auth/devstorage.full_control',
 ];
 /**
- * Creates a GCS Storage client whose **auth/token** requests go through Node's
- * native `fetch` (undici) instead of `node-fetch`.
+ * Native `fetch` (undici) wrapper that adds `duplex: 'half'` whenever a request
+ * carries a body. undici rejects streaming request bodies without this option
+ * (`RequestInit: duplex option is required when sending a body`), which surfaces
+ * during GCS uploads (multipart bodies are streams). `node-fetch` did not need
+ * it, so the option must be supplied explicitly now that we use the native fetch.
+ */
+const nativeFetchWithDuplex = (input, init) => {
+    if (init && init.body != null && init.duplex == null) {
+        init = { ...init, duplex: 'half' };
+    }
+    return globalThis.fetch(input, init);
+};
+/**
+ * Creates a GCS Storage client whose HTTP requests go through Node's native
+ * `fetch` (undici) instead of `node-fetch`.
  *
  * Why: `@google-cloud/storage@7` pins `google-auth-library@9`, which ships
  * `gaxios@6`. gaxios 6 always uses `node-fetch` in Node (it only picks the
@@ -3631,15 +3644,15 @@ const STORAGE_SCOPES = [
  * transporter with `fetchImplementation` set to the native fetch, gtoken/JWT
  * mint tokens via undici and the failure disappears.
  *
- * Only token requests use this transporter; object up/downloads keep their own
- * transport, so response-stream semantics are unaffected.
+ * The same transporter is reused by `@google-cloud/storage` for JSON-API
+ * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
  */
 function createStorage(projectId) {
     const authClient = new google_auth_library_1.GoogleAuth({
         projectId,
         scopes: STORAGE_SCOPES,
         clientOptions: {
-            transporter: new gaxios_1.Gaxios({ fetchImplementation: globalThis.fetch }),
+            transporter: new gaxios_1.Gaxios({ fetchImplementation: nativeFetchWithDuplex }),
         },
     });
     return new storage_1.Storage({

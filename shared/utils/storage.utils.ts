@@ -13,8 +13,22 @@ const STORAGE_SCOPES = [
 ];
 
 /**
- * Creates a GCS Storage client whose **auth/token** requests go through Node's
- * native `fetch` (undici) instead of `node-fetch`.
+ * Native `fetch` (undici) wrapper that adds `duplex: 'half'` whenever a request
+ * carries a body. undici rejects streaming request bodies without this option
+ * (`RequestInit: duplex option is required when sending a body`), which surfaces
+ * during GCS uploads (multipart bodies are streams). `node-fetch` did not need
+ * it, so the option must be supplied explicitly now that we use the native fetch.
+ */
+const nativeFetchWithDuplex: typeof globalThis.fetch = (input, init) => {
+  if (init && init.body != null && (init as { duplex?: string }).duplex == null) {
+    init = { ...init, duplex: 'half' } as RequestInit;
+  }
+  return globalThis.fetch(input, init);
+};
+
+/**
+ * Creates a GCS Storage client whose HTTP requests go through Node's native
+ * `fetch` (undici) instead of `node-fetch`.
  *
  * Why: `@google-cloud/storage@7` pins `google-auth-library@9`, which ships
  * `gaxios@6`. gaxios 6 always uses `node-fetch` in Node (it only picks the
@@ -25,15 +39,15 @@ const STORAGE_SCOPES = [
  * transporter with `fetchImplementation` set to the native fetch, gtoken/JWT
  * mint tokens via undici and the failure disappears.
  *
- * Only token requests use this transporter; object up/downloads keep their own
- * transport, so response-stream semantics are unaffected.
+ * The same transporter is reused by `@google-cloud/storage` for JSON-API
+ * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
  */
 export function createStorage(projectId: string): Storage {
   const authClient = new GoogleAuth({
     projectId,
     scopes: STORAGE_SCOPES,
     clientOptions: {
-      transporter: new Gaxios({ fetchImplementation: globalThis.fetch as never }),
+      transporter: new Gaxios({ fetchImplementation: nativeFetchWithDuplex as never }),
     },
   });
 
