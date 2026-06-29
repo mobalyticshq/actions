@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { Storage } from '@google-cloud/storage';
+import { createStorage } from '@shared/utils/storage.utils';
 import { checkSchemaVersion } from './steps/0-check-schema-version';
 import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
@@ -30,10 +30,7 @@ export async function run(): Promise<void> {
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
     // Initialize Storage and Bucket
-    const storage = new Storage({
-      projectId: gcsProjectId,
-      retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
-    });
+    const storage = createStorage(gcsProjectId);
     const bucket = storage.bucket(gcsBucketName);
 
     // Step 0: Check schema version

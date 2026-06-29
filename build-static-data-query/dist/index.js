@@ -728,6 +728,13 @@ function spawnWithTimeout(input) {
 
 /***/ }),
 
+/***/ 154:
+/***/ ((module) => {
+
+module.exports = require("google-auth-library");
+
+/***/ }),
+
 /***/ 156:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -768,7 +775,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__webpack_require__(659));
-const storage_1 = __webpack_require__(869);
+const storage_utils_1 = __webpack_require__(931);
 const _0_check_schema_version_1 = __webpack_require__(911);
 const _1_download_schema_1 = __webpack_require__(309);
 const _2_generate_scopes_1 = __webpack_require__(559);
@@ -796,10 +803,7 @@ async function run() {
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
         core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
         // Initialize Storage and Bucket
-        const storage = new storage_1.Storage({
-            projectId: gcsProjectId,
-            retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
-        });
+        const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
         const bucket = storage.bucket(gcsBucketName);
         // Step 0: Check schema version
         core.startGroup('🔍 Step 0: Checking schema version');
@@ -2847,6 +2851,13 @@ Object.defineProperty(exports, "uploadBuild", ({ enumerable: true, get: function
 
 /***/ }),
 
+/***/ 445:
+/***/ ((module) => {
+
+module.exports = require("gaxios");
+
+/***/ }),
+
 /***/ 463:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -3586,6 +3597,58 @@ Object.defineProperty(exports, "cleanSchema", ({ enumerable: true, get: function
 /***/ ((module) => {
 
 module.exports = require("path");
+
+/***/ }),
+
+/***/ 931:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createStorage = createStorage;
+const storage_1 = __webpack_require__(869);
+const google_auth_library_1 = __webpack_require__(154);
+const gaxios_1 = __webpack_require__(445);
+/**
+ * Scopes that `@google-cloud/storage` requests for its own auth client. We must
+ * replicate them here because we provide a custom `authClient` (see below).
+ */
+const STORAGE_SCOPES = [
+    'https://www.googleapis.com/auth/iam',
+    'https://www.googleapis.com/auth/cloud-platform',
+    'https://www.googleapis.com/auth/devstorage.full_control',
+];
+/**
+ * Creates a GCS Storage client whose **auth/token** requests go through Node's
+ * native `fetch` (undici) instead of `node-fetch`.
+ *
+ * Why: `@google-cloud/storage@7` pins `google-auth-library@9`, which ships
+ * `gaxios@6`. gaxios 6 always uses `node-fetch` in Node (it only picks the
+ * native fetch when a browser `window.fetch` exists). `node-fetch` fails against
+ * the Google OAuth token endpoint with `Invalid response body while trying to
+ * fetch https://www.googleapis.com/oauth2/v4/token: Premature close`, whereas
+ * the native fetch works (verified). By giving the auth client a Gaxios
+ * transporter with `fetchImplementation` set to the native fetch, gtoken/JWT
+ * mint tokens via undici and the failure disappears.
+ *
+ * Only token requests use this transporter; object up/downloads keep their own
+ * transport, so response-stream semantics are unaffected.
+ */
+function createStorage(projectId) {
+    const authClient = new google_auth_library_1.GoogleAuth({
+        projectId,
+        scopes: STORAGE_SCOPES,
+        clientOptions: {
+            transporter: new gaxios_1.Gaxios({ fetchImplementation: globalThis.fetch }),
+        },
+    });
+    return new storage_1.Storage({
+        projectId,
+        authClient,
+        retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
+    });
+}
+
 
 /***/ }),
 

@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { Storage } from '@google-cloud/storage';
+import { createStorage } from '@shared/utils/storage.utils';
 import { uploadBuild } from './upload-build';
 
 /**
@@ -17,10 +17,7 @@ async function run(): Promise<void> {
     core.info(`🚀 Starting upload build for static data mapping - game: ${game}`);
 
     // Initialize Storage and Bucket
-    const storage = new Storage({
-      projectId: gcsProjectId,
-      retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
-    });
+    const storage = createStorage(gcsProjectId);
     const bucket = storage.bucket(gcsBucketName);
 
     // Upload build

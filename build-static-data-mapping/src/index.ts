@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { Storage } from '@google-cloud/storage';
+import { createStorage } from '@shared/utils/storage.utils';
 import { downloadBuildArtifacts } from './steps/1-download-build-artifacts';
 import { extractEntitiesEnum } from './steps/2-extract-entities-enum';
 import { copyUserPrompts } from './steps/3-copy-user-prompts';
@@ -23,10 +23,7 @@ export async function run(): Promise<void> {
     core.info(`🚀 Starting build static data mapping pipeline for game: ${game}`);
 
     // Initialize Storage and Bucket
-    const storage = new Storage({
-      projectId: gcsProjectId,
-      retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
-    });
+    const storage = createStorage(gcsProjectId);
     const bucket = storage.bucket(gcsBucketName);
 
     // Step 1: Check schema version
