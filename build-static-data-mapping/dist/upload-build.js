@@ -436,7 +436,10 @@ async function run() {
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
         core.info(`🚀 Starting upload build for static data mapping - game: ${game}`);
         // Initialize Storage and Bucket
-        const storage = new storage_1.Storage({ projectId: gcsProjectId });
+        const storage = new storage_1.Storage({
+            projectId: gcsProjectId,
+            retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
+        });
         const bucket = storage.bucket(gcsBucketName);
         // Upload build
         await (0, upload_build_1.uploadBuild)({

@@ -796,7 +796,10 @@ async function run() {
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
         core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
         // Initialize Storage and Bucket
-        const storage = new storage_1.Storage({ projectId: gcsProjectId });
+        const storage = new storage_1.Storage({
+            projectId: gcsProjectId,
+            retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
+        });
         const bucket = storage.bucket(gcsBucketName);
         // Step 0: Check schema version
         core.startGroup('🔍 Step 0: Checking schema version');

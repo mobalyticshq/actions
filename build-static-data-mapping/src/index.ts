@@ -23,7 +23,10 @@ export async function run(): Promise<void> {
     core.info(`🚀 Starting build static data mapping pipeline for game: ${game}`);
 
     // Initialize Storage and Bucket
-    const storage = new Storage({ projectId: gcsProjectId });
+    const storage = new Storage({
+      projectId: gcsProjectId,
+      retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
+    });
     const bucket = storage.bucket(gcsBucketName);
 
     // Step 1: Check schema version
