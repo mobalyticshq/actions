@@ -17,6 +17,7 @@ export interface UploadBuildOptions {
   env: string;
   gameUrlSlug: string;
   schemaVersion: string;
+  disableQueryAst: boolean;
 }
 
 const buildPath = './build';
@@ -45,8 +46,12 @@ function makeModuleEntrypointName(hash: string): string {
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, gameUrlSlug, schemaVersion } = options;
+    const { bucket, env, gameUrlSlug, schemaVersion, disableQueryAst } = options;
     const bucketName = bucket.name;
+
+    const staticDataQueryModuleSlug = disableQueryAst
+      ? DynamicModuleSlug.STATIC_DATA_QUERY_V2
+      : DynamicModuleSlug.STATIC_DATA_QUERY;
 
     core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
 
@@ -66,12 +71,23 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     // Step 2: Build GCS paths
-    const fullVersionPath = buildStaticDataQueryModuleFolderPath(env, gameUrlSlug, schemaVersion);
+    const fullVersionPath = buildStaticDataQueryModuleFolderPath(
+      env,
+      gameUrlSlug,
+      schemaVersion,
+      staticDataQueryModuleSlug,
+    );
 
     core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
 
     // Step 3: Check if version folder already exists
-    const moduleFolderExists = await checkStaticDataQueryModuleFolderExists(bucket, env, gameUrlSlug, schemaVersion);
+    const moduleFolderExists = await checkStaticDataQueryModuleFolderExists(
+      bucket,
+      env,
+      gameUrlSlug,
+      schemaVersion,
+      staticDataQueryModuleSlug,
+    );
     if (moduleFolderExists) {
       const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
       core.setFailed(errorMessage);
@@ -225,7 +241,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
         version: schemaVersion,
       };
 
-      const basePath = generateModulePath(env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY);
+      const basePath = generateModulePath(env, gameUrlSlug, staticDataQueryModuleSlug);
       const configDestination = `${basePath}/config.json`;
       const configFile = bucket.file(configDestination);
       const configJson = JSON.stringify(config, null, 2);

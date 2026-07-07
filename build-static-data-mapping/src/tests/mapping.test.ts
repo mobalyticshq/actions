@@ -8,6 +8,13 @@ if (!GRAPHQL_ENDPOINT) {
   throw new Error('GRAPHQL_ENDPOINT environment variable is required');
 }
 
+// In v2 mode the downloaded query artifact is already a plain string, so it is
+// used directly; otherwise it is a compiled AST that must be printed.
+const queryIsString = process.env.DISABLE_QUERY_AST_COMPILATION === 'true';
+
+const toQueryString = (query: unknown): string =>
+  queryIsString ? (query as string) : print(query as DocumentNode);
+
 interface GraphQLResponse<T> {
   data?: T;
   errors?: Array<{
@@ -28,7 +35,7 @@ describe('Static Data Mapping Integration Test', () => {
     // Convert GraphQL DocumentNode to query string
     const { staticDataQuery } = queryObject;
 
-    const queryString = print(staticDataQuery as unknown as DocumentNode);
+    const queryString = toQueryString(staticDataQuery);
 
     // Execute GraphQL request
     let response: Response;
@@ -139,7 +146,7 @@ describe('Static Data Mapping Integration Test', () => {
     // Convert GraphQL DocumentNode to query string
     const { staticDataMetaQuery } = queryObject;
 
-    const queryString = print(staticDataMetaQuery as unknown as DocumentNode);
+    const queryString = toQueryString(staticDataMetaQuery);
 
     // Execute GraphQL request
     let response: Response;

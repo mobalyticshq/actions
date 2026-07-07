@@ -26,6 +26,7 @@ export async function run(): Promise<void> {
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
+    const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
@@ -41,6 +42,7 @@ export async function run(): Promise<void> {
       env: dynamicModulesEnv,
       game,
       gameUrlSlug,
+      disableQueryAst,
     });
     core.endGroup();
 
@@ -100,7 +102,7 @@ export async function run(): Promise<void> {
 
     // Step 6: Compile query
     core.startGroup('🔨 Step 6: Compiling queries');
-    await compileQueries();
+    await compileQueries({ disableQueryAst });
     core.info(`✓ Queries Compiling completed`);
     core.endGroup();
 
@@ -126,6 +128,7 @@ export async function run(): Promise<void> {
       env: dynamicModulesEnv,
       gameUrlSlug,
       schemaVersion: schemaVersionCheck.currentSchemaVersion,
+      disableQueryAst,
     });
     core.info(`✓ Build upload completed`);
     core.endGroup();

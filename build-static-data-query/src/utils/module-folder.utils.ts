@@ -3,8 +3,13 @@ import { generateModuleFolderName, generateModulePath } from '@shared/utils/dyna
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import { isFolderExists } from '@shared/utils/bucket.utils';
 
-export function buildStaticDataQueryModuleFolderPath(env: string, game: string, schemaVersion: string): string {
-  const basePath = generateModulePath(env, game, DynamicModuleSlug.STATIC_DATA_QUERY);
+export function buildStaticDataQueryModuleFolderPath(
+  env: string,
+  game: string,
+  schemaVersion: string,
+  slug: DynamicModuleSlug,
+): string {
+  const basePath = generateModulePath(env, game, slug);
   const versionFolder = generateModuleFolderName(schemaVersion);
   return `${basePath}/${versionFolder}`;
 }
@@ -14,7 +19,8 @@ export async function checkStaticDataQueryModuleFolderExists(
   env: string,
   game: string,
   schemaVersion: string,
+  slug: DynamicModuleSlug,
 ): Promise<boolean> {
-  const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion);
+  const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion, slug);
   return isFolderExists(bucket, versionFolderPath);
 }

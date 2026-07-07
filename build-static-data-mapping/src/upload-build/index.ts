@@ -13,6 +13,7 @@ async function run(): Promise<void> {
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
+    const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
 
     core.info(`🚀 Starting upload build for static data mapping - game: ${game}`);
 
@@ -25,6 +26,7 @@ async function run(): Promise<void> {
       bucket,
       env: dynamicModulesEnv,
       gameUrlSlug,
+      disableQueryAst,
     });
 
     core.info(`✓ Upload build completed successfully`);

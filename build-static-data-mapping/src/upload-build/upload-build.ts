@@ -15,6 +15,7 @@ export interface UploadBuildOptions {
   bucket: Bucket;
   env: string;
   gameUrlSlug: string;
+  disableQueryAst: boolean;
 }
 
 const buildMappingPath = './build/mapping';
@@ -23,8 +24,12 @@ const buildDistPath = './build/dist';
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, gameUrlSlug } = options;
+    const { bucket, env, gameUrlSlug, disableQueryAst } = options;
     const bucketName = bucket.name;
+
+    const staticDataMappingModuleSlug = disableQueryAst
+      ? DynamicModuleSlug.STATIC_DATA_MAPPING_V2
+      : DynamicModuleSlug.STATIC_DATA_MAPPING;
 
     core.info(`Starting upload of mapping files to GCS bucket: ${bucketName}`);
 
@@ -44,19 +49,19 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
     }
 
     // Step 2: Get current version and increment
-    const existingConfig = await downloadConfigFromBucket(
-      bucket,
-      env,
-      gameUrlSlug,
-      DynamicModuleSlug.STATIC_DATA_MAPPING,
-    );
+    const existingConfig = await downloadConfigFromBucket(bucket, env, gameUrlSlug, staticDataMappingModuleSlug);
     const currentVersion = existingConfig?.version || null;
     const newVersion = incrementVersion(currentVersion);
 
     core.info(`Current version: ${currentVersion || 'none'}, new version: ${newVersion}`);
 
     // Step 3: Build GCS paths
-    const moduleFolderPath = buildStaticDataMappingModulePath(env, gameUrlSlug, newVersion);
+    const moduleFolderPath = buildStaticDataMappingModulePath(
+      env,
+      gameUrlSlug,
+      newVersion,
+      staticDataMappingModuleSlug,
+    );
 
     core.info(`Target path: gs://${bucketName}/${moduleFolderPath}`);
 
@@ -127,7 +132,7 @@ export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
         version: newVersion,
       };
 
-      const basePath = generateModulePath(env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_MAPPING);
+      const basePath = generateModulePath(env, gameUrlSlug, staticDataMappingModuleSlug);
       const configDestination = `${basePath}/config.json`;
       const configFile = bucket.file(configDestination);
       const configJson = JSON.stringify(config, null, 2);
