@@ -14,6 +14,14 @@ import { Storage } from '@google-cloud/storage';
  *
  * The same transporter is reused by `@google-cloud/storage` for JSON-API
  * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
+ *
+ * TODO (remove this workaround when upstream upgrades): there is currently no
+ * `@google-cloud/storage` release that drops gaxios 6 — even the latest (7.21)
+ * still depends on `google-auth-library@^9`. Native fetch arrives only with
+ * gaxios 7 (`google-auth-library@10`). Once `@google-cloud/storage` officially
+ * moves to google-auth 10, delete this whole file, replace `createStorage(id)`
+ * with `new Storage({ projectId: id })` at the call sites, and drop the explicit
+ * `gaxios` / `google-auth-library` dependencies from package.json.
  */
 export declare function createStorage(projectId: string): Storage;
 //# sourceMappingURL=storage.utils.d.ts.map

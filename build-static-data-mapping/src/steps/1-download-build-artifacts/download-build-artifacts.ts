@@ -10,6 +10,7 @@ export interface DownloadBuildArtifactsOptions {
   bucket: Bucket;
   env: string;
   gameUrlSlug: string;
+  disableQueryAst: boolean;
 }
 
 const filterTypesFiles = (fileName: string) =>
@@ -17,11 +18,15 @@ const filterTypesFiles = (fileName: string) =>
 
 export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOptions): Promise<void> {
   try {
-    const { bucket, env, gameUrlSlug } = options;
+    const { bucket, env, gameUrlSlug, disableQueryAst } = options;
     const bucketName = bucket.name;
 
+    const staticDataQueryModuleSlug = disableQueryAst
+      ? DynamicModuleSlug.STATIC_DATA_QUERY_V2
+      : DynamicModuleSlug.STATIC_DATA_QUERY;
+
     // Step 1: Download config.json
-    const config = await downloadConfigFromBucket(bucket, env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY);
+    const config = await downloadConfigFromBucket(bucket, env, gameUrlSlug, staticDataQueryModuleSlug);
 
     if (!config) {
       const errorMessage = `Config file not found for game: ${gameUrlSlug}`;
@@ -40,7 +45,7 @@ export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOpti
     core.info(`Module folder: ${moduleFolder}`);
 
     // Step 3: Build bucket path
-    const baseModulePath = generateModulePath(env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY);
+    const baseModulePath = generateModulePath(env, gameUrlSlug, staticDataQueryModuleSlug);
     const baseBucketPath = `${baseModulePath}/${moduleFolder}`;
 
     core.info(`Base bucket path: gs://${bucketName}/${baseBucketPath}`);

@@ -35,6 +35,10 @@ inputs:
   dynamic-modules-env:
     description: 'Environment for dynamic modules (e.g., prod, staging, dev)'
     required: true
+  disable-query-ast-compilation:
+    description: 'When true (v2 mode), consume the query as a plain string instead of a compiled AST, download query artifacts from the static-data-query-v2 module and publish the mapping module under static-data-mapping-v2. When false (default), use the compiled AST and the v1 slugs.'
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -71,6 +75,7 @@ runs:
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
+        INPUT_DISABLE-QUERY-AST-COMPILATION: ${{ inputs.disable-query-ast-compilation }}
 
     - name: Run webpack build for generated mapping
       run: npm run build:mapping
@@ -83,6 +88,7 @@ runs:
       working-directory: ${{ github.action_path }}
       env:
         GRAPHQL_ENDPOINT: ${{ inputs.graphql-endpoint }}
+        DISABLE_QUERY_AST_COMPILATION: ${{ inputs.disable-query-ast-compilation }}
 
     - name: Run upload build script
       run: node dist/upload-build.js
@@ -94,3 +100,4 @@ runs:
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
+        INPUT_DISABLE-QUERY-AST-COMPILATION: ${{ inputs.disable-query-ast-compilation }}

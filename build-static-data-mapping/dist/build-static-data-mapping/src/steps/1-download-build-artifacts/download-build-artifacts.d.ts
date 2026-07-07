@@ -3,6 +3,7 @@ export interface DownloadBuildArtifactsOptions {
     bucket: Bucket;
     env: string;
     gameUrlSlug: string;
+    disableQueryAst: boolean;
 }
 export declare function downloadBuildArtifacts(options: DownloadBuildArtifactsOptions): Promise<void>;
 //# sourceMappingURL=download-build-artifacts.d.ts.map

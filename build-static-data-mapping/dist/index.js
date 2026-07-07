@@ -50,10 +50,13 @@ const dynamic_modules_types_1 = __webpack_require__(463);
 const filterTypesFiles = (fileName) => fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
 async function downloadBuildArtifacts(options) {
     try {
-        const { bucket, env, gameUrlSlug } = options;
+        const { bucket, env, gameUrlSlug, disableQueryAst } = options;
         const bucketName = bucket.name;
+        const staticDataQueryModuleSlug = disableQueryAst
+            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
+            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
         // Step 1: Download config.json
-        const config = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+        const config = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, staticDataQueryModuleSlug);
         if (!config) {
             const errorMessage = `Config file not found for game: ${gameUrlSlug}`;
             core.setFailed(errorMessage);
@@ -68,7 +71,7 @@ async function downloadBuildArtifacts(options) {
         const moduleFolder = config.moduleFolder.endsWith('/') ? config.moduleFolder : `${config.moduleFolder}/`;
         core.info(`Module folder: ${moduleFolder}`);
         // Step 3: Build bucket path
-        const baseModulePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+        const baseModulePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, staticDataQueryModuleSlug);
         const baseBucketPath = `${baseModulePath}/${moduleFolder}`;
         core.info(`Base bucket path: gs://${bucketName}/${baseBucketPath}`);
         // Step 4: Create local build folder
@@ -317,6 +320,7 @@ async function run() {
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
+        const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
         core.info(`🚀 Starting build static data mapping pipeline for game: ${game}`);
         // Initialize Storage and Bucket
         const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
@@ -327,6 +331,7 @@ async function run() {
             bucket,
             env: dynamicModulesEnv,
             gameUrlSlug,
+            disableQueryAst,
         });
         core.endGroup();
         // Step 2: Extract entities enum
@@ -633,7 +638,9 @@ exports.DynamicModuleSlug = void 0;
 var DynamicModuleSlug;
 (function (DynamicModuleSlug) {
     DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
+    DynamicModuleSlug["STATIC_DATA_MAPPING_V2"] = "static-data-mapping-v2";
     DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
+    DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
 })(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
 
 
@@ -915,6 +922,14 @@ const nativeFetchWithDuplex = (input, init) => {
  *
  * The same transporter is reused by `@google-cloud/storage` for JSON-API
  * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
+ *
+ * TODO (remove this workaround when upstream upgrades): there is currently no
+ * `@google-cloud/storage` release that drops gaxios 6 — even the latest (7.21)
+ * still depends on `google-auth-library@^9`. Native fetch arrives only with
+ * gaxios 7 (`google-auth-library@10`). Once `@google-cloud/storage` officially
+ * moves to google-auth 10, delete this whole file, replace `createStorage(id)`
+ * with `new Storage({ projectId: id })` at the call sites, and drop the explicit
+ * `gaxios` / `google-auth-library` dependencies from package.json.
  */
 function createStorage(projectId) {
     const authClient = new google_auth_library_1.GoogleAuth({
