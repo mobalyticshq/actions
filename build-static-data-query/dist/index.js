@@ -170,6 +170,13 @@ async function generateGqlTypes() {
 
 /***/ }),
 
+/***/ 16:
+/***/ ((module) => {
+
+module.exports = require("url");
+
+/***/ }),
+
 /***/ 17:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -427,19 +434,22 @@ async function fetchSchemaVersionFromGraphQL(endpoint, game) {
 }
 async function checkSchemaVersion(options) {
     try {
-        const { graphqlEndpoint, bucket, env, game, gameUrlSlug } = options;
+        const { graphqlEndpoint, bucket, env, game, gameUrlSlug, disableQueryAst } = options;
+        const staticDataQueryModuleSlug = disableQueryAst
+            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
+            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
         core.info(`Checking schema version for game: ${game}`);
         // Execute GraphQL query and GCS download in parallel
         const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
             fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-            (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY).then(result => result?.version),
+            (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, staticDataQueryModuleSlug).then(result => result?.version),
         ]);
         // Check if version folder already exists
         if (currentSchemaVersion) {
-            const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, currentSchemaVersion);
+            const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, currentSchemaVersion, staticDataQueryModuleSlug);
             if (versionFolderExists) {
                 const bucketName = bucket.name;
-                const versionFolderPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, currentSchemaVersion);
+                const versionFolderPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, currentSchemaVersion, staticDataQueryModuleSlug);
                 core.info(`✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`);
                 return {
                     shouldContinue: false,
@@ -801,6 +811,7 @@ async function run() {
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
+        const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
         core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
         // Initialize Storage and Bucket
         const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
@@ -813,6 +824,7 @@ async function run() {
             env: dynamicModulesEnv,
             game,
             gameUrlSlug,
+            disableQueryAst,
         });
         core.endGroup();
         if (!schemaVersionCheck.shouldContinue) {
@@ -864,7 +876,7 @@ async function run() {
         core.endGroup();
         // Step 6: Compile query
         core.startGroup('🔨 Step 6: Compiling queries');
-        await (0, _6_compile_query_1.compileQueries)();
+        await (0, _6_compile_query_1.compileQueries)({ disableQueryAst });
         core.info(`✓ Queries Compiling completed`);
         core.endGroup();
         // Step 7: Generate GraphQL types
@@ -887,6 +899,7 @@ async function run() {
             env: dynamicModulesEnv,
             gameUrlSlug,
             schemaVersion: schemaVersionCheck.currentSchemaVersion,
+            disableQueryAst,
         });
         core.info(`✓ Build upload completed`);
         core.endGroup();
@@ -1282,18 +1295,85 @@ async function isFolderExists(bucket, folderPath) {
 /***/ }),
 
 /***/ 380:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.compileQueries = compileQueries;
+const path_1 = __importDefault(__webpack_require__(928));
+const fs_1 = __importDefault(__webpack_require__(896));
+const url_1 = __webpack_require__(16);
+const graphql_1 = __webpack_require__(253);
+const core = __importStar(__webpack_require__(659));
 const compile_utils_1 = __webpack_require__(756);
 const queryDir = 'build/gql';
 const outputDir = 'build/dist';
 const entryFileName = 'entrypoint.ts';
 const outputFileName = 'entrypoint.js';
-async function compileQueries() {
-    await (0, compile_utils_1.compileCode)(queryDir, outputDir, entryFileName, outputFileName);
+// Native ESM dynamic import that survives TS (module: commonjs) and webpack
+// transpilation, which would otherwise rewrite `import()` into `require()`.
+const importEsm = new Function('specifier', 'return import(specifier);');
+async function compileQueries(options) {
+    const { disableQueryAst } = options;
+    if (!disableQueryAst) {
+        // v1: compile the gql template literals into a DocumentNode (AST) bundle.
+        await (0, compile_utils_1.compileCode)(queryDir, outputDir, entryFileName, outputFileName);
+        return;
+    }
+    // v2: fragment stitching still runs through the AST, but we print the
+    // DocumentNodes to plain strings at build time so the published artifact is a
+    // dependency-free string map (no runtime `graphql` require).
+    const astFileName = 'entrypoint.ast.mjs';
+    await (0, compile_utils_1.compileCode)(queryDir, outputDir, entryFileName, astFileName);
+    const absoluteOutputDir = path_1.default.resolve(process.cwd(), outputDir);
+    const astFilePath = path_1.default.join(absoluteOutputDir, astFileName);
+    const astModule = await importEsm((0, url_1.pathToFileURL)(astFilePath).href);
+    const queries = astModule.default;
+    const entries = Object.entries(queries)
+        .map(([key, documentNode]) => `  ${JSON.stringify(key)}: ${JSON.stringify((0, graphql_1.print)(documentNode))}`)
+        .join(',\n');
+    const fileContents = `export default {\n${entries},\n};\n`;
+    const outputFilePath = path_1.default.join(absoluteOutputDir, outputFileName);
+    fs_1.default.writeFileSync(outputFilePath, fileContents, 'utf-8');
+    core.info(`✓ Emitted plain-string query artifact to: ${path_1.default.relative(process.cwd(), outputFilePath)}`);
+    // Remove the intermediate AST bundle so only the string artifact is published.
+    fs_1.default.rmSync(astFilePath, { force: true });
 }
 
 
@@ -2867,7 +2947,9 @@ exports.DynamicModuleSlug = void 0;
 var DynamicModuleSlug;
 (function (DynamicModuleSlug) {
     DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
+    DynamicModuleSlug["STATIC_DATA_MAPPING_V2"] = "static-data-mapping-v2";
     DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
+    DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
 })(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
 
 
@@ -3379,8 +3461,11 @@ function makeModuleEntrypointName(hash) {
 }
 async function uploadBuild(options) {
     try {
-        const { bucket, env, gameUrlSlug, schemaVersion } = options;
+        const { bucket, env, gameUrlSlug, schemaVersion, disableQueryAst } = options;
         const bucketName = bucket.name;
+        const staticDataQueryModuleSlug = disableQueryAst
+            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
+            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
         core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
         // Step 1: Verify bucket exists
         try {
@@ -3398,10 +3483,10 @@ async function uploadBuild(options) {
             throw error instanceof Error ? error : new Error(errorMessage);
         }
         // Step 2: Build GCS paths
-        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, schemaVersion);
+        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, schemaVersion, staticDataQueryModuleSlug);
         core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
         // Step 3: Check if version folder already exists
-        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, schemaVersion);
+        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, schemaVersion, staticDataQueryModuleSlug);
         if (moduleFolderExists) {
             const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
             core.setFailed(errorMessage);
@@ -3545,7 +3630,7 @@ async function uploadBuild(options) {
                 name: `${moduleFolder}/${entrypointName}`,
                 version: schemaVersion,
             };
-            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, staticDataQueryModuleSlug);
             const configDestination = `${basePath}/config.json`;
             const configFile = bucket.file(configDestination);
             const configJson = JSON.stringify(config, null, 2);
@@ -3646,6 +3731,14 @@ const nativeFetchWithDuplex = (input, init) => {
  *
  * The same transporter is reused by `@google-cloud/storage` for JSON-API
  * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
+ *
+ * TODO (remove this workaround when upstream upgrades): there is currently no
+ * `@google-cloud/storage` release that drops gaxios 6 — even the latest (7.21)
+ * still depends on `google-auth-library@^9`. Native fetch arrives only with
+ * gaxios 7 (`google-auth-library@10`). Once `@google-cloud/storage` officially
+ * moves to google-auth 10, delete this whole file, replace `createStorage(id)`
+ * with `new Storage({ projectId: id })` at the call sites, and drop the explicit
+ * `gaxios` / `google-auth-library` dependencies from package.json.
  */
 function createStorage(projectId) {
     const authClient = new google_auth_library_1.GoogleAuth({
@@ -3699,15 +3792,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildStaticDataQueryModuleFolderPath = buildStaticDataQueryModuleFolderPath;
 exports.checkStaticDataQueryModuleFolderExists = checkStaticDataQueryModuleFolderExists;
 const dynamic_module_utils_1 = __webpack_require__(798);
-const dynamic_modules_types_1 = __webpack_require__(463);
 const bucket_utils_1 = __webpack_require__(328);
-function buildStaticDataQueryModuleFolderPath(env, game, schemaVersion) {
-    const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY);
+function buildStaticDataQueryModuleFolderPath(env, game, schemaVersion, slug) {
+    const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, slug);
     const versionFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
     return `${basePath}/${versionFolder}`;
 }
-async function checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion) {
-    const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion);
+async function checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion, slug) {
+    const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion, slug);
     return (0, bucket_utils_1.isFolderExists)(bucket, versionFolderPath);
 }
 

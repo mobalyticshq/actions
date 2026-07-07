@@ -14,6 +14,7 @@ export interface CheckSchemaVersionOptions {
   env: string;
   game: string;
   gameUrlSlug: string;
+  disableQueryAst: boolean;
 }
 
 export interface CheckSchemaVersionResult {
@@ -96,16 +97,18 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
 
 export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Promise<CheckSchemaVersionResult> {
   try {
-    const { graphqlEndpoint, bucket, env, game, gameUrlSlug } = options;
+    const { graphqlEndpoint, bucket, env, game, gameUrlSlug, disableQueryAst } = options;
+
+    const staticDataQueryModuleSlug = disableQueryAst
+      ? DynamicModuleSlug.STATIC_DATA_QUERY_V2
+      : DynamicModuleSlug.STATIC_DATA_QUERY;
 
     core.info(`Checking schema version for game: ${game}`);
 
     // Execute GraphQL query and GCS download in parallel
     const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
       fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-      downloadConfigFromBucket(bucket, env, gameUrlSlug, DynamicModuleSlug.STATIC_DATA_QUERY).then(
-        result => result?.version,
-      ),
+      downloadConfigFromBucket(bucket, env, gameUrlSlug, staticDataQueryModuleSlug).then(result => result?.version),
     ]);
 
     // Check if version folder already exists
@@ -115,10 +118,16 @@ export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Pr
         env,
         gameUrlSlug,
         currentSchemaVersion,
+        staticDataQueryModuleSlug,
       );
       if (versionFolderExists) {
         const bucketName = bucket.name;
-        const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, gameUrlSlug, currentSchemaVersion);
+        const versionFolderPath = buildStaticDataQueryModuleFolderPath(
+          env,
+          gameUrlSlug,
+          currentSchemaVersion,
+          staticDataQueryModuleSlug,
+        );
         core.info(
           `✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`,
         );
