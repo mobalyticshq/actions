@@ -3,7 +3,6 @@ export interface UploadBuildOptions {
     bucket: Bucket;
     env: string;
     gameUrlSlug: string;
-    disableQueryAst: boolean;
 }
 export declare function uploadBuild(options: UploadBuildOptions): Promise<void>;
 //# sourceMappingURL=upload-build.d.ts.map

@@ -84,11 +84,8 @@ const buildTypesPath = './build/types';
 const buildDistPath = './build/dist';
 async function uploadBuild(options) {
     try {
-        const { bucket, env, gameUrlSlug, disableQueryAst } = options;
+        const { bucket, env, gameUrlSlug } = options;
         const bucketName = bucket.name;
-        const staticDataMappingModuleSlug = disableQueryAst
-            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING_V2
-            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING;
         core.info(`Starting upload of mapping files to GCS bucket: ${bucketName}`);
         // Step 1: Verify bucket exists
         try {
@@ -106,12 +103,12 @@ async function uploadBuild(options) {
             throw error instanceof Error ? error : new Error(errorMessage);
         }
         // Step 2: Get current version and increment
-        const existingConfig = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, staticDataMappingModuleSlug);
+        const existingConfig = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
         const currentVersion = existingConfig?.version || null;
         const newVersion = (0, module_folder_utils_1.incrementVersion)(currentVersion);
         core.info(`Current version: ${currentVersion || 'none'}, new version: ${newVersion}`);
         // Step 3: Build GCS paths
-        const moduleFolderPath = (0, module_folder_utils_1.buildStaticDataMappingModulePath)(env, gameUrlSlug, newVersion, staticDataMappingModuleSlug);
+        const moduleFolderPath = (0, module_folder_utils_1.buildStaticDataMappingModulePath)(env, gameUrlSlug, newVersion);
         core.info(`Target path: gs://${bucketName}/${moduleFolderPath}`);
         // Step 4: Check if module folder already exists
         const moduleFolderExists = await (0, bucket_utils_1.isFolderExists)(bucket, moduleFolderPath);
@@ -148,7 +145,7 @@ async function uploadBuild(options) {
                 name: `${newVersion}/index.js`,
                 version: newVersion,
             };
-            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, staticDataMappingModuleSlug);
+            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
             const configDestination = `${basePath}/config.json`;
             const configFile = bucket.file(configDestination);
             const configJson = JSON.stringify(config, null, 2);
@@ -393,7 +390,6 @@ exports.DynamicModuleSlug = void 0;
 var DynamicModuleSlug;
 (function (DynamicModuleSlug) {
     DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
-    DynamicModuleSlug["STATIC_DATA_MAPPING_V2"] = "static-data-mapping-v2";
     DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
     DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
 })(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
@@ -453,7 +449,6 @@ async function run() {
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
-        const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
         core.info(`🚀 Starting upload build for static data mapping - game: ${game}`);
         // Initialize Storage and Bucket
         const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
@@ -463,7 +458,6 @@ async function run() {
             bucket,
             env: dynamicModulesEnv,
             gameUrlSlug,
-            disableQueryAst,
         });
         core.info(`✓ Upload build completed successfully`);
     }
@@ -640,9 +634,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildStaticDataMappingModulePath = buildStaticDataMappingModulePath;
 exports.incrementVersion = incrementVersion;
 const dynamic_module_utils_1 = __webpack_require__(798);
+const dynamic_modules_types_1 = __webpack_require__(463);
 const core = __importStar(__webpack_require__(659));
-function buildStaticDataMappingModulePath(env, game, version, slug) {
-    const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, slug);
+function buildStaticDataMappingModulePath(env, game, version) {
+    const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_MAPPING);
     return `${basePath}/${version}`;
 }
 function incrementVersion(currentVersion) {

@@ -2,13 +2,8 @@ import { generateModuleFolderName, generateModulePath } from '@shared/utils/dyna
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 import * as core from '@actions/core';
 
-export function buildStaticDataMappingModulePath(
-  env: string,
-  game: string,
-  version: string,
-  slug: DynamicModuleSlug,
-): string {
-  const basePath = generateModulePath(env, game, slug);
+export function buildStaticDataMappingModulePath(env: string, game: string, version: string): string {
+  const basePath = generateModulePath(env, game, DynamicModuleSlug.STATIC_DATA_MAPPING);
   return `${basePath}/${version}`;
 }
 

@@ -2947,7 +2947,6 @@ exports.DynamicModuleSlug = void 0;
 var DynamicModuleSlug;
 (function (DynamicModuleSlug) {
     DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
-    DynamicModuleSlug["STATIC_DATA_MAPPING_V2"] = "static-data-mapping-v2";
     DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
     DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
 })(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));

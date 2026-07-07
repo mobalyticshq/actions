@@ -36,7 +36,7 @@ inputs:
     description: 'Environment for dynamic modules (e.g., prod, staging, dev)'
     required: true
   disable-query-ast-compilation:
-    description: 'When true (v2 mode), consume the query as a plain string instead of a compiled AST, download query artifacts from the static-data-query-v2 module and publish the mapping module under static-data-mapping-v2. When false (default), use the compiled AST and the v1 slugs.'
+    description: 'When true (v2 mode), download query artifacts from the static-data-query-v2 module and consume the query as a plain string instead of a compiled AST (the integration test uses the query string directly, without graphql print()). When false (default), download from static-data-query and use the compiled AST. The mapping module is always published under the static-data-mapping slug regardless of this flag.'
     required: false
     default: 'false'
 
@@ -100,4 +100,3 @@ runs:
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
-        INPUT_DISABLE-QUERY-AST-COMPILATION: ${{ inputs.disable-query-ast-compilation }}
