@@ -99,6 +99,7 @@ func validateFieldRules(fieldName string, field *types.SchemaField, path string,
 	errors = append(errors, validateSS18_RefToReferenceValid(field, path, schema)...)
 	errors = append(errors, validateSS19_FilterOnlyOnString(field, path)...)
 	errors = append(errors, validateSS20_RefFieldNameConflict(fieldName, field, path, group)...)
+	errors = append(errors, validateSS22_TranslatableOnlyOnStringText(fieldName, field, path)...)
 	return errors
 }
 
@@ -391,6 +392,29 @@ func validateSS20_RefFieldNameConflict(fieldName string, field *types.SchemaFiel
 				}
 			}
 		}
+	}
+	return nil
+}
+
+// SS22: translatable only on String text fields. A translated identifier breaks slug-based
+// cross-linking silently instead of failing, so a mis-annotation is rejected here
+func validateSS22_TranslatableOnlyOnStringText(fieldName string, field *types.SchemaField, path string) []types.ValidationError {
+	if !field.Translatable {
+		return nil
+	}
+	if field.Type != "String" {
+		return []types.ValidationError{{
+			Type:    "error",
+			Message: fmt.Sprintf("translatable: true only allowed on String type fields; got type: %q", field.Type),
+			Path:    path + ".translatable",
+		}}
+	}
+	if fieldName == "id" || fieldName == "slug" {
+		return []types.ValidationError{{
+			Type:    "error",
+			Message: fmt.Sprintf("field %q is an identifier and must not be translatable", fieldName),
+			Path:    path + ".translatable",
+		}}
 	}
 	return nil
 }

@@ -248,6 +248,44 @@ func TestSS19_FilterOnlyOnString(t *testing.T) {
 	})
 }
 
+func TestSS22_TranslatableOnlyOnStringText(t *testing.T) {
+	t.Run("translatable on String is ok", func(t *testing.T) {
+		field := &types.SchemaField{Type: "String", Translatable: true}
+		errors := validateSS22_TranslatableOnlyOnStringText("name", field, "test.path")
+		if len(errors) != 0 {
+			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+
+	t.Run("not translatable passes regardless of type", func(t *testing.T) {
+		field := &types.SchemaField{Type: "Ref", RefTo: "items"}
+		errors := validateSS22_TranslatableOnlyOnStringText("itemRef", field, "test.path")
+		if len(errors) != 0 {
+			t.Errorf("expected no errors, got %d", len(errors))
+		}
+	})
+
+	t.Run("translatable on non-String is error", func(t *testing.T) {
+		for _, fieldType := range []string{"Ref", "Object", "Int", "Float", "Boolean"} {
+			field := &types.SchemaField{Type: fieldType, Translatable: true}
+			errors := validateSS22_TranslatableOnlyOnStringText("name", field, "test.path")
+			if len(errors) != 1 {
+				t.Errorf("type %s: expected 1 error, got %d", fieldType, len(errors))
+			}
+		}
+	})
+
+	t.Run("translatable on id or slug is error", func(t *testing.T) {
+		for _, fieldName := range []string{"id", "slug"} {
+			field := &types.SchemaField{Type: "String", Translatable: true}
+			errors := validateSS22_TranslatableOnlyOnStringText(fieldName, field, "test.path")
+			if len(errors) != 1 {
+				t.Errorf("field %s: expected 1 error, got %d", fieldName, len(errors))
+			}
+		}
+	})
+}
+
 func TestSS20_RefFieldNameConflict(t *testing.T) {
 	group := &types.SchemaGroup{
 		Fields: map[string]types.SchemaField{

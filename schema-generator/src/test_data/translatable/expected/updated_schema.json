@@ -1,0 +1,22 @@
+{
+  "namespace": "someGame.staticData",
+  "typePrefix": "SomeGame",
+  "groups": {
+    "weapons": {
+      "fields": {
+        "deprecated": { "type": "Boolean", "required": true },
+        "id": { "type": "String", "filter": true, "required": true },
+        "info": { "type": "Object", "objName": "info" },
+        "legacyDescription": { "type": "String", "translatable": true },
+        "name": { "type": "String", "filter": true, "required": true, "translatable": true }
+      },
+      "objects": {
+        "info": {
+          "fields": {
+            "category": { "type": "String", "translatable": true }
+          }
+        }
+      }
+    }
+  }
+}

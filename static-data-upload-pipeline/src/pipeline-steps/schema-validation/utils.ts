@@ -367,6 +367,9 @@ export function validateFieldStructure(
     });
   }
 
+  // 10. Validate translatable (only String text fields, never identifiers)
+  errors.push(...validateTranslatableModifier(field, fieldName, `groups.${groupName}.fields.${fieldName}`));
+
   // 9. Validate Ref field name conflicts
   if (fieldName.endsWith('Ref')) {
     const baseFieldName = fieldName.slice(0, -3); // Remove "Ref" suffix
@@ -537,7 +540,42 @@ export function validateObjectFieldStructure(
     }
   }
 
+  // Validate translatable (only String text fields, never identifiers)
+  errors.push(
+    ...validateTranslatableModifier(field, fieldName, `groups.${groupName}.objects.${objectName}.fields.${fieldName}`),
+  );
+
   return errors;
+}
+
+// A translated identifier breaks slug-based cross-linking silently instead of failing, so a
+// mis-annotation is rejected here
+export function validateTranslatableModifier(
+  field: SchemaField,
+  fieldName: string,
+  path: string,
+): ValidationError[] {
+  if (field.translatable !== true) {
+    return [];
+  }
+
+  if (field.type !== 'String') {
+    return [{
+      type: 'error',
+      message: `Translatable modifier is only acceptable for fields with type String, got: "${field.type}"`,
+      path: `${path}.translatable`,
+    }];
+  }
+
+  if (fieldName === 'id' || fieldName === 'slug') {
+    return [{
+      type: 'error',
+      message: `Field "${fieldName}" is an identifier and must not be translatable`,
+      path: `${path}.translatable`,
+    }];
+  }
+
+  return [];
 }
 
 // Main validation function
