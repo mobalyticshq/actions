@@ -11,6 +11,9 @@ const writeFieldConfigInline = (fieldConfig: FieldConfig): string => {
     if (fieldConfig.required) {
         parts.push('"required": true');
     }
+    if (fieldConfig.translatable) {
+        parts.push('"translatable": true');
+    }
     if (fieldConfig.objName) {
         parts.push(`"objName": "${fieldConfig.objName}"`);
     }
@@ -31,6 +34,9 @@ export const serializeToJson = (cfg: Schema): string => {
     lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
     if (cfg.geckMode) {
         lines.push(`${indent(1)}"geckMode": true,`);
+    }
+    if (cfg.deprecatedGeckMode) {
+        lines.push(`${indent(1)}"deprecatedGeckMode": true,`);
     }
     
     // Add gqlTypesOverrides if it exists

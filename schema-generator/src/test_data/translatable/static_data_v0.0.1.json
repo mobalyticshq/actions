@@ -1,0 +1,13 @@
+{
+  "weapons": [
+    {
+      "id": "sword",
+      "gameId": "sword",
+      "name": "Sword",
+      "deprecated": false,
+      "info": {
+        "category": "melee"
+      }
+    }
+  ]
+}

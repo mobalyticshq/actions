@@ -4,6 +4,7 @@ export interface FieldConfig {
     array?: boolean;
     filter?: boolean;
     required?: boolean;
+    translatable?: boolean;
     objName?: string;
     refTo?: string;
     refFilters?: string[];
@@ -22,6 +23,9 @@ export interface Schema {
     namespace: string;
     typePrefix: string;
     geckMode?: boolean;
+    // The key the consumers actually read (be-spock's LoadSchemaConfig and geck-validator's SS04);
+    // without it Int/Float fields are rejected at load time.
+    deprecatedGeckMode?: boolean;
     gqlTypesOverrides?: Record<string, string>;
     groups: Record<string, GroupConfig>;
 }

@@ -1,0 +1,20 @@
+{
+  "namespace": "someGame.staticData",
+  "typePrefix": "SomeGame",
+  "groups": {
+    "weapons": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "translatable": true },
+        "legacyDescription": { "type": "String", "translatable": true }
+      },
+      "objects": {
+        "info": {
+          "fields": {
+            "category": { "type": "String", "translatable": true }
+          }
+        }
+      }
+    }
+  }
+}

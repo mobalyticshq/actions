@@ -1229,6 +1229,12 @@ const mergeFieldConfig = (newFieldConfig, existingFieldConfig, groupNames, ignor
     if (existingFieldConfig.required === true) {
         merged.required = true;
     }
+    // Override translatable from existing if it's true. The generator infers configs from data,
+    // which can never know which strings are display text — the annotation only ever lives in the
+    // existing schema, so dropping it here would erase it on every regeneration.
+    if (existingFieldConfig.translatable === true) {
+        merged.translatable = true;
+    }
     return merged;
 };
 exports.mergeFieldConfig = mergeFieldConfig;
@@ -1310,6 +1316,10 @@ const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = fals
     // Always copy geckMode from existing schema if it's enabled
     if (existingSchema.geckMode) {
         result.geckMode = existingSchema.geckMode;
+    }
+    // Always copy deprecatedGeckMode from existing schema if it's enabled
+    if (existingSchema.deprecatedGeckMode) {
+        result.deprecatedGeckMode = existingSchema.deprecatedGeckMode;
     }
     const groupNames = allGroupNames(newSchema, existingSchema, ignoreDeleted);
     // First, merge groups that exist in new schema
@@ -1435,6 +1445,9 @@ const writeFieldConfigInline = (fieldConfig) => {
     if (fieldConfig.required) {
         parts.push('"required": true');
     }
+    if (fieldConfig.translatable) {
+        parts.push('"translatable": true');
+    }
     if (fieldConfig.objName) {
         parts.push(`"objName": "${fieldConfig.objName}"`);
     }
@@ -1454,6 +1467,9 @@ const serializeToJson = (cfg) => {
     lines.push(`${indent(1)}"typePrefix": "${cfg.typePrefix}",`);
     if (cfg.geckMode) {
         lines.push(`${indent(1)}"geckMode": true,`);
+    }
+    if (cfg.deprecatedGeckMode) {
+        lines.push(`${indent(1)}"deprecatedGeckMode": true,`);
     }
     // Add gqlTypesOverrides if it exists
     if (cfg.gqlTypesOverrides && Object.keys(cfg.gqlTypesOverrides).length > 0) {

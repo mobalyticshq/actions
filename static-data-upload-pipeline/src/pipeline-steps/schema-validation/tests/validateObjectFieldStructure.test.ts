@@ -131,6 +131,44 @@ describe('validateObjectFieldStructure', () => {
     });
   });
 
+  describe('translatable validation', () => {
+    it('should fail when translatable is true but type is not String', () => {
+      const field: SchemaField = {
+        type: 'Boolean',
+        translatable: true,
+      };
+
+      const errors = validateObjectFieldStructure(field, 'enabled', 'stats', 'testGroup', mockGroup, mockSchema);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].message).toContain('Translatable modifier is only acceptable for fields with type String');
+      expect(errors[0].path).toBe('groups.testGroup.objects.stats.fields.enabled.translatable');
+    });
+
+    it('should fail when translatable is set on an identifier field', () => {
+      for (const fieldName of ['id', 'slug']) {
+        const field: SchemaField = {
+          type: 'String',
+          translatable: true,
+        };
+
+        const errors = validateObjectFieldStructure(field, fieldName, 'stats', 'testGroup', mockGroup, mockSchema);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('is an identifier and must not be translatable');
+        expect(errors[0].path).toBe(`groups.testGroup.objects.stats.fields.${fieldName}.translatable`);
+      }
+    });
+
+    it('should pass when translatable is true and type is String', () => {
+      const field: SchemaField = {
+        type: 'String',
+        translatable: true,
+      };
+
+      const errors = validateObjectFieldStructure(field, 'name', 'stats', 'testGroup', mockGroup, mockSchema);
+      expect(errors).toHaveLength(0);
+    });
+  });
+
   describe('combined validation', () => {
     it('should return multiple errors for invalid field', () => {
       const field: SchemaField = {

@@ -30,6 +30,7 @@ This folder contains the schema validation logic and unit tests for the static d
 9. **refTo values** must exist in groups keys in the schema
 10. **Filters** must be valid (filter modifier only acceptable for fields with type String)
 11. **Ref field names** should not conflict with other fields after trimming "Ref" suffix
+12. **Translatable** must be valid (translatable modifier only acceptable for fields with type String, and never on `id`/`slug`)
 
 ### Backward Compatibility Validation
 - Namespace and TypePrefix must not change

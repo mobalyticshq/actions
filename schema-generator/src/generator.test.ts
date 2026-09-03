@@ -65,6 +65,30 @@ describe('processSchemaGeneration', () => {
     expect(result.trim()).toBe(expectedSchemaContent.trim());
   });
 
+  it('should preserve translatable annotations from the existing schema', () => {
+    // Arrange:
+    // The annotation only ever lives in the existing schema — data inference cannot produce it —
+    // so losing it in any of these paths would strip it on every regeneration.
+    const staticDataPath = path.join(__dirname, 'test_data', "translatable");
+    const existingSchemaPath = path.join(__dirname, 'test_data', "translatable", 'existing_schema.json');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', "translatable", 'expected', 'updated_schema.json');
+
+    const config: SchemaGenerationConfig = {
+      staticDataPath,
+      existingSchemaPath
+    };
+
+    // Act
+    const result = processSchemaGeneration(config);
+
+    // Assert
+    const expectedSchemaContent = fs.readFileSync(expectedSchemaPath, 'utf8');
+
+    // Compare the exact string output (including formatting)
+    expect(result.trim()).toBe(expectedSchemaContent.trim());
+    expect((result.match(/"translatable": true/g) || []).length).toBe(3);
+  });
+
   it('should generate schema from deep nested static data', () => {
     // Arrange
     const staticDataPath = path.join(__dirname, 'test_data', "nested");

@@ -224,7 +224,7 @@ export function validateSchemaStructure(schema: ApiSchema): ValidationError[] {
     if (!isValidFieldNameString(groupName)) {
       errors.push({
         type: 'error',
-        message: `Group name must must start with a letter and contain only letters and digits, got: "${groupName}"`,
+        message: `Group name must start with a letter and contain only letters and digits, got: "${groupName}"`,
         path: `groups.${groupName}`,
       });
     }
@@ -277,7 +277,7 @@ export function validateGroupStructure(group: SchemaGroup, groupName: string, sc
     if (!isValidFieldNameString(fieldName)) {
       errors.push({
         type: 'error',
-        message: `Field name start with a letter and contain only letters and digits, got: "${fieldName}"`,
+        message: `Field name must start with a letter and contain only letters and digits, got: "${fieldName}"`,
         path: `groups.${groupName}.fields.${fieldName}`,
       });
     }
@@ -367,7 +367,10 @@ export function validateFieldStructure(
     });
   }
 
-  // 9. Validate Ref field name conflicts
+  // 9. Validate translatable (only String text fields, never identifiers)
+  errors.push(...validateTranslatableModifier(field, fieldName, `groups.${groupName}.fields.${fieldName}`));
+
+  // 10. Validate Ref field name conflicts
   if (fieldName.endsWith('Ref')) {
     const baseFieldName = fieldName.slice(0, -3); // Remove "Ref" suffix
     if (group.fields[baseFieldName]) {
@@ -537,7 +540,42 @@ export function validateObjectFieldStructure(
     }
   }
 
+  // Validate translatable (only String text fields, never identifiers)
+  errors.push(
+    ...validateTranslatableModifier(field, fieldName, `groups.${groupName}.objects.${objectName}.fields.${fieldName}`),
+  );
+
   return errors;
+}
+
+// A translated identifier breaks slug-based cross-linking silently instead of failing, so a
+// mis-annotation is rejected here
+export function validateTranslatableModifier(
+  field: SchemaField,
+  fieldName: string,
+  path: string,
+): ValidationError[] {
+  if (field.translatable !== true) {
+    return [];
+  }
+
+  if (field.type !== 'String') {
+    return [{
+      type: 'error',
+      message: `Translatable modifier is only acceptable for fields with type String, got: "${field.type}"`,
+      path: `${path}.translatable`,
+    }];
+  }
+
+  if (fieldName === 'id' || fieldName === 'slug') {
+    return [{
+      type: 'error',
+      message: `Field "${fieldName}" is an identifier and must not be translatable`,
+      path: `${path}.translatable`,
+    }];
+  }
+
+  return [];
 }
 
 // Main validation function

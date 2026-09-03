@@ -13,6 +13,7 @@ type SchemaField struct {
 	Array            bool     `json:"array,omitempty"`
 	Required         bool     `json:"required,omitempty"`
 	Filter           bool     `json:"filter,omitempty"`
+	Translatable     bool     `json:"translatable,omitempty"`
 	RefTo            string   `json:"refTo,omitempty"`
 	ObjName          string   `json:"objName,omitempty"`
 	RefFilters       []string `json:"refFilters,omitempty"`

@@ -149,7 +149,7 @@ describe('validateSchemaStructure', () => {
 
       const errors = validateSchemaStructure(schema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Group name must contain only letters and digits');
+      expect(errors[0].message).toContain('Group name must start with a letter');
     });
 
     it('should pass with valid groups', () => {

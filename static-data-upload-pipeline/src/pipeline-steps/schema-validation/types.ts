@@ -4,6 +4,7 @@ export interface SchemaField {
   array?: boolean;
   required?: boolean;
   filter?: boolean;
+  translatable?: boolean;
   refTo?: string;
   objName?: string;
 }

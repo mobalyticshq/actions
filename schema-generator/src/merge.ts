@@ -34,7 +34,14 @@ export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfi
     if (existingFieldConfig.required === true) {
         merged.required = true;
     }
-    
+
+    // Override translatable from existing if it's true. The generator infers configs from data,
+    // which can never know which strings are display text — the annotation only ever lives in the
+    // existing schema, so dropping it here would erase it on every regeneration.
+    if (existingFieldConfig.translatable === true) {
+        merged.translatable = true;
+    }
+
     return merged;
 };
 
@@ -139,6 +146,11 @@ export const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schem
     // Always copy geckMode from existing schema if it's enabled
     if (existingSchema.geckMode) {
         result.geckMode = existingSchema.geckMode;
+    }
+
+    // Always copy deprecatedGeckMode from existing schema if it's enabled
+    if (existingSchema.deprecatedGeckMode) {
+        result.deprecatedGeckMode = existingSchema.deprecatedGeckMode;
     }
     const groupNames: string[] = allGroupNames(newSchema, existingSchema, ignoreDeleted);
     // First, merge groups that exist in new schema

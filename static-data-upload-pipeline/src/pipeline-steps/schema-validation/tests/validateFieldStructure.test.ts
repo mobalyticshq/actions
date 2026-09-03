@@ -131,6 +131,43 @@ describe('validateFieldStructure', () => {
     });
   });
 
+  describe('translatable validation', () => {
+    it('should fail when translatable is true but type is not String', () => {
+      const field: SchemaField = {
+        type: 'Ref',
+        refTo: 'weapons',
+        translatable: true,
+      };
+
+      const errors = validateFieldStructure(field, 'weaponRef', 'testGroup', mockGroup, mockSchema);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].message).toContain('Translatable modifier is only acceptable for fields with type String');
+    });
+
+    it('should fail when translatable is set on an identifier field', () => {
+      for (const fieldName of ['id', 'slug']) {
+        const field: SchemaField = {
+          type: 'String',
+          translatable: true,
+        };
+
+        const errors = validateFieldStructure(field, fieldName, 'testGroup', mockGroup, mockSchema);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('is an identifier and must not be translatable');
+      }
+    });
+
+    it('should pass when translatable is true and type is String', () => {
+      const field: SchemaField = {
+        type: 'String',
+        translatable: true,
+      };
+
+      const errors = validateFieldStructure(field, 'name', 'testGroup', mockGroup, mockSchema);
+      expect(errors).toHaveLength(0);
+    });
+  });
+
   describe('Ref field name conflicts', () => {
     it('should fail when Ref field conflicts with existing field', () => {
       const field: SchemaField = {

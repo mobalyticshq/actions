@@ -87,6 +87,7 @@ geck-validator validate --help
 | SS18 | refTo reference valid | If field has `refTo`, it must exist in schema groups |
 | SS19 | Filter only on String | `filter: true` only allowed on String type fields |
 | SS20 | Ref field name conflict | For Ref fields: if `geckRefFieldName` is set, check it doesn't conflict with other fields; otherwise check field name suffixes (Ref/Slug/Slugs) don't conflict with base field names |
+| SS22 | Translatable only on String text | `translatable: true` only allowed on String type fields, and never on `id`/`slug` |
 
 ### Schema Compatibility Validation (Backward Compatibility)
 
