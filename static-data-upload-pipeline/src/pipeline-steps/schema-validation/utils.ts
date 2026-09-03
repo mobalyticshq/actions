@@ -367,10 +367,10 @@ export function validateFieldStructure(
     });
   }
 
-  // 10. Validate translatable (only String text fields, never identifiers)
+  // 9. Validate translatable (only String text fields, never identifiers)
   errors.push(...validateTranslatableModifier(field, fieldName, `groups.${groupName}.fields.${fieldName}`));
 
-  // 9. Validate Ref field name conflicts
+  // 10. Validate Ref field name conflicts
   if (fieldName.endsWith('Ref')) {
     const baseFieldName = fieldName.slice(0, -3); // Remove "Ref" suffix
     if (group.fields[baseFieldName]) {
