@@ -16,9 +16,9 @@ describe('validateObjectsStructure', () => {
   };
 
   describe('object name validation', () => {
-    it('should fail with invalid object name containing numbers', () => {
+    it('should fail with invalid object name starting with a number', () => {
       const objects: Record<string, SchemaObject> = {
-        stats1: {
+        '1stats': {
           fields: {
             value: { type: 'String' },
           },
@@ -27,7 +27,7 @@ describe('validateObjectsStructure', () => {
 
       const errors = validateObjectsStructure(objects, 'testGroup', mockGroup, mockSchema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Object name must contain only letters');
+      expect(errors[0].message).toContain('Object name must start with a letter');
     });
 
     it('should fail with invalid object name containing special characters', () => {
@@ -41,7 +41,7 @@ describe('validateObjectsStructure', () => {
 
       const errors = validateObjectsStructure(objects, 'testGroup', mockGroup, mockSchema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Object name must contain only letters');
+      expect(errors[0].message).toContain('Object name must start with a letter');
     });
 
     it('should pass with valid object name containing only letters', () => {

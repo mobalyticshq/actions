@@ -48,7 +48,7 @@ describe('validateObjectStructure', () => {
 
       const errors = validateObjectStructure(object, 'stats', 'testGroup', mockGroup, mockSchema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Object field name must contain only letters and digits');
+      expect(errors[0].message).toContain('Object field name must start with a letter');
     });
 
     it('should pass with unique field names', () => {

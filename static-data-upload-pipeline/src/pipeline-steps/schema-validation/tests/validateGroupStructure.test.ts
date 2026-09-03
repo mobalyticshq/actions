@@ -56,7 +56,7 @@ describe('validateGroupStructure', () => {
 
       const errors = validateGroupStructure(group, 'testGroup', mockSchema);
       expect(errors).toHaveLength(1);
-      expect(errors[0].message).toContain('Field name must contain only letters and digits');
+      expect(errors[0].message).toContain('Field name must start with a letter');
     });
 
     it('should pass with unique field names', () => {

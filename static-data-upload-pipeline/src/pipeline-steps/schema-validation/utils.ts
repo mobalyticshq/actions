@@ -224,7 +224,7 @@ export function validateSchemaStructure(schema: ApiSchema): ValidationError[] {
     if (!isValidFieldNameString(groupName)) {
       errors.push({
         type: 'error',
-        message: `Group name must must start with a letter and contain only letters and digits, got: "${groupName}"`,
+        message: `Group name must start with a letter and contain only letters and digits, got: "${groupName}"`,
         path: `groups.${groupName}`,
       });
     }
@@ -277,7 +277,7 @@ export function validateGroupStructure(group: SchemaGroup, groupName: string, sc
     if (!isValidFieldNameString(fieldName)) {
       errors.push({
         type: 'error',
-        message: `Field name start with a letter and contain only letters and digits, got: "${fieldName}"`,
+        message: `Field name must start with a letter and contain only letters and digits, got: "${fieldName}"`,
         path: `groups.${groupName}.fields.${fieldName}`,
       });
     }
