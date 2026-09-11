@@ -15,7 +15,6 @@ export enum ReportMessages {
   duplicatedGameIds = 'gameId is not uniq',
   mismatchedSlugs = 'slug!=slugify(name)',
   notInCamelCase = 'not in camel case',
-  abscentConfigurationForRef = "can't find ref in schema.json file",
   abscentGroupForRef = "can't find group for ref",
   invalidRef = 'wrong field type for ref',
   abscentIdInRef = "can't find entity in referenced group",
@@ -343,31 +342,24 @@ function deepTests(
       if (!isCamelCase(k)) {
         report.errors[ReportMessages.notInCamelCase].add(prop);
       }
-      //all ref and *Ref must be correct ( need config file)
-      if (k === 'ref' || k.endsWith('Ref')) {
+      //only fields declared as refs in schema.json are validated as refs
+      const _prop = prop.replace(/\[\d+\]/g, '');
+      const ref = config.refs?.find(ref => ref.from === _prop);
+      if (ref) {
         if (o[k] !== null && typeof o[k] !== 'string' && !Array.isArray(o[k])) {
           report.errors[ReportMessages.invalidRef].add(prop);
-        } else {
-          const value = o[k];
-          const _prop = prop.replace(/\[\d+\]/g, '');
-          const ref = config.refs?.find(ref => ref.from === _prop);
-          if (!ref) {
-            report.errors[ReportMessages.abscentConfigurationForRef].add(prop);
-          } else if (!data[ref.to]) {
-            report.errors[ReportMessages.abscentGroupForRef].add(prop);
-          } else {
-            if (typeof o[k] == 'string') {
-              if (!data[ref.to].find(ent => ent.id === value)) {
-                report.errors[ReportMessages.abscentIdInRef].add(prop);
-              }
-            } else if (Array.isArray(o[k])) {
-              o[k].forEach(id => {
-                if (!data[ref.to].find(ent => ent.id === id)) {
-                  report.errors[ReportMessages.abscentIdInRef].add(prop);
-                }
-              });
-            }
+        } else if (!data[ref.to]) {
+          report.errors[ReportMessages.abscentGroupForRef].add(prop);
+        } else if (typeof o[k] === 'string') {
+          if (!data[ref.to].find(ent => ent.id === o[k])) {
+            report.errors[ReportMessages.abscentIdInRef].add(prop);
           }
+        } else if (Array.isArray(o[k])) {
+          o[k].forEach(id => {
+            if (!data[ref.to].find(ent => ent.id === id)) {
+              report.errors[ReportMessages.abscentIdInRef].add(prop);
+            }
+          });
         }
       }
       if (o[k] != null) deepTests(o[k], prop, config, data, tmpBucket, knownAssets, report);
@@ -441,7 +433,6 @@ export async function validate(
           [ReportMessages.duplicatedGameIds]: new Set<string>(),
           [ReportMessages.mismatchedSlugs]: new Set<string>(),
           [ReportMessages.notInCamelCase]: new Set<string>(),
-          [ReportMessages.abscentConfigurationForRef]: new Set<string>(),
           [ReportMessages.abscentGroupForRef]: new Set<string>(),
           [ReportMessages.invalidRef]: new Set<string>(),
           [ReportMessages.abscentIdInRef]: new Set<string>(),
