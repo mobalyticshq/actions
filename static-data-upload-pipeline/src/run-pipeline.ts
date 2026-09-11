@@ -4,8 +4,6 @@ import { gameIconsMap, gameNamesMap } from './utils/common.utils';
 import { logColors, logger } from './utils/logger.utils';
 import { schemaValidationStep } from './pipeline-steps/schema-validation/schema-validation';
 import { createReportStep } from './pipeline-steps/create-report';
-import path from 'path';
-import { existsSync, readFileSync } from 'fs';
 import { mergeStaticDataStep } from './pipeline-steps/merge-static-data';
 import { overrideStaticData } from './pipeline-steps/override-static-data';
 import { validateStaticDataStep } from './pipeline-steps/validate-static-data/validate-static-data-step';
@@ -149,16 +147,7 @@ export async function runPipeline({
       logger.endGroup();
     }
 
-    // ------------------ КУСОК ОТ КОТОРОГО НАДО ИЗБАВИТЬСЯ КОГДА ИЗБАВИМСЯ ОТ CONFIG.JSON ------------------
-
-    let config: ExtractedRefs = {refs: []};
-    const pathToConfig = path.join(staticDataPath, 'config.json');
-    if (existsSync(pathToConfig)) {
-      config = JSON.parse(readFileSync(pathToConfig, 'utf8'));
-    } else {
-      config = apiSchema ? extractSchemaRefs(apiSchema) : {refs: []};
-    }
-    // ----------------------------- КОНЕЦ КУСКА ОТ КОТОРОГО НАДО ИЗБАВИТЬСЯ --------------------------------
+    const config: ExtractedRefs = apiSchema ? extractSchemaRefs(apiSchema) : { refs: [] };
 
     // -------- Merge static data files step --------
     logger.group(`:merge: Merge static data files `);
