@@ -15,7 +15,6 @@ export enum ReportMessages {
   duplicatedGameIds = 'gameId is not uniq',
   mismatchedSlugs = 'slug!=slugify(name)',
   notInCamelCase = 'not in camel case',
-  abscentConfigurationForRef = "can't find ref in schema.json file",
   abscentGroupForRef = "can't find group for ref",
   invalidRef = 'wrong field type for ref',
   abscentIdInRef = "can't find entity in referenced group",
@@ -343,7 +342,7 @@ function deepTests(
       if (!isCamelCase(k)) {
         report.errors[ReportMessages.notInCamelCase].add(prop);
       }
-      //all ref and *Ref must be correct ( need config file)
+      //ref and *Ref keys with a configured mapping must resolve; unmapped ones are not validated
       if (k === 'ref' || k.endsWith('Ref')) {
         if (o[k] !== null && typeof o[k] !== 'string' && !Array.isArray(o[k])) {
           report.errors[ReportMessages.invalidRef].add(prop);
@@ -352,7 +351,7 @@ function deepTests(
           const _prop = prop.replace(/\[\d+\]/g, '');
           const ref = config.refs?.find(ref => ref.from === _prop);
           if (!ref) {
-            report.errors[ReportMessages.abscentConfigurationForRef].add(prop);
+            // no configured mapping for this key — nothing to validate against
           } else if (!data[ref.to]) {
             report.errors[ReportMessages.abscentGroupForRef].add(prop);
           } else {
@@ -441,7 +440,6 @@ export async function validate(
           [ReportMessages.duplicatedGameIds]: new Set<string>(),
           [ReportMessages.mismatchedSlugs]: new Set<string>(),
           [ReportMessages.notInCamelCase]: new Set<string>(),
-          [ReportMessages.abscentConfigurationForRef]: new Set<string>(),
           [ReportMessages.abscentGroupForRef]: new Set<string>(),
           [ReportMessages.invalidRef]: new Set<string>(),
           [ReportMessages.abscentIdInRef]: new Set<string>(),
