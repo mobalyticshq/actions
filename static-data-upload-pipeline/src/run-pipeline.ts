@@ -1,6 +1,6 @@
 // Interface for runPipeline parameters
 import { ApiSchema } from './pipeline-steps/schema-validation/types';
-import { gameIconsMap, gameNamesMap } from './utils/common.utils';
+import { gameIconsMap, gameNamesMap, parseStaticDataPath } from './utils/common.utils';
 import { logColors, logger } from './utils/logger.utils';
 import { schemaValidationStep } from './pipeline-steps/schema-validation/schema-validation';
 import { createReportStep } from './pipeline-steps/create-report';
@@ -43,10 +43,9 @@ export async function runPipeline({
   apiSchemaPath,
   skipSchemaValidation = false,
 }: RunPipelineArgs): Promise<StaticData | null | undefined> {
-  // Define environment (dev/stg/prod) from the staticDataPatn
-  const environment = staticDataPath.split('/')[1].toUpperCase();
-  // Define what game we are processing from the path
-  const gameSlug = staticDataPath.split('/')[0];
+  // Define the game and the environment from the path - counted back from `static_data`,
+  // because `games/<slug>/<env>/...` and `<slug>/<env>/...` sit at different depths.
+  const { gameSlug, environment } = parseStaticDataPath(staticDataPath);
   const gameName = gameNamesMap[gameSlug] || gameSlug;
   const gameIcon = gameIconsMap[gameSlug] || '';
   // Define asset prefixes for tmp and prod buckets

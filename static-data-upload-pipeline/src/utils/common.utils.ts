@@ -135,3 +135,22 @@ export function readSchema(schemaPath: string): ApiSchema | null {
     return null;
   }
 }
+
+/**
+ * Pull the game slug and the environment out of a static data path.
+ *
+ * Two layouts are in use and they have different depths:
+ *   games/<gameSlug>/<env>/static_data
+ *   <gameSlug>/<env>/static_data          (moba-equipment, moba-farm, moba-achievement)
+ *
+ * Reading positionally from the front only works for the second one - it reported
+ * every game as "games" and used the game slug as the environment, so the Slack
+ * report never said which environment had actually run. Counting back from
+ * `static_data` works for both.
+ */
+export function parseStaticDataPath(staticDataPath: string): { gameSlug: string; environment: string } {
+  const segments = staticDataPath.split('/').filter(Boolean);
+  const environment = segments[segments.length - 2] ?? '';
+  const gameSlug = segments[segments.length - 3] ?? segments[0] ?? '';
+  return { gameSlug, environment: environment.toUpperCase() };
+}

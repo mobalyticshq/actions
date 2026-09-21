@@ -53,12 +53,23 @@ async function run() {
   console.log('ℹ️ folder for prod assets:', prodAssetFolder);
   console.log('ℹ️ Dry run mode enabled:', dryRun);
 
-  const pattern = /static_data_v\d+.\d+.\d+.json/;
+  // Dots are escaped and the pattern is anchored on purpose: an unescaped `.`
+  // matches any character, so a malformed name like static_data_v0.010.json used
+  // to pass here and then break a later step instead of being rejected outright.
+  const pattern = /^static_data_v\d+\.\d+\.\d+\.json$/;
   const versionedFiles = new Array<string>();
   // Read all files from staticDataPath that match the pattern
   const files = readdirSync(staticDataPath);
   files.forEach(filename => {
-    if (!pattern.test(filename)) return null;
+    if (!pattern.test(filename)) {
+      // Don't let a typo'd version file disappear silently - it would ship stale data.
+      if (filename.startsWith('static_data_v')) {
+        console.log(
+          `⚠️ Skipped ${filename}: not a valid version file name, expected static_data_v<major>.<minor>.<patch>.json`,
+        );
+      }
+      return null;
+    }
     versionedFiles.push(path.join(staticDataPath, filename));
   });
 
