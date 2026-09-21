@@ -19,7 +19,7 @@ async function run() {
   const apiSchemaPath = '/Users/alexmittsel/WORK/ngf-configuration/borderlands-4/dev/static_data/schema.json'
 
   const apiSchema = readSchema(apiSchemaPath);
-  const pattern = /static_data_v\d+.\d+.\d+.json/;
+  const pattern = /^static_data_v\d+\.\d+\.\d+\.json$/;
   const slackManager = new SlackMessageManagerV2(chanelId);
 
 
