@@ -12,18 +12,27 @@ export type TooltipStructureTags = {
     value: {
         name: string;
         icon?: string;
+        color?: string;
+        backgroundColor?: string;
     }[];
 };
 export type TooltipStructureBulletList = {
     type: 'bullet-list';
+    listStyle?: string;
+    header?: ReactNode;
+    color?: string;
     value: {
         title: ReactNode;
         listStyleImageUrl?: string;
         color?: string;
+        right?: ReactNode;
+        rightColor?: string;
     }[];
 };
 export type TooltipStructureTable = {
     type: 'table';
+    color?: string;
+    rowColors?: (string | null)[];
     value: {
         columns: NgfTooltipTableColumn[];
         data: NgfTooltipTableRowData[];
@@ -35,15 +44,22 @@ export type TooltipStructureStats = {
         name: ReactNode;
         value: ReactNode;
         labelFirst?: boolean;
+        nameColor?: string;
+        valueColor?: string;
     }[];
 };
 export type TooltipStructureDescription = {
     type: 'description';
     value: string;
+    color?: string;
+};
+export type TooltipDivider = {
+    type: 'divider';
 };
 export type TooltipStructureFlavor = {
     type: 'flavor';
     value: string;
+    color?: string;
 };
 export type TooltipStructureDataList = {
     type: 'data-list';
@@ -51,6 +67,8 @@ export type TooltipStructureDataList = {
         icon?: string;
         name: string;
         description: string;
+        nameColor?: string;
+        descriptionColor?: string;
     }[];
 };
 export type TooltipStructureImageList = {
@@ -60,18 +78,21 @@ export type TooltipStructureImageList = {
         name?: string;
     }[];
 };
-export type StaticDataInfoContent = TooltipStructureTags | TooltipStructureBulletList | TooltipStructureTable | TooltipStructureStats | TooltipStructureDescription | TooltipStructureFlavor | TooltipStructureDataList | TooltipStructureImageList;
+export type StaticDataInfoContent = TooltipStructureTags | TooltipStructureBulletList | TooltipStructureTable | TooltipStructureStats | TooltipStructureDescription | TooltipStructureFlavor | TooltipStructureDataList | TooltipStructureImageList | TooltipDivider;
 export type StaticDataInfo = {
     slug: string;
     type: string;
     groupName: string;
     color?: string | null;
     backgroundImage?: string | null;
+    backgroundSize?: 'top' | 'cover' | null;
     isTooltipDisabled?: boolean;
     icon: string | null;
     iconStyle: 'square' | 'square-rounded' | 'circle';
     title: string;
+    titleColor?: string | null;
     subTitle?: string | null;
+    subTitleColor?: string | null;
     hotkey?: string | null;
     content?: StaticDataInfoContent[] | null;
 };

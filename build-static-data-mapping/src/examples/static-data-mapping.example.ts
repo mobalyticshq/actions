@@ -1,24 +1,32 @@
-import { type StaticDataInfoContent, type StaticDataInfo } from '../types/generic-static-data.type';
+import { type StaticDataInfoContent, type StaticDataInfo } from '../types/output-data.types';
 
 export function processNocturnalAspects(value: Hades2StaticDataNocturnalAspectsFragment): StaticDataInfo {
-  const color = '#1D4A7C';
-  const tooltipColor = '#B63AE9';
+  const titleColor = '#B63AE9';
 
   const content: StaticDataInfoContent[] = [];
 
   // Add cost requirements section
-  const costRequirements = value.cost?.map(cost => `Rank ${cost.rank}: ${cost.value}`).filter(Boolean) || [];
+  const costRequirements = value.cost?.map(cost => ({ rank: `Rank ${cost.rank}`, cost: `${cost.value}` })) || [];
 
-  content.push([
-    {
-      type: 'description',
-      value: 'Requirement',
-    },
-    {
-      type: 'bullet-list',
-      value: costRequirements.map(item => ({ title: item })),
-    },
-  ]);
+  if (costRequirements.length) {
+    content.push(
+      {
+        type: 'description',
+        value: 'Requirement',
+        color: '#E6CC80',
+      },
+      {
+        type: 'bullet-list',
+        listStyle: 'none',
+        value: costRequirements.map(item => ({
+          title: item.rank,
+          color: '#FFFFFF',
+          right: item.cost,
+          rightColor: '#FFD100',
+        })),
+      },
+    );
+  }
 
   // Add main description
   if (value.aspectDescription) {
@@ -30,18 +38,20 @@ export function processNocturnalAspects(value: Hades2StaticDataNocturnalAspectsF
 
   // Add flavor text
   if (value.flavorText) {
+    content.push({ type: 'divider' });
     content.push({
       type: 'flavor',
       value: value.flavorText,
+      color: '#C8A2E8',
     });
   }
 
   return {
     slug: value.slug,
     title: value.name,
+    titleColor,
     subTitle: value.weapon?.name ?? '',
     icon: value.iconUrl || '',
-    color,
     type: 'nocturnalAspects',
     groupName: 'Nocturnal Aspects',
     iconStyle: 'square-rounded',
