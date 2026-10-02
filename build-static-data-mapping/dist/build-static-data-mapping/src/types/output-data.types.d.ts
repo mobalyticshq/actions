@@ -7,6 +7,10 @@ export type NgfTooltipTableColumn = {
 export type NgfTooltipTableRowData = {
     [key: string]: string | number;
 };
+export type NgfTooltipTableRow = {
+    cells: NgfTooltipTableRowData;
+    color?: string | null;
+};
 export type TooltipStructureTags = {
     type: 'tags';
     value: {
@@ -32,10 +36,9 @@ export type TooltipStructureBulletList = {
 export type TooltipStructureTable = {
     type: 'table';
     color?: string;
-    rowColors?: (string | null)[];
     value: {
         columns: NgfTooltipTableColumn[];
-        data: NgfTooltipTableRowData[];
+        data: (NgfTooltipTableRowData | NgfTooltipTableRow)[];
     };
 };
 export type TooltipStructureStats = {

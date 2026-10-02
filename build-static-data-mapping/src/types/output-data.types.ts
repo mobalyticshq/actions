@@ -12,6 +12,11 @@ export type NgfTooltipTableRowData = {
   [key: string]: string | number;
 };
 
+export type NgfTooltipTableRow = {
+  cells: NgfTooltipTableRowData;
+  color?: string | null;
+};
+
 export type TooltipStructureTags = {
   type: 'tags';
   value: { name: string; icon?: string; color?: string; backgroundColor?: string }[];
@@ -29,9 +34,8 @@ export type TooltipStructureBulletList = {
 export type TooltipStructureTable = {
   type: 'table';
   color?: string;
-  // indexed like `value.data`
-  rowColors?: (string | null)[];
-  value: { columns: NgfTooltipTableColumn[]; data: NgfTooltipTableRowData[] };
+  // a row is either flat cells keyed by `dataIndex`, or `{ cells, color }` to color that row
+  value: { columns: NgfTooltipTableColumn[]; data: (NgfTooltipTableRowData | NgfTooltipTableRow)[] };
 };
 
 export type TooltipStructureStats = {
