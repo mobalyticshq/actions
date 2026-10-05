@@ -18,12 +18,14 @@ export function processNocturnalAspects(value: Hades2StaticDataNocturnalAspectsF
       {
         type: 'bullet-list',
         listStyle: 'none',
-        value: costRequirements.map(item => ({
-          title: item.rank,
-          color: '#FFFFFF',
-          right: item.cost,
-          rightColor: '#FFD100',
-        })),
+        value: [
+          // plain row: a single text
+          { title: 'Unlock cost per rank', color: '#FFFFFF' },
+          // two-column rows: the last column is aligned to the right edge
+          ...costRequirements.map(item => ({
+            columns: [{ text: item.rank, color: '#FFFFFF' }, { text: item.cost, color: '#FFD100' }],
+          })),
+        ],
       },
     );
   }

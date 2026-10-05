@@ -22,13 +22,21 @@ export type TooltipStructureTags = {
   value: { name: string; icon?: string; color?: string; backgroundColor?: string }[];
 };
 
+export type TooltipText = { text: ReactNode; color?: string };
+
+// `columns` renders one row split across the full width, the last column is aligned to the right edge
+export type TooltipStructureBulletListItem = {
+  listStyleImageUrl?: string;
+  color?: string;
+} & ({ title: ReactNode } | { columns: TooltipText[] });
+
 export type TooltipStructureBulletList = {
   type: 'bullet-list';
   // 'none' hides the bullet markers
   listStyle?: string;
   header?: ReactNode;
   color?: string;
-  value: { title: ReactNode; listStyleImageUrl?: string; color?: string; right?: ReactNode; rightColor?: string }[];
+  value: TooltipStructureBulletListItem[];
 };
 
 export type TooltipStructureTable = {

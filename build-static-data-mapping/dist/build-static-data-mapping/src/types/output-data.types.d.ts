@@ -20,18 +20,24 @@ export type TooltipStructureTags = {
         backgroundColor?: string;
     }[];
 };
+export type TooltipText = {
+    text: ReactNode;
+    color?: string;
+};
+export type TooltipStructureBulletListItem = {
+    listStyleImageUrl?: string;
+    color?: string;
+} & ({
+    title: ReactNode;
+} | {
+    columns: TooltipText[];
+});
 export type TooltipStructureBulletList = {
     type: 'bullet-list';
     listStyle?: string;
     header?: ReactNode;
     color?: string;
-    value: {
-        title: ReactNode;
-        listStyleImageUrl?: string;
-        color?: string;
-        right?: ReactNode;
-        rightColor?: string;
-    }[];
+    value: TooltipStructureBulletListItem[];
 };
 export type TooltipStructureTable = {
     type: 'table';
