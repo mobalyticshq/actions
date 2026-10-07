@@ -12,7 +12,28 @@ inputs:
   spreadsheets_folder_url:
     description: 'URL of the Google Drive folder where spreadsheets are stored or will be created'
     required: true
+  static_data_path:
+    description: 'Path to the static data folder in the calling repo (e.g. games/wowfor/dev/static_data)'
+    required: false
+  game_specific_tests:
+    description: 'Path to game-specific tests'
+    required: false
+  tmp_assets_folder:
+    description: 'GCS folder that asset URLs in the static data must point into; copied to prod_assets_folder on sync (e.g. gs://cdn.mobalytics.gg/assets/wow-forever)'
+    required: false
+  prod_assets_folder:
+    description: 'GCS folder assets are copied to on sync'
+    required: false
+  dry_run:
+    description: "'true' to validate and report without syncing anything"
+    required: false
+  skip_schema_validation:
+    description: "'true' to skip the schema backward-compatibility check"
+    required: false
+  slack_channel_id:
+    description: 'Slack channel the run report is posted to'
+    required: false
 
 runs:
-  using: 'node16'
+  using: 'node24'
   main: 'dist/index.js'
