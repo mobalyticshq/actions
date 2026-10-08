@@ -7,6 +7,7 @@ import { promisify } from 'util';
 import { exec, spawn } from 'child_process';
 import { ApiSchema } from './schema-validation/types';
 import { SlackMessageManagerV2 } from '../utils/slack-manager-v2.utils';
+import { describeError } from '../utils/common.utils';
 
 const execAsync = promisify(exec);
 
@@ -91,7 +92,7 @@ export async function syncStaticDataStep(
   } catch (error) {
     await slackManager.appendNewLine({
       id: 'override-spreadsheet-error',
-      content: `Unable to write override spreadsheet. <${actionUrl}|See pipeline logs>`,
+      content: `Unable to write override spreadsheet: ${describeError(error)}. <${actionUrl}|See pipeline logs>`,
       emoji: ':warning:',
     })
     console.log(`⚠️ Unable to write override spreadsheet: ${error}`);
