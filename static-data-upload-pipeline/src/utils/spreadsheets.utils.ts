@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import { google, sheets_v4 } from 'googleapis';
 import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
@@ -556,6 +556,25 @@ export async function addSheet(spreadsheetId: string, auth: GoogleAuth, title: s
   });
 }
 
+/**
+ * Request that widens a sheet to `columns` if it is narrower, or null if it already fits.
+ *
+ * addSheet creates every sheet 26 columns wide, and appendCells adds rows as needed but
+ * never columns - so a group with more fields than that made Google reject the whole
+ * batchUpdate (every sheet, not just the wide one). Never shrinks: that would delete
+ * columns, and in the override spreadsheet those can hold hand-entered *_override values.
+ */
+export function widenSheetRequest(sheet: sheets_v4.Schema$Sheet, columns: number) {
+  const current = sheet.properties?.gridProperties?.columnCount ?? 0;
+  if (columns <= current) return null;
+  return {
+    updateSheetProperties: {
+      properties: { sheetId: sheet.properties?.sheetId, gridProperties: { columnCount: columns } },
+      fields: 'gridProperties.columnCount',
+    },
+  };
+}
+
 export async function deleteSheet(spreadsheetId: string, auth: GoogleAuth, sheetId: number) {
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -706,6 +725,9 @@ export async function updateSpreadsheets(
         });
 
         if (sheet.properties?.title) {
+          const rows = newSpreadsheetData[sheet.properties.title] ?? [];
+          const widen = widenSheetRequest(sheet, rows.reduce((width, row) => Math.max(width, row.length), 0));
+          if (widen) requests.push(widen);
           requests.push({
             appendCells: {
               sheetId: sheet.properties?.sheetId,

@@ -6,7 +6,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { stringify } from './common.utils';
 
 import { ReportMessages } from '../pipeline-steps/validate-static-data/utils';
-import { addSheet, clearSheets, setColor } from './spreadsheets.utils';
+import { addSheet, clearSheets, setColor, widenSheetRequest } from './spreadsheets.utils';
 import { buildGoogleAuth, SPREADSHEETS_SCOPE } from './google-auth.utils';
 
 const sheets = google.sheets('v4');
@@ -37,8 +37,9 @@ async function fillColors(
     for (const sheet of sheetsInfo) {
       const sheetId = sheet.properties?.sheetId;
       if (sheet.properties?.title && sheetId) {
-        //reset color
-        requests.push(setColor(sheetId, 0, 1000, 0, 26, 1, 1, 1));
+        // Reset the whole grid - it can be wider and taller than the 1000 x 26 a sheet starts with
+        const grid = sheet.properties.gridProperties;
+        requests.push(setColor(sheetId, 0, grid?.rowCount ?? 1000, 0, grid?.columnCount ?? 26, 1, 1, 1));
         cells[sheet.properties?.title]?.forEach(cell => {
           requests.push(setColor(sheetId, cell.row, cell.row + 1, cell.col, cell.col + 1, cell.r, cell.g, cell.b));
         });
@@ -347,6 +348,8 @@ async function fillPages(
 
         if (sheet.properties?.title) {
           if (spreadsheetData[sheet.properties?.title] === undefined) continue;
+          const widen = widenSheetRequest(sheet, spreadsheetData[sheet.properties.title].reduce((width, row) => Math.max(width, row.length), 0));
+          if (widen) requests.push(widen);
           requests.push({
             appendCells: {
               sheetId: sheet.properties?.sheetId,
@@ -404,7 +407,11 @@ async function fillPages(
   }
 }
 
-export async function createReport(reports: ValidationReport[], spreadsheetId: string, schemaValidationErrors: any[] = []) {
+export async function createReport(
+  reports: ValidationReport[],
+  spreadsheetId: string,
+  schemaValidationErrors: any[] = [],
+): Promise<{ done: boolean; error?: unknown }> {
   try {
     const auth = buildGoogleAuth([SPREADSHEETS_SCOPE]);
     console.log('## prepare sheets');
@@ -422,9 +429,9 @@ export async function createReport(reports: ValidationReport[], spreadsheetId: s
     console.log('## remove unsed sheets');
     await clearSheets(spreadsheetData, spreadsheetId, auth);
 
-    return true;
+    return { done: true };
   } catch (error) {
     console.error('Report spreadsheets access error :', error);
+    return { done: false, error };
   }
-  return false;
 }

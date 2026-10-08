@@ -2,6 +2,7 @@ import { logger } from '../utils/logger.utils';
 import { ValidationReport } from '../types';
 import { createReport } from '../utils/report.utils';
 import { SlackMessageManagerV2 } from '../utils/slack-manager-v2.utils';
+import { describeError } from '../utils/common.utils';
 
 export async function createReportStep(
   actionUrl: string,
@@ -14,7 +15,7 @@ export async function createReportStep(
   schemaValidationErrors: any[] = [],
 ) {
   logger.group(`📊 Create Mistakes Report: https://docs.google.com/spreadsheets/d/${reportSpreadsheetId}`);
-  const reportDone = await createReport(reports, reportSpreadsheetId, schemaValidationErrors);
+  const { done: reportDone, error: reportError } = await createReport(reports, reportSpreadsheetId, schemaValidationErrors);
 
   let slackMsg = `Report: `;
   slackMsg += `❗ - errors:${errors}  `;
@@ -40,7 +41,7 @@ export async function createReportStep(
 
     await slackManager.appendNewLine({
         id: 'spreadsheet-report-error',
-        content: `Can't create mistakes report, something went wrong! Please contact any engineer. <${actionUrl}|See pipeline logs>`,
+        content: `Can't create mistakes report: ${describeError(reportError)}. <${actionUrl}|See pipeline logs>`,
         emoji: ':mild-panic:',
     });
   }
