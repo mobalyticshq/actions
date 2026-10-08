@@ -3,6 +3,8 @@ import { StaticData } from '../types';
 import { readFileSync } from 'fs';
 import { isValidDataForMerge, mergeStaticData } from '../utils/merge.utils';
 import { SlackMessageManagerV2 } from '../utils/slack-manager-v2.utils';
+import { describeError } from '../utils/common.utils';
+import * as path from 'path';
 
 interface MergeStaticDataOutput {
   staticData: StaticData;
@@ -15,6 +17,8 @@ export async function mergeStaticDataStep(
   slackManager: SlackMessageManagerV2,
   versions: Array<string>,
 ): Promise<MergeStaticDataOutput> {
+  // Kept outside the loop so the catch can say which file broke the merge
+  let currentFile = '';
   try {
     await slackManager.appendNewLine({
       id: 'merge-static-data',
@@ -26,6 +30,7 @@ export async function mergeStaticDataStep(
     let oldData = {} as StaticData;
 
     for (let i = 0; i < versions.length; ++i) {
+      currentFile = versions[i];
       const data: StaticData = JSON.parse(readFileSync(versions[i], 'utf8'));
       const isValidForMerge = isValidDataForMerge(data);
       if (!isValidForMerge) {
@@ -49,9 +54,11 @@ export async function mergeStaticDataStep(
 
     return { staticData, oldData, success: true };
   } catch (error) {
+    console.log(`❌ Merging static data files failed on ${currentFile}:`, error);
+    const where = currentFile ? ` on \`${path.basename(currentFile)}\`` : '';
     await slackManager.updateMessage(
       'merge-static-data',
-      `Merging static data files failed, something went wrong! Please contact any engineer. <${actionUrl}|See pipeline logs>`,
+      `Merging static data files failed${where}: ${describeError(error)}. <${actionUrl}|See pipeline logs>`,
       ':mild-panic:',
     );
 
