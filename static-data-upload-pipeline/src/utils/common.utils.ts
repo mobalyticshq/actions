@@ -1,6 +1,7 @@
 import * as slugify_ from 'slugify';
 import { ApiSchema } from '../pipeline-steps/schema-validation/types';
 import { existsSync, readFileSync } from 'fs';
+import * as path from 'path';
 
 export const gameIconsMap: Record<string, string> = {
   'the-bazaar': ':bazaarr:',
@@ -16,8 +17,23 @@ export const gameIconsMap: Record<string, string> = {
   'poe-2': ':poe2:',
   poe: ':poe-2:',
   zzz: ':zzzz:',
+  'wow-forever': ':wowz:',
+  'genshin-impact': ':genshin:',
+  riftbound: ':riftbound:',
+  'arknights-endfield': ':arknights-endfield:',
+  marathon: ':marathon:',
+  overwatch: ':overwatch:',
+  'slay-the-spire-2': ':sts2:',
+  'neverness-to-everness': ':nte:',
+  tft: ':tft:',
+  gamebase: ':newspaper:',
+  dnd: ':dragon:',
 };
 
+// Keyed by the site URL slug, as in games/<abbr>/slug.txt - see describeGameEnv.
+// Titles for games added after September 2025 are copied from availableGames in
+// games/common/prod/game-config/config.json; icons are Slack emoji names, so add
+// one only once the emoji exists in the workspace.
 export const gameNamesMap: Record<string, string> = {
   'the-bazaar': 'The Bazaar',
   'borderlands-4': 'Borderlands 4',
@@ -32,6 +48,17 @@ export const gameNamesMap: Record<string, string> = {
   'poe-2': 'Path of Exile 2',
   poe: 'Path of Exile',
   zzz: 'ZZZ',
+  tft: 'Teamfight Tactics',
+  'wow-forever': 'World of Warcraft: Forever',
+  marathon: 'Marathon',
+  'slay-the-spire-2': 'Slay the Spire 2',
+  overwatch: 'Overwatch',
+  valorant: 'Valorant',
+  'neverness-to-everness': 'Neverness to Everness',
+  'arknights-endfield': 'Arknights: Endfield',
+  '2xko': '2XKO',
+  riftbound: 'Riftbound',
+  'genshin-impact': 'Genshin Impact',
 };
 
 export const initSlugify = () =>
@@ -153,4 +180,37 @@ export function parseStaticDataPath(staticDataPath: string): { gameSlug: string;
   const environment = segments[segments.length - 2] ?? '';
   const gameSlug = segments[segments.length - 3] ?? segments[0] ?? '';
   return { gameSlug, environment: environment.toUpperCase() };
+}
+
+/**
+ * "<game name> <icon> <ENV>" for Slack headers and logs.
+ *
+ * The maps are keyed by the site URL slug, which stopped being the folder name when
+ * games moved to games/<abbr>/ (d4, bl4, wowfor...). games/<abbr>/slug.txt maps one to
+ * the other; it sits in the run's sparse checkout because cone mode materialises every
+ * ancestor directory's files. moba-* layouts have no slug.txt and use the folder name.
+ */
+export function describeGameEnv(staticDataPath: string): string {
+  const { gameSlug, environment } = parseStaticDataPath(staticDataPath);
+  let slug = gameSlug;
+  const gameDir = path.join(staticDataPath, '..', '..');
+  if (gameDir !== '.') {
+    try {
+      slug = readFileSync(path.join(gameDir, 'slug.txt'), 'utf8').trim() || gameSlug;
+    } catch {
+      // No slug.txt - keep the folder name.
+    }
+  }
+  return [gameNamesMap[slug] || slug, gameIconsMap[slug], environment].filter(Boolean).join(' ');
+}
+
+/**
+ * One-line, Slack-safe description of a thrown value, for "something went wrong" messages.
+ * Slack treats <, > and & as markup, and a JSON.parse error on a large file can be long.
+ */
+export function describeError(error: unknown, maxLength = 300): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const oneLine = message.replace(/\s+/g, ' ').trim();
+  const short = oneLine.length > maxLength ? `${oneLine.slice(0, maxLength)}…` : oneLine;
+  return short.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

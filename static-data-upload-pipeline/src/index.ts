@@ -4,7 +4,7 @@ dotenv.config();
 import * as core from '@actions/core';
 import { existsSync, readdirSync } from 'fs';
 import * as path from 'path';
-import { initSlugify, readSchema } from './utils/common.utils';
+import { describeGameEnv, initSlugify, readSchema } from './utils/common.utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './utils/logger.utils';
@@ -58,20 +58,36 @@ async function run() {
   // to pass here and then break a later step instead of being rejected outright.
   const pattern = /^static_data_v\d+\.\d+\.\d+\.json$/;
   const versionedFiles = new Array<string>();
+  const malformedFiles = new Array<string>();
   // Read all files from staticDataPath that match the pattern
   const files = readdirSync(staticDataPath);
   files.forEach(filename => {
-    if (!pattern.test(filename)) {
-      // Don't let a typo'd version file disappear silently - it would ship stale data.
-      if (filename.startsWith('static_data_v')) {
-        console.log(
-          `⚠️ Skipped ${filename}: not a valid version file name, expected static_data_v<major>.<minor>.<patch>.json`,
-        );
-      }
-      return null;
+    if (pattern.test(filename)) {
+      versionedFiles.push(path.join(staticDataPath, filename));
+    } else if (filename.startsWith('static_data_v')) {
+      malformedFiles.push(filename);
     }
-    versionedFiles.push(path.join(staticDataPath, filename));
   });
+
+  // A static_data_v* file that doesn't parse as a version is almost always the one meant
+  // to ship. Skipping it would quietly ship the previous version and report success, so
+  // stop here - before spreadsheet discovery, merge and validation spend anything.
+  if (malformedFiles.length > 0) {
+    const names = malformedFiles.join(', ');
+    // No angle brackets - Slack reads <...> as a link or mention.
+    const expected = 'expected static_data_vMAJOR.MINOR.PATCH.json';
+    console.log(`❌ Not a valid version file name: ${names} - ${expected}`);
+    logger.endGroup();
+    await slackManager.sendMessage([
+      {
+        id: 'header',
+        content: `Invalid static data file name for ${describeGameEnv(staticDataPath)}: \`${names}\` - ${expected}`,
+        emoji: ':x:',
+      },
+    ]);
+    core.setFailed(`Not a valid version file name: ${names} - ${expected}`);
+    return;
+  }
 
   const sortedFiles = versionedFiles
     .map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000)))

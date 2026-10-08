@@ -1,6 +1,6 @@
 // Interface for runPipeline parameters
 import { ApiSchema } from './pipeline-steps/schema-validation/types';
-import { gameIconsMap, gameNamesMap, parseStaticDataPath } from './utils/common.utils';
+import { describeError, describeGameEnv } from './utils/common.utils';
 import { logColors, logger } from './utils/logger.utils';
 import { schemaValidationStep } from './pipeline-steps/schema-validation/schema-validation';
 import { createReportStep } from './pipeline-steps/create-report';
@@ -43,22 +43,19 @@ export async function runPipeline({
   apiSchemaPath,
   skipSchemaValidation = false,
 }: RunPipelineArgs): Promise<StaticData | null | undefined> {
-  // Define the game and the environment from the path - counted back from `static_data`,
-  // because `games/<slug>/<env>/...` and `<slug>/<env>/...` sit at different depths.
-  const { gameSlug, environment } = parseStaticDataPath(staticDataPath);
-  const gameName = gameNamesMap[gameSlug] || gameSlug;
-  const gameIcon = gameIconsMap[gameSlug] || '';
+  // "<game> <icon> <ENV>" for the Slack headers
+  const gameEnv = describeGameEnv(staticDataPath);
   // Define asset prefixes for tmp and prod buckets
   const tmpAssetPrefix = tmpAssetFolder.replace('gs://', 'https://');
   const prodAssetPrefix = prodAssetFolder.replace('gs://', 'https://');
 
   // If there is no versioned files - exit
   if (versions.length == 0) {
-    console.log(`❌ There is no static data files for ${gameName} ${gameIcon} ${environment} ${staticDataPath}`);
+    console.log(`❌ There is no static data files for ${gameEnv} ${staticDataPath}`);
     const message = [
       {
         id: 'header',
-        content: `There is no static data files for ${gameName} ${gameIcon} ${environment}`,
+        content: `There is no static data files for ${gameEnv}`,
         emoji: ':x:',
       },
     ];
@@ -88,7 +85,7 @@ export async function runPipeline({
     await slackManager.sendMessage([
       {
         id: 'start-pipeline',
-        content: `DRY RUN pipeline for ${latestSDVersion} ${gameName} ${gameIcon} ${environment}`,
+        content: `DRY RUN pipeline for ${latestSDVersion} ${gameEnv}`,
         emoji: ':test_tube:',
       },
       actionLinkLine,
@@ -97,7 +94,7 @@ export async function runPipeline({
     await slackManager.sendMessage([
       {
         id: 'start-pipeline',
-        content: `RUN pipeline for ${latestSDVersion} ${gameName} ${gameIcon} ${environment}`,
+        content: `RUN pipeline for ${latestSDVersion} ${gameEnv}`,
         emoji: ':rocket:',
       },
       actionLinkLine,
@@ -234,10 +231,10 @@ export async function runPipeline({
     return overridedData;
 
   } catch (error) {
-    console.log(`⚠️ Error during pipeline ${error}`);
+    console.log(`⚠️ Error during pipeline`, error);
     await slackManager.appendNewLine({
       id: 'pipeline-error',
-      content: `Something went wrong during pipeline running. Please contact any engineer. <${actionUrl}|See pipeline logs>`,
+      content: `Something went wrong during pipeline running: ${describeError(error)}. <${actionUrl}|See pipeline logs>`,
       emoji: ':mild-panic:',
     })
   }
