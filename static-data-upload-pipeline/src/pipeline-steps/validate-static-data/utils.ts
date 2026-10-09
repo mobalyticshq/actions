@@ -36,6 +36,7 @@ export enum ReportMessages {
   requiredFieldMissing = 'required field is missing',
   invalidFieldType = 'invalid field type',
   invalidRefTarget = 'invalid ref target',
+  refToDeprecated = 'ref points to deprecated entity',
   groupNotInSchema = 'group not found in schema',
 }
 
@@ -69,21 +70,23 @@ function validateFieldType(value: any, fieldType: string, isArray: boolean = fal
   }
 }
 
-function validateRefTarget(refValue: any, refTo: string, data: StaticData): boolean {
-  if (!data[refTo]) return false;
+// 'missing' if any id has no entity in the target group, 'deprecated' if all exist but one is retired.
+// Refs resolve against the merged state, which keeps retired rows, so a dead target used to pass silently.
+export function checkRefTarget(refValue: any, refTo: string, data: StaticData): 'ok' | 'missing' | 'deprecated' {
+  if (!data[refTo]) return 'missing';
+  const ids = typeof refValue === 'string' ? [refValue] : Array.isArray(refValue) ? refValue : null;
+  if (!ids) return 'missing';
 
-  if (typeof refValue === 'string') {
-    return data[refTo].some(entity => entity.id === refValue);
+  let status: 'ok' | 'deprecated' = 'ok';
+  for (const id of ids) {
+    const target = typeof id === 'string' ? data[refTo].find(entity => entity.id === id) : undefined;
+    if (!target) return 'missing';
+    if (target.deprecated) status = 'deprecated';
   }
-
-  if (Array.isArray(refValue)) {
-    return refValue.every(id => typeof id === 'string' && data[refTo].some(entity => entity.id === id));
-  }
-
-  return false;
+  return status;
 }
 
-function validateEntityAgainstSchema(
+export function validateEntityAgainstSchema(
   entity: Entity,
   groupName: string,
   schema: ApiSchema,
@@ -114,9 +117,10 @@ function validateEntityAgainstSchema(
 
     // Validate Ref fields
     if (fieldSchema.type === 'Ref' && fieldSchema.refTo) {
-      if (!validateRefTarget(fieldValue, fieldSchema.refTo, data)) {
-        entityReport.errors[ReportMessages.invalidRefTarget].add(fieldPath);
-      }
+      const target = checkRefTarget(fieldValue, fieldSchema.refTo, data);
+      if (target === 'missing') entityReport.errors[ReportMessages.invalidRefTarget].add(fieldPath);
+      // A retired entity may keep pointing at retired ones; only a live one leads users to a dead entity
+      if (target === 'deprecated' && !entity.deprecated) entityReport.warnings[ReportMessages.refToDeprecated].add(fieldPath);
     }
 
     // Validate Object fields recursively
@@ -173,9 +177,9 @@ function validateObjectAgainstSchema(
 
     // Validate Ref fields
     if (fieldSchema.type === 'Ref' && fieldSchema.refTo) {
-      if (!validateRefTarget(fieldValue, fieldSchema.refTo, data)) {
-        report.errors[ReportMessages.invalidRefTarget].add(fieldPath);
-      }
+      const target = checkRefTarget(fieldValue, fieldSchema.refTo, data);
+      if (target === 'missing') report.errors[ReportMessages.invalidRefTarget].add(fieldPath);
+      if (target === 'deprecated' && !report.entity.deprecated) report.warnings[ReportMessages.refToDeprecated].add(fieldPath);
     }
 
     // Validate nested Object fields recursively
@@ -447,6 +451,7 @@ export async function validate(
           [ReportMessages.deprecated]: new Set<string>(),
           [ReportMessages.slugChanged]: new Set<string>(),
           [ReportMessages.slugMoved]: new Set<string>(),
+          [ReportMessages.refToDeprecated]: new Set<string>(),
           [ReportMessages.nameChanged]: new Set<string>(),
           [ReportMessages.justMsg]: new Set<string>(),
           //[ReportMessages.URLChanged]:new Set<string>(),

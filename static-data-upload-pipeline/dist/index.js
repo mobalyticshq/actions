@@ -857308,6 +857308,8 @@ function syncBuckets(source, target) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReportMessages = void 0;
+exports.checkRefTarget = checkRefTarget;
+exports.validateEntityAgainstSchema = validateEntityAgainstSchema;
 exports.findSlugMoves = findSlugMoves;
 exports.validate = validate;
 const common_utils_1 = __nccwpck_require__(59847);
@@ -857344,6 +857346,7 @@ var ReportMessages;
     ReportMessages["requiredFieldMissing"] = "required field is missing";
     ReportMessages["invalidFieldType"] = "invalid field type";
     ReportMessages["invalidRefTarget"] = "invalid ref target";
+    ReportMessages["refToDeprecated"] = "ref points to deprecated entity";
     ReportMessages["groupNotInSchema"] = "group not found in schema";
 })(ReportMessages || (exports.ReportMessages = ReportMessages = {}));
 const assetExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.svg', '.avif', '.webm', '.mp4'];
@@ -857373,16 +857376,23 @@ function validateFieldType(value, fieldType, isArray = false) {
             return false;
     }
 }
-function validateRefTarget(refValue, refTo, data) {
+// 'missing' if any id has no entity in the target group, 'deprecated' if all exist but one is retired.
+// Refs resolve against the merged state, which keeps retired rows, so a dead target used to pass silently.
+function checkRefTarget(refValue, refTo, data) {
     if (!data[refTo])
-        return false;
-    if (typeof refValue === 'string') {
-        return data[refTo].some(entity => entity.id === refValue);
+        return 'missing';
+    const ids = typeof refValue === 'string' ? [refValue] : Array.isArray(refValue) ? refValue : null;
+    if (!ids)
+        return 'missing';
+    let status = 'ok';
+    for (const id of ids) {
+        const target = typeof id === 'string' ? data[refTo].find(entity => entity.id === id) : undefined;
+        if (!target)
+            return 'missing';
+        if (target.deprecated)
+            status = 'deprecated';
     }
-    if (Array.isArray(refValue)) {
-        return refValue.every(id => typeof id === 'string' && data[refTo].some(entity => entity.id === id));
-    }
-    return false;
+    return status;
 }
 function validateEntityAgainstSchema(entity, groupName, schema, data, entityReport) {
     const groupSchema = schema.groups[groupName];
@@ -857405,9 +857415,12 @@ function validateEntityAgainstSchema(entity, groupName, schema, data, entityRepo
         }
         // Validate Ref fields
         if (fieldSchema.type === 'Ref' && fieldSchema.refTo) {
-            if (!validateRefTarget(fieldValue, fieldSchema.refTo, data)) {
+            const target = checkRefTarget(fieldValue, fieldSchema.refTo, data);
+            if (target === 'missing')
                 entityReport.errors[ReportMessages.invalidRefTarget].add(fieldPath);
-            }
+            // A retired entity may keep pointing at retired ones; only a live one leads users to a dead entity
+            if (target === 'deprecated' && !entity.deprecated)
+                entityReport.warnings[ReportMessages.refToDeprecated].add(fieldPath);
         }
         // Validate Object fields recursively
         if (fieldSchema.type === 'Object' && fieldSchema.objName) {
@@ -857444,9 +857457,11 @@ function validateObjectAgainstSchema(obj, objectSchema, groupName, schema, data,
         }
         // Validate Ref fields
         if (fieldSchema.type === 'Ref' && fieldSchema.refTo) {
-            if (!validateRefTarget(fieldValue, fieldSchema.refTo, data)) {
+            const target = checkRefTarget(fieldValue, fieldSchema.refTo, data);
+            if (target === 'missing')
                 report.errors[ReportMessages.invalidRefTarget].add(fieldPath);
-            }
+            if (target === 'deprecated' && !report.entity.deprecated)
+                report.warnings[ReportMessages.refToDeprecated].add(fieldPath);
         }
         // Validate nested Object fields recursively
         if (fieldSchema.type === 'Object' && fieldSchema.objName) {
@@ -857690,6 +857705,7 @@ async function validate(data, oldData, config, tmpBucket, apiSchema, isValidatio
                     [ReportMessages.deprecated]: new Set(),
                     [ReportMessages.slugChanged]: new Set(),
                     [ReportMessages.slugMoved]: new Set(),
+                    [ReportMessages.refToDeprecated]: new Set(),
                     [ReportMessages.nameChanged]: new Set(),
                     [ReportMessages.justMsg]: new Set(),
                     //[ReportMessages.URLChanged]:new Set<string>(),

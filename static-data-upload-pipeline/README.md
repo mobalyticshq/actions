@@ -165,6 +165,8 @@ Files must match: `static_data_vX.Y.Z.json` where X, Y, Z are numbers in range `
 | number is not allowed | ERROR | All numbers must be strings (e.g. `"value": "5"` not `"value": 5`) to avoid float32/float64/int32/int64 issues |
 | entity deprecated | WARNING | Entity `id` not found in the latest version of static data |
 | slug changed | WARNING | Slug was changed in the latest version of static data |
+| slug moved | WARNING | The slug now opens a different entity, while the entity that held it stays live under another slug. Both rows name both ids |
+| ref points to deprecated entity | WARNING | A live entity references an entity that is deprecated - the ref resolves, but leads to a retired entity |
 | name changed | WARNING | Name was changed in the latest version of static data |
 | field disappeared | WARNING | Field not present in the latest version of static data |
 | asset changed | WARNING | Asset URL was changed in the latest version of static data |
