@@ -45,10 +45,17 @@ export async function processUrlsInChunks(
   // Process all URLs synchronously
   console.log(`⚡ Validating ${entries.length} URLs synchronously...`);
 
+  const missing: string[] = [];
   for (const [url, reports] of entries) {
-    if (reports.length > 0) {
-      validateAssetWithGCS(url, reports, assetSizeLimit, existingFiles);
+    if (reports.length > 0 && !validateAssetWithGCS(url, reports, assetSizeLimit, existingFiles)) {
+      missing.push(url);
     }
+  }
+  // The report only names the field path, so this is the one place the URL itself shows up
+  if (missing.length > 0) {
+    console.log(`❌ ${missing.length} asset URL(s) not found in the bucket:`);
+    missing.slice(0, 50).forEach(url => console.log(`  ${url}`));
+    if (missing.length > 50) console.log(`  ...and ${missing.length - 50} more`);
   }
 
   console.log(`✅ Finished processing all ${entries.length} URLs using GCS validation`);
@@ -74,8 +81,8 @@ async function getAllFilesInBucket(bucket: any, prefix: string = ''): Promise<Se
   }
 }
 
-// Validate asset using GCS instead of CDN
-function validateAssetWithGCS(
+// Validate asset using GCS instead of CDN; returns whether the asset exists
+export function validateAssetWithGCS(
   url: string,
   reports: {
     report: ValidationEntityReport;
@@ -83,11 +90,12 @@ function validateAssetWithGCS(
   }[],
   assetSizeLimit: number,
   existingFiles: Set<string>,
-) {
+): boolean {
   try {
-    // Extract asset path from URL
-    const urlObj = new URL(url);
-    const assetPath = urlObj.pathname;
+    // URL.pathname is percent-encoded (a space becomes %20) while GCS lists raw object
+    // names, so a file with a space or non-ASCII character in its name was reported
+    // missing even though it exists. A malformed escape throws and is reported below.
+    const assetPath = decodeURIComponent(new URL(url).pathname);
 
     // Check if file exists in GCS
     const fileExists = existingFiles.has(assetPath);
@@ -96,12 +104,13 @@ function validateAssetWithGCS(
       // File exists in GCS - validation passed
       // Note: We skip size validation for GCS files for now
       // In the future, we could add metadata fetching for size validation
-    } else {
-      // File doesn't exist in GCS
-      reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
+      return true;
     }
+    // File doesn't exist in GCS
+    reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
   } catch (err) {
     // Invalid URL or other error
     reports.forEach(report => report.report.errors[ReportMessages.assetURLNotAvailable].add(report.path));
   }
+  return false;
 }

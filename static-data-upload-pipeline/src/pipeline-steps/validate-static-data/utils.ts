@@ -24,6 +24,7 @@ export enum ReportMessages {
   newEntity = 'new entity',
   deprecated = 'entity deprecated',
   slugChanged = 'slug changed',
+  slugMoved = 'slug moved',
   nameChanged = 'name changed',
   fieldDisappear = 'field disappear',
   assetChanged = 'asset changed',
@@ -369,6 +370,33 @@ function deepTests(
   }
 }
 
+/**
+ * Slugs that moved from one live entity to another between the previous state and this one.
+ *
+ * Each side alone only shows up as an unrelated `slug changed`, yet for a consumer it is
+ * worse than a 404: the old URL silently opens a different entity (wowfor_stg v0.0.27 had
+ * six). Only counts when the previous owner is still live - a retired one handing its
+ * slug over is the intended outcome, not a surprise.
+ */
+export function findSlugMoves(oldEntities: Entity[] = [], newEntities: Entity[] = []) {
+  const oldLiveOwner = new Map<string, string>(); // slug -> id
+  for (const e of oldEntities) if (e.slug && e.id && !e.deprecated) oldLiveOwner.set(e.slug, String(e.id));
+  const liveNow = new Map<string, Entity>();
+  for (const e of newEntities) if (e.id && !e.deprecated) liveNow.set(String(e.id), e);
+
+  const movedIn = new Map<string, { slug: string; from: string; fromSlug: string }>();
+  const movedOut = new Map<string, { slug: string; to: string }>();
+  for (const [id, ent] of liveNow) {
+    const from = ent.slug ? oldLiveOwner.get(ent.slug) : undefined;
+    const previous = from !== undefined && from !== id ? liveNow.get(from) : undefined;
+    if (ent.slug && from && previous?.slug && previous.slug !== ent.slug) {
+      movedIn.set(id, { slug: ent.slug, from, fromSlug: previous.slug });
+      movedOut.set(from, { slug: ent.slug, to: id });
+    }
+  }
+  return { movedIn, movedOut };
+}
+
 export async function validate(
   data: StaticData,
   oldData: StaticData,
@@ -397,6 +425,7 @@ export async function validate(
       validationReport.errors['Group is not array'].add(group);
       continue;
     }
+    const { movedIn, movedOut } = findSlugMoves(oldData[group], data[group]);
     const knownIds = new Set();
     const knownSlugs = new Set();
     const knownGameIds = new Set();
@@ -417,7 +446,9 @@ export async function validate(
           [ReportMessages.assetChanged]: new Set<string>(),
           [ReportMessages.deprecated]: new Set<string>(),
           [ReportMessages.slugChanged]: new Set<string>(),
+          [ReportMessages.slugMoved]: new Set<string>(),
           [ReportMessages.nameChanged]: new Set<string>(),
+          [ReportMessages.justMsg]: new Set<string>(),
           //[ReportMessages.URLChanged]:new Set<string>(),
         },
         infos: {
@@ -511,6 +542,18 @@ export async function validate(
       //slug changed
       if (ent.id && ent.slug && oldData[group] && oldData[group].find(e => ent.id == e.id && e.slug !== ent.slug)) {
         entityReport.warnings[ReportMessages.slugChanged].add(`${group}.slug`);
+      }
+      //slug moved between two live entities - name both ids, on both rows
+      const arrived = ent.id ? movedIn.get(String(ent.id)) : undefined;
+      if (arrived) {
+        entityReport.warnings[ReportMessages.slugMoved].add(`${group}.slug`);
+        entityReport.warnings[ReportMessages.justMsg].add(
+          `slug moved: "${arrived.slug}" now opens id ${ent.id}, it used to open id ${arrived.from} (still live as "${arrived.fromSlug}")`,
+        );
+      }
+      const departed = ent.id ? movedOut.get(String(ent.id)) : undefined;
+      if (departed) {
+        entityReport.warnings[ReportMessages.justMsg].add(`slug moved: "${departed.slug}" now opens id ${departed.to}`);
       }
       //name changed
       if (ent.id && ent.name && oldData[group] && oldData[group].find(e => ent.id == e.id && e.name !== ent.name)) {
