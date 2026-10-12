@@ -856302,6 +856302,20 @@ async function run() {
     // Create Slack message manager for this run
     // const slackManager = new SlackMessageManager();
     const slackManager = new slack_manager_v2_utils_1.SlackMessageManagerV2(chanelId);
+    // A folder without its game segment (gs://cdn.mobalytics.gg/assets/) makes asset validation
+    // list the whole CDN (OOM), lets any game's assets pass the "lives in this game's folder"
+    // check, and a root tmp with a scoped prod would rsync the CDN into one game's folder.
+    const unscoped = [tmpAssetFolder, prodAssetFolder].filter(folder => !(0, common_utils_1.isScopedAssetsFolder)(folder));
+    if (unscoped.length > 0) {
+        // No angle brackets - Slack reads <...> as a link or mention.
+        const message = `Assets folder must look like gs://BUCKET/assets/GAME, got: ${unscoped.map(f => `\`${f || '(empty)'}\``).join(', ')}`;
+        console.log(`❌ ${message}`);
+        await slackManager.sendMessage([
+            { id: 'header', content: `Invalid assets folder for ${(0, common_utils_1.describeGameEnv)(staticDataPath)}. ${message}`, emoji: ':x:' },
+        ]);
+        core.setFailed(message);
+        return;
+    }
     logger_utils_1.logger.group(`🚀🚀 Run static data upload pipeline for ${staticDataPath} `);
     //log header
     console.log('ℹ️ bucket for static data:', process.env.GCP_BUCKET_NAME);
@@ -858059,12 +858073,15 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.processUrlsInChunks = processUrlsInChunks;
+exports.getAllFilesInBucket = getAllFilesInBucket;
 exports.validateAssetWithGCS = validateAssetWithGCS;
 const storage_1 = __nccwpck_require__(28525);
 const utils_1 = __nccwpck_require__(40294);
-// Process URLs using GCS validation (single API call + synchronous validation)
+// Process URLs using GCS validation (one streamed listing + synchronous validation)
 async function processUrlsInChunks(entries, assetSizeLimit, tmpBucket) {
     console.log(`🔄 Processing ${entries.length} URLs using GCS validation...`);
+    if (entries.length === 0)
+        return;
     const prefix = new URL(tmpBucket).pathname; // Extract prefix from tmpBucket URL
     const gcsOptions = {
         bucketName: process.env.GCP_ASSETS_BUCKET_NAME || 'cdn.mobalytics.gg', // Default to mobalytics CDN bucket
@@ -858078,10 +858095,11 @@ async function processUrlsInChunks(entries, assetSizeLimit, tmpBucket) {
     };
     const storage = new storage_1.Storage({ credentials: gcsOptions.credentials });
     const bucket = storage.bucket(gcsOptions.bucketName);
-    // Get all existing files from GCS bucket (single API call with prefix filter)
+    // List the configured prefix, keeping only the files the static data references
     console.log(`🔍 Fetching file list from GCS bucket: ${gcsOptions.bucketName} with prefix: ${gcsOptions.prefix}`);
-    const existingFiles = await getAllFilesInBucket(bucket, gcsOptions.prefix);
-    console.log(`📁 Found ${existingFiles.size} files in GCS bucket with prefix ${gcsOptions.prefix}`);
+    const wanted = new Set(entries.map(([url]) => assetPathOf(url)).filter((p) => p !== null));
+    const existingFiles = await getAllFilesInBucket(bucket, gcsOptions.prefix ?? '', wanted);
+    console.log(`📁 Found ${existingFiles.size} of ${wanted.size} referenced files in GCS bucket with prefix ${gcsOptions.prefix}`);
     // Process all URLs synchronously
     console.log(`⚡ Validating ${entries.length} URLs synchronously...`);
     const missing = [];
@@ -858099,15 +858117,24 @@ async function processUrlsInChunks(entries, assetSizeLimit, tmpBucket) {
     }
     console.log(`✅ Finished processing all ${entries.length} URLs using GCS validation`);
 }
-// Get all files in the GCS bucket with optional prefix filter
-async function getAllFilesInBucket(bucket, prefix = '') {
+// URL.pathname is percent-encoded (a space becomes %20) while GCS lists raw object names
+function assetPathOf(url) {
+    try {
+        return decodeURIComponent(new URL(url).pathname);
+    }
+    catch {
+        return null; // malformed URL or escape - validateAssetWithGCS reports it
+    }
+}
+// Which of the wanted paths exist under the prefix. The listing is streamed and only matches are
+// kept: getFiles() buffered every object with its metadata, so a wide prefix ran out of memory.
+async function getAllFilesInBucket(bucket, prefix, wanted) {
     const files = new Set();
     try {
-        // Use prefix to filter files by directory
-        const options = prefix ? { prefix } : {};
-        const [fileList] = await bucket.getFiles(options);
-        for (const file of fileList) {
-            files.add(`/${file.name}`);
+        for await (const file of bucket.getFilesStream(prefix ? { prefix } : {})) {
+            const name = `/${file.name}`;
+            if (wanted.has(name))
+                files.add(name);
         }
         return files;
     }
@@ -858119,10 +858146,10 @@ async function getAllFilesInBucket(bucket, prefix = '') {
 // Validate asset using GCS instead of CDN; returns whether the asset exists
 function validateAssetWithGCS(url, reports, assetSizeLimit, existingFiles) {
     try {
-        // URL.pathname is percent-encoded (a space becomes %20) while GCS lists raw object
-        // names, so a file with a space or non-ASCII character in its name was reported
-        // missing even though it exists. A malformed escape throws and is reported below.
-        const assetPath = decodeURIComponent(new URL(url).pathname);
+        // Decoded: a file with a space or non-ASCII character in its name used to be reported missing
+        const assetPath = assetPathOf(url);
+        if (assetPath === null)
+            throw new Error(`invalid asset URL ${url}`);
         // Check if file exists in GCS
         const fileExists = existingFiles.has(assetPath);
         if (fileExists) {
@@ -858216,6 +858243,7 @@ exports.tryParse = tryParse;
 exports.readSchema = readSchema;
 exports.parseStaticDataPath = parseStaticDataPath;
 exports.describeGameEnv = describeGameEnv;
+exports.isScopedAssetsFolder = isScopedAssetsFolder;
 exports.describeError = describeError;
 const slugify_ = __importStar(__nccwpck_require__(14952));
 const fs_1 = __nccwpck_require__(79896);
@@ -858410,6 +858438,10 @@ function describeGameEnv(staticDataPath) {
         }
     }
     return [exports.gameNamesMap[slug] || slug, exports.gameIconsMap[slug], environment].filter(Boolean).join(' ');
+}
+// gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
+function isScopedAssetsFolder(folder) {
+    return /^gs:\/\/[^/]+(\/[^/]+){2,}\/?$/.test(folder);
 }
 /**
  * One-line, Slack-safe description of a thrown value, for "something went wrong" messages.

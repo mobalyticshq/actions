@@ -4,7 +4,7 @@ dotenv.config();
 import * as core from '@actions/core';
 import { existsSync, readdirSync } from 'fs';
 import * as path from 'path';
-import { describeGameEnv, initSlugify, readSchema } from './utils/common.utils';
+import { describeGameEnv, initSlugify, isScopedAssetsFolder, readSchema } from './utils/common.utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './utils/logger.utils';
@@ -41,6 +41,21 @@ async function run() {
   // Create Slack message manager for this run
   // const slackManager = new SlackMessageManager();
   const slackManager = new SlackMessageManagerV2(chanelId);
+
+  // A folder without its game segment (gs://cdn.mobalytics.gg/assets/) makes asset validation
+  // list the whole CDN (OOM), lets any game's assets pass the "lives in this game's folder"
+  // check, and a root tmp with a scoped prod would rsync the CDN into one game's folder.
+  const unscoped = [tmpAssetFolder, prodAssetFolder].filter(folder => !isScopedAssetsFolder(folder));
+  if (unscoped.length > 0) {
+    // No angle brackets - Slack reads <...> as a link or mention.
+    const message = `Assets folder must look like gs://BUCKET/assets/GAME, got: ${unscoped.map(f => `\`${f || '(empty)'}\``).join(', ')}`;
+    console.log(`❌ ${message}`);
+    await slackManager.sendMessage([
+      { id: 'header', content: `Invalid assets folder for ${describeGameEnv(staticDataPath)}. ${message}`, emoji: ':x:' },
+    ]);
+    core.setFailed(message);
+    return;
+  }
 
   logger.group(`🚀🚀 Run static data upload pipeline for ${staticDataPath} `);
 
