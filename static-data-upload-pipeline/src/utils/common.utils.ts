@@ -204,6 +204,11 @@ export function describeGameEnv(staticDataPath: string): string {
   return [gameNamesMap[slug] || slug, gameIconsMap[slug], environment].filter(Boolean).join(' ');
 }
 
+// gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
+export function isScopedAssetsFolder(folder: string): boolean {
+  return /^gs:\/\/[^/]+(\/[^/]+){2,}\/?$/.test(folder);
+}
+
 /**
  * One-line, Slack-safe description of a thrown value, for "something went wrong" messages.
  * Slack treats <, > and & as markup, and a JSON.parse error on a large file can be long.

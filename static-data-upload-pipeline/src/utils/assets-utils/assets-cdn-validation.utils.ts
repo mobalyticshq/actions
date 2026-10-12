@@ -12,13 +12,14 @@ interface GCSValidationOptions {
   };
 }
 
-// Process URLs using GCS validation (single API call + synchronous validation)
+// Process URLs using GCS validation (one streamed listing + synchronous validation)
 export async function processUrlsInChunks(
   entries: [string, { report: ValidationEntityReport; path: string }[]][],
   assetSizeLimit: number,
   tmpBucket: string,
 ): Promise<void> {
   console.log(`🔄 Processing ${entries.length} URLs using GCS validation...`);
+  if (entries.length === 0) return;
 
   const prefix = new URL(tmpBucket).pathname; // Extract prefix from tmpBucket URL
   const gcsOptions: GCSValidationOptions = {
@@ -37,10 +38,11 @@ export async function processUrlsInChunks(
 
   const bucket = storage.bucket(gcsOptions.bucketName);
 
-  // Get all existing files from GCS bucket (single API call with prefix filter)
+  // List the configured prefix, keeping only the files the static data references
   console.log(`🔍 Fetching file list from GCS bucket: ${gcsOptions.bucketName} with prefix: ${gcsOptions.prefix}`);
-  const existingFiles = await getAllFilesInBucket(bucket, gcsOptions.prefix);
-  console.log(`📁 Found ${existingFiles.size} files in GCS bucket with prefix ${gcsOptions.prefix}`);
+  const wanted = new Set(entries.map(([url]) => assetPathOf(url)).filter((p): p is string => p !== null));
+  const existingFiles = await getAllFilesInBucket(bucket, gcsOptions.prefix ?? '', wanted);
+  console.log(`📁 Found ${existingFiles.size} of ${wanted.size} referenced files in GCS bucket with prefix ${gcsOptions.prefix}`);
 
   // Process all URLs synchronously
   console.log(`⚡ Validating ${entries.length} URLs synchronously...`);
@@ -61,17 +63,24 @@ export async function processUrlsInChunks(
   console.log(`✅ Finished processing all ${entries.length} URLs using GCS validation`);
 }
 
-// Get all files in the GCS bucket with optional prefix filter
-async function getAllFilesInBucket(bucket: any, prefix: string = ''): Promise<Set<string>> {
+// URL.pathname is percent-encoded (a space becomes %20) while GCS lists raw object names
+function assetPathOf(url: string): string | null {
+  try {
+    return decodeURIComponent(new URL(url).pathname);
+  } catch {
+    return null; // malformed URL or escape - validateAssetWithGCS reports it
+  }
+}
+
+// Which of the wanted paths exist under the prefix. The listing is streamed and only matches are
+// kept: getFiles() buffered every object with its metadata, so a wide prefix ran out of memory.
+export async function getAllFilesInBucket(bucket: any, prefix: string, wanted: Set<string>): Promise<Set<string>> {
   const files = new Set<string>();
 
   try {
-    // Use prefix to filter files by directory
-    const options = prefix ? { prefix } : {};
-    const [fileList] = await bucket.getFiles(options);
-
-    for (const file of fileList) {
-      files.add(`/${file.name}`);
+    for await (const file of bucket.getFilesStream(prefix ? { prefix } : {})) {
+      const name = `/${file.name}`;
+      if (wanted.has(name)) files.add(name);
     }
 
     return files;
@@ -92,10 +101,9 @@ export function validateAssetWithGCS(
   existingFiles: Set<string>,
 ): boolean {
   try {
-    // URL.pathname is percent-encoded (a space becomes %20) while GCS lists raw object
-    // names, so a file with a space or non-ASCII character in its name was reported
-    // missing even though it exists. A malformed escape throws and is reported below.
-    const assetPath = decodeURIComponent(new URL(url).pathname);
+    // Decoded: a file with a space or non-ASCII character in its name used to be reported missing
+    const assetPath = assetPathOf(url);
+    if (assetPath === null) throw new Error(`invalid asset URL ${url}`);
 
     // Check if file exists in GCS
     const fileExists = existingFiles.has(assetPath);
