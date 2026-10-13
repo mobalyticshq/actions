@@ -857915,12 +857915,47 @@ async function runValidationExtensions(extensionsDir, data, oldData) {
 /***/ }),
 
 /***/ 89557:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.runPipeline = runPipeline;
+// Interface for runPipeline parameters
+const core = __importStar(__nccwpck_require__(37484));
 const common_utils_1 = __nccwpck_require__(59847);
 const logger_utils_1 = __nccwpck_require__(80418);
 const schema_validation_1 = __nccwpck_require__(20475);
@@ -857949,6 +857984,7 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
             },
         ];
         await slackManager.sendMessage(message);
+        core.setFailed(`There is no static data files in ${staticDataPath}`);
         return null;
     }
     logger_utils_1.logger.group(`🚀 Run pipeline for:\n ${logger_utils_1.logColors.green}${versions}${logger_utils_1.logColors.reset}`);
@@ -858006,6 +858042,7 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
                  * because we can't continue without valid schema
                  * Static Data validation step requires valid schema */
                 await (0, create_report_1.createReportStep)(actionUrl, slackManager, [], reportSpreadsheetId, 0, 0, 0, schemaValidationResult.errors ?? []);
+                core.setFailed('Schema validation failed - see the report');
                 return null;
             }
             logger_utils_1.logger.endGroup();
@@ -858043,6 +858080,9 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
                 emoji: ':lee-nice:',
             });
         }
+        // Red job on data errors, dry run included - that is what the PR check is for. Warnings stay green.
+        if (errors > 0)
+            core.setFailed(`Static data validation found ${errors} error(s) - see the report`);
         if (!dryRun) {
             if (errors == 0) {
                 logger_utils_1.logger.group('✅ Static data is valid! Sync data 📦');
@@ -858060,6 +858100,7 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
             content: `Something went wrong during pipeline running: ${(0, common_utils_1.describeError)(error)}. <${actionUrl}|See pipeline logs>`,
             emoji: ':mild-panic:',
         });
+        core.setFailed(`Pipeline failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 
