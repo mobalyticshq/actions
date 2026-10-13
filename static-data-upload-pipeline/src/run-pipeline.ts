@@ -1,4 +1,5 @@
 // Interface for runPipeline parameters
+import * as core from '@actions/core';
 import { ApiSchema } from './pipeline-steps/schema-validation/types';
 import { describeError, describeGameEnv } from './utils/common.utils';
 import { logColors, logger } from './utils/logger.utils';
@@ -60,6 +61,7 @@ export async function runPipeline({
       },
     ];
     await slackManager.sendMessage(message);
+    core.setFailed(`There is no static data files in ${staticDataPath}`);
     return null;
   }
 
@@ -138,6 +140,7 @@ export async function runPipeline({
           0,
           schemaValidationResult.errors ?? [],
         );
+        core.setFailed('Schema validation failed - see the report');
         return null;
       }
       logger.endGroup();
@@ -205,6 +208,9 @@ export async function runPipeline({
       })
     }
 
+    // Red job on data errors, dry run included - that is what the PR check is for. Warnings stay green.
+    if (errors > 0) core.setFailed(`Static data validation found ${errors} error(s) - see the report`);
+
     if(!dryRun) {
       if (errors == 0) {
         logger.group('✅ Static data is valid! Sync data 📦');
@@ -237,5 +243,6 @@ export async function runPipeline({
       content: `Something went wrong during pipeline running: ${describeError(error)}. <${actionUrl}|See pipeline logs>`,
       emoji: ':mild-panic:',
     })
+    core.setFailed(`Pipeline failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
