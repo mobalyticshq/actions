@@ -5,6 +5,7 @@ import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
 import { generateFragments } from './steps/4-generate-fragments';
+import { guardFragmentRegression } from './steps/4b-check-fragment-regression';
 import { generateQuery } from './steps/5-generate-query';
 import { generateGqlTypes } from './steps/7-generate-gql-types';
 import { uploadBuild } from './steps/9-upload-build';
@@ -27,6 +28,8 @@ export async function run(): Promise<void> {
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
     const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
+    const fragmentRegressionRetries = parseInt(core.getInput('fragment-regression-retries') || '2', 10);
+    const allowFragmentRegression = core.getInput('allow-fragment-regression') === 'true';
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
@@ -89,6 +92,20 @@ export async function run(): Promise<void> {
       model,
     });
     core.info(`✓ Fragments generation completed`);
+    core.endGroup();
+
+    // Step 4b: Make sure the new fragments do not select less than the live ones
+    core.startGroup('🛡️ Step 4b: Checking fragments for regressions');
+    await guardFragmentRegression({
+      bucket,
+      env: dynamicModulesEnv,
+      gameUrlSlug,
+      liveSchemaVersion: schemaVersionCheck.existingSchemaVersion,
+      disableQueryAst,
+      retries: fragmentRegressionRetries,
+      allowRegression: allowFragmentRegression,
+      regenerate: () => generateFragments({ timeoutMs, model }),
+    });
     core.endGroup();
 
     // Step 5: Generate query

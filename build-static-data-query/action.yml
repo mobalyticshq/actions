@@ -40,6 +40,14 @@ inputs:
     description: 'When true (v2 mode), emit the query as a plain string instead of a compiled AST, and use the static-data-query-v2 dynamic-module slug. When false (default), use the compiled AST and the static-data-query slug.'
     required: false
     default: 'false'
+  fragment-regression-retries:
+    description: 'How many times to regenerate the fragments when they drop fields that the live query selects and the schema still has. After the last retry the build fails without publishing, so the live query stays in place.'
+    required: false
+    default: '2'
+  allow-fragment-regression:
+    description: 'When true, publish even if the fragments still drop fields after the retries. Use only when the drop is intended, e.g. a type that now loops back to its parent and should collapse to its scalar fields.'
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -78,3 +86,5 @@ runs:
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
         INPUT_DISABLE-QUERY-AST-COMPILATION: ${{ inputs.disable-query-ast-compilation }}
+        INPUT_FRAGMENT-REGRESSION-RETRIES: ${{ inputs.fragment-regression-retries }}
+        INPUT_ALLOW-FRAGMENT-REGRESSION: ${{ inputs.allow-fragment-regression }}

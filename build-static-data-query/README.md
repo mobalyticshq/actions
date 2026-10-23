@@ -11,6 +11,7 @@ This GitHub Action automates the process of creating optimized GraphQL queries f
 3. **Scope generation** — analyzes the schema and determines data scopes for a specific game
 4. **Schema cleaning** — removes unused types and fields, keeping only those necessary for static data
 5. **Fragment generation** — uses an AI agent (cursor-cli) to automatically generate GraphQL fragments for all entity types
+   - **Fragment regression check** — compares the new fragments with the live ones. If they drop fields the schema still has (e.g. a linked type cut down to `slug id name`), the fragments are regenerated up to `fragment-regression-retries` times, and the build then fails without uploading, so the live query stays in place. Fields the schema itself removed, and new fields, are allowed.
 6. **Query generation** — creates the main GraphQL query using the generated fragments
 7. **Query compilation** — compiles the query into an AST
 8. **TypeScript type generation** — creates typed TypeScript types based on the GraphQL schema
@@ -44,6 +45,8 @@ This GitHub Action automates the process of creating optimized GraphQL queries f
 | `gcs-project-id` | Google Cloud Project ID | Yes | - |
 | `dynamic-modules-env` | Environment for dynamic modules (prod, staging, dev) | Yes | - |
 | `gcp-service-account-json` | GCP service account JSON credentials | Yes | - |
+| `fragment-regression-retries` | How many times to regenerate the fragments when they drop fields the live query selects and the schema still has | No | `2` |
+| `allow-fragment-regression` | Publish even if the fragments still drop fields after the retries. Only for an intended drop | No | `false` |
 
 ### Output File Structure
 
