@@ -1,22 +1,23 @@
-import { FieldConfig, ObjectConfig, GroupConfig, Schema, MANUAL_FILL_PLACEHOLDER } from './schema';
+import { FieldConfig, ObjectConfig, GroupConfig, Schema, FIELD_TYPES, MANUAL_FILL_PLACEHOLDER } from './schema';
 
 // Helper function to merge field configurations
 export const mergeFieldConfig = (newFieldConfig: FieldConfig, existingFieldConfig: FieldConfig, groupNames: string[], ignoreDeleted: boolean = false): FieldConfig => {
     const merged = { ...newFieldConfig };
-    
-    // Override type from existing if new type is placeholder and existing has valid type
-    if (newFieldConfig.type === MANUAL_FILL_PLACEHOLDER) {
-        if (existingFieldConfig.type && existingFieldConfig.type !== MANUAL_FILL_PLACEHOLDER) {
-            merged.type = existingFieldConfig.type;
+
+    // Override type from existing if it has a valid one. Inference only sees the latest data file: it reads
+    // every slug-suffixed field as a Ref and a Float whose current values are whole numbers as an Int, while
+    // the validators reject any type change of an existing field as breaking.
+    if (existingFieldConfig.type && existingFieldConfig.type !== MANUAL_FILL_PLACEHOLDER) {
+        merged.type = existingFieldConfig.type;
+        if (merged.type !== FIELD_TYPES.REF) {
+            delete merged.refTo;
         }
     }
-    
-    // Override refTo from existing if present
-    if (!newFieldConfig.refTo || newFieldConfig.refTo === MANUAL_FILL_PLACEHOLDER) { 
-        if (existingFieldConfig.refTo && existingFieldConfig.refTo !== MANUAL_FILL_PLACEHOLDER) {
-            if (groupNames.includes(existingFieldConfig.refTo)) {
-                merged.refTo = existingFieldConfig.refTo;
-            }
+
+    // Override refTo from existing if its target group is still there
+    if (merged.type === FIELD_TYPES.REF && existingFieldConfig.refTo && existingFieldConfig.refTo !== MANUAL_FILL_PLACEHOLDER) {
+        if (groupNames.includes(existingFieldConfig.refTo)) {
+            merged.refTo = existingFieldConfig.refTo;
         }
     }
 

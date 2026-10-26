@@ -1,0 +1,6 @@
+{
+  "refs": [
+    { "from": "weapons.mainStatSlug", "to": "dictionary" },
+    { "from": "weapons.statRef", "to": "dictionary" }
+  ]
+}

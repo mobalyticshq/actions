@@ -1,0 +1,27 @@
+{
+  "ascendancies": [
+    { "id": "titan", "slug": "titan", "name": "Titan" }
+  ],
+  "description": [
+    { "id": "life-text", "slug": "life-text", "name": "Life text" }
+  ],
+  "dictionary": [
+    { "id": "life", "slug": "life", "name": "Life" }
+  ],
+  "weapons": [
+    {
+      "id": "sword",
+      "slug": "sword",
+      "name": "Sword",
+      "ascendancySlug": "titan",
+      "descriptionRef": "life",
+      "mainStatSlug": "life",
+      "prefixStatSlugs": ["local_physical_damage_+%"],
+      "suffixStatSlugs": ["local_attack_speed_+%"],
+      "x": 3,
+      "weaponStats": [
+        { "slug": "physical-damage", "statRef": "life", "value": 10 }
+      ]
+    }
+  ]
+}
