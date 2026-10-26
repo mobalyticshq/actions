@@ -9,6 +9,7 @@ import { mergeStaticDataStep } from './pipeline-steps/merge-static-data';
 import { overrideStaticData } from './pipeline-steps/override-static-data';
 import { validateStaticDataStep } from './pipeline-steps/validate-static-data/validate-static-data-step';
 import { syncStaticDataStep } from './pipeline-steps/sync-static-data-step';
+import { shadowBucketBaseStep } from './pipeline-steps/shadow-bucket-base';
 import { MessageLine, SlackMessageManagerV2 } from './utils/slack-manager-v2.utils';
 import { ExtractedRefs, extractSchemaRefs } from './utils/schema-refs-extractor/schema-refs-extractor';
 import { deduplicateReports } from './utils/report-deduplication.utils';
@@ -210,6 +211,19 @@ export async function runPipeline({
 
     // Red job on data errors, dry run included - that is what the PR check is for. Warnings stay green.
     if (errors > 0) core.setFailed(`Static data validation found ${errors} error(s) - see the report`);
+
+    // Shadow run of the planned bucket-based merge: read-only, reports the difference, never changes the result.
+    // Must run before the sync, which replaces the bucket's newest file.
+    await shadowBucketBaseStep({
+      actionUrl,
+      slackManager,
+      staticDataPath,
+      versions,
+      shipped: overridedData,
+      spreadsheetData,
+      tmpAssetPrefix,
+      prodAssetPrefix,
+    });
 
     if(!dryRun) {
       if (errors == 0) {

@@ -141,6 +141,10 @@ Set `INPUT_DRY_RUN=true` while testing locally — this runs all validation and 
 
 Files must match: `static_data_vX.Y.Z.json` where X, Y, Z are numbers in range `[0, 9999]`.
 
+## Shadow bucket-base merge
+
+Every run also computes what a **bucket-based** merge would ship: the highest-version `static_data_v*.json` already in `GCP_BUCKET_NAME` as the base, plus every git version file with a version >= the base, plus the override spreadsheet. It compares that with the data the run actually produced and posts one Slack line (`Shadow bucket-base merge: identical...` or `...differs: N live->deprecated, ...`), with the per-entity list in the Actions log. It is read-only and never changes what ships; it measures the planned switch away from re-merging the whole git history on every run. It is skipped, with the reason in the line, when the bucket has no version file yet, the newest one was not written by the pipeline (no `deprecated` keys), or the bucket cannot be read.
+
 ## Validation report messages
 
 | Message | Level | Description |

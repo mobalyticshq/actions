@@ -1,4 +1,4 @@
-import { Storage } from '@google-cloud/storage';
+import { buildStorage } from '../google-auth.utils';
 import { ValidationEntityReport } from '../../types';
 
 import { ReportMessages } from '../../pipeline-steps/validate-static-data/utils';
@@ -6,10 +6,6 @@ import { ReportMessages } from '../../pipeline-steps/validate-static-data/utils'
 interface GCSValidationOptions {
   bucketName: string;
   prefix?: string; // Directory prefix to filter files (e.g., "assets/poe-1/images/")
-  credentials?: {
-    client_email: string;
-    private_key: string;
-  };
 }
 
 // Process URLs using GCS validation (one streamed listing + synchronous validation)
@@ -25,18 +21,9 @@ export async function processUrlsInChunks(
   const gcsOptions: GCSValidationOptions = {
     bucketName: process.env.GCP_ASSETS_BUCKET_NAME || 'cdn.mobalytics.gg', // Default to mobalytics CDN bucket
     prefix: prefix.slice(1) || 'assets/example-game', // Default to example-game images directory
-    credentials:
-      process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY
-        ? {
-            client_email: process.env.GOOGLE_CLIENT_EMAIL,
-            private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-          }
-        : undefined,
   };
 
-  const storage = new Storage({ credentials: gcsOptions.credentials });
-
-  const bucket = storage.bucket(gcsOptions.bucketName);
+  const bucket = buildStorage().bucket(gcsOptions.bucketName);
 
   // List the configured prefix, keeping only the files the static data references
   console.log(`🔍 Fetching file list from GCS bucket: ${gcsOptions.bucketName} with prefix: ${gcsOptions.prefix}`);

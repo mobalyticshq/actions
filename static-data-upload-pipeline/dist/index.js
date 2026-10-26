@@ -857140,6 +857140,197 @@ function validateSchemaCompatibility(newSchema, referenceSchema) {
 
 /***/ }),
 
+/***/ 41855:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isIdentical = void 0;
+exports.pickBucketBase = pickBucketBase;
+exports.isPipelineProduced = isPipelineProduced;
+exports.selectIncoming = selectIncoming;
+exports.shadowMerge = shadowMerge;
+exports.applySheet = applySheet;
+exports.diffStaticData = diffStaticData;
+exports.formatShadowLine = formatShadowLine;
+exports.shadowBucketBaseStep = shadowBucketBaseStep;
+const path = __importStar(__nccwpck_require__(16928));
+const fs_1 = __nccwpck_require__(79896);
+const merge_utils_1 = __nccwpck_require__(21066);
+const spreadsheets_apply_v2_utils_1 = __nccwpck_require__(80887);
+const spreadsheets_utils_1 = __nccwpck_require__(33425);
+const common_utils_1 = __nccwpck_require__(59847);
+const google_auth_utils_1 = __nccwpck_require__(76586);
+// Highest-version static_data_v*.json among the names, or null
+function pickBucketBase(names) {
+    let best = null;
+    for (const name of names) {
+        const v = (0, common_utils_1.versionOf)(name);
+        if (v && (!best || (0, common_utils_1.compareVersions)(v, best.v) > 0))
+            best = { name, v };
+    }
+    return best?.name ?? null;
+}
+// Every pipeline-written entity carries `deprecated`; a raw extractor file copied into the bucket by hand does not
+function isPipelineProduced(data) {
+    const entities = Object.values(data).flatMap(group => (Array.isArray(group) ? group : []));
+    return entities.length > 0 && entities.every(e => e != null && typeof e === 'object' && 'deprecated' in e);
+}
+// Git version files not yet in the base: version >= base (>=, so an in-place edit of the newest file still counts)
+function selectIncoming(versions, baseName) {
+    const base = (0, common_utils_1.versionOf)(baseName);
+    return versions
+        .map(p => ({ p, v: (0, common_utils_1.versionOf)(path.basename(p)) }))
+        .filter((x) => x.v !== null && (0, common_utils_1.compareVersions)(x.v, base) >= 0)
+        .sort((a, b) => (0, common_utils_1.compareVersions)(a.v, b.v))
+        .map(x => x.p);
+}
+// Same fold as mergeStaticDataStep, starting from the base instead of from nothing
+function shadowMerge(base, incoming) {
+    let data = base;
+    incoming.forEach((file, i) => {
+        if (!(0, merge_utils_1.isValidDataForMerge)(file)) {
+            if (i < incoming.length - 1)
+                return;
+            throw new Error('the newest git file is not valid for merge');
+        }
+        data = (0, merge_utils_1.mergeStaticData)(file, data);
+    });
+    return data;
+}
+// The override step's pure half, on the sheet rows the real override step already fetched
+function applySheet(data, spreadsheetData) {
+    if (!spreadsheetData)
+        return data;
+    const processed = (0, spreadsheets_apply_v2_utils_1.applySpreadsheetsDataV2)(spreadsheetData, data, (0, spreadsheets_utils_1.emptySpreadsheetReport)());
+    return (0, merge_utils_1.mergeStaticData)(processed, data, false);
+}
+function diffStaticData(shipped, shadow, tmpAssetPrefix = '', prodAssetPrefix = '') {
+    // The bucket file carries prod asset URLs; the run's data still has tmp ones until the sync rewrites them
+    const a = structuredClone(shipped);
+    const b = structuredClone(shadow);
+    if (tmpAssetPrefix && tmpAssetPrefix !== prodAssetPrefix) {
+        (0, merge_utils_1.replaceAssets)(a, tmpAssetPrefix, prodAssetPrefix);
+        (0, merge_utils_1.replaceAssets)(b, tmpAssetPrefix, prodAssetPrefix);
+    }
+    const d = { onlyInShipped: [], onlyInShadow: [], liveToDeprecated: [], deprecatedToLive: [], fieldDiffs: [] };
+    const strip = (e) => JSON.stringify({ ...e, deprecated: undefined });
+    for (const group of new Set([...Object.keys(a), ...Object.keys(b)])) {
+        const am = new Map((Array.isArray(a[group]) ? a[group] : []).map(e => [String(e.id), e]));
+        const bm = new Map((Array.isArray(b[group]) ? b[group] : []).map(e => [String(e.id), e]));
+        for (const [id, ae] of am) {
+            const be = bm.get(id);
+            const key = `${group}/${id}`;
+            if (!be)
+                d.onlyInShipped.push(key);
+            else if (!ae.deprecated && be.deprecated)
+                d.liveToDeprecated.push(key);
+            else if (ae.deprecated && !be.deprecated)
+                d.deprecatedToLive.push(key);
+            else if (strip(ae) !== strip(be))
+                d.fieldDiffs.push(key);
+        }
+        for (const id of bm.keys())
+            if (!am.has(id))
+                d.onlyInShadow.push(`${group}/${id}`);
+    }
+    return d;
+}
+const isIdentical = (d) => Object.values(d).every(list => list.length === 0);
+exports.isIdentical = isIdentical;
+function formatShadowLine(d, baseName, incomingCount) {
+    const scope = `base ${baseName} + ${incomingCount} git file${incomingCount === 1 ? '' : 's'}`;
+    if ((0, exports.isIdentical)(d))
+        return `Shadow bucket-base merge: identical to the pipeline result (${scope})`;
+    return (`Shadow bucket-base merge differs from the pipeline result: ` +
+        `${d.liveToDeprecated.length} live→deprecated, ${d.deprecatedToLive.length} deprecated→live, ` +
+        `${d.onlyInShipped.length} only in the pipeline result, ${d.onlyInShadow.length} only in the shadow, ` +
+        `${d.fieldDiffs.length} field diffs (${scope})`);
+}
+async function shadowBucketBaseStep(args) {
+    const { actionUrl, slackManager, staticDataPath, versions, shipped, spreadsheetData, tmpAssetPrefix, prodAssetPrefix } = args;
+    const skip = async (reason) => {
+        console.log(`🔎 Shadow bucket-base merge skipped: ${reason}`);
+        await slackManager.appendNewLine({ id: 'shadow-bucket-base', content: `Shadow bucket-base merge: skipped - ${reason}`, emoji: ':mag:' });
+        return null;
+    };
+    try {
+        const bucketName = process.env.GCP_BUCKET_NAME;
+        if (!bucketName)
+            return skip('GCP_BUCKET_NAME is not set');
+        const bucket = (0, google_auth_utils_1.buildStorage)().bucket(bucketName);
+        const prefix = staticDataPath.replace(/\/+$/, '') + '/';
+        const [files] = await bucket.getFiles({ prefix });
+        const baseName = pickBucketBase(files.map(f => f.name.slice(prefix.length)).filter(n => !n.includes('/')));
+        if (!baseName)
+            return skip('no version file in the bucket yet');
+        const [buf] = await bucket.file(prefix + baseName).download();
+        const base = JSON.parse(buf.toString('utf8'));
+        if (!isPipelineProduced(base))
+            return skip(`${baseName} in the bucket was not written by the pipeline (no deprecated keys)`);
+        const incomingPaths = selectIncoming(versions, baseName);
+        const incoming = incomingPaths.map(p => JSON.parse((0, fs_1.readFileSync)(p, 'utf8')));
+        const shadow = applySheet(shadowMerge(base, incoming), spreadsheetData);
+        const diff = diffStaticData(shipped, shadow, tmpAssetPrefix, prodAssetPrefix);
+        const line = formatShadowLine(diff, baseName, incomingPaths.length);
+        console.log(`🔎 ${line}`);
+        if (!(0, exports.isIdentical)(diff)) {
+            for (const [kind, list] of Object.entries(diff)) {
+                if (list.length === 0)
+                    continue;
+                console.log(`   ${kind} (${list.length}): ${list.slice(0, 50).join(', ')}${list.length > 50 ? ', ...' : ''}`);
+            }
+        }
+        await slackManager.appendNewLine({
+            id: 'shadow-bucket-base',
+            content: (0, exports.isIdentical)(diff) ? line : `${line}. <${actionUrl}|Details in the log>`,
+            emoji: (0, exports.isIdentical)(diff) ? ':mag:' : ':warning:',
+        });
+        return diff;
+    }
+    catch (error) {
+        console.log('⚠️ Shadow bucket-base merge failed:', error);
+        return skip(`bucket read failed: ${(0, common_utils_1.describeError)(error)}`);
+    }
+}
+
+
+/***/ }),
+
 /***/ 78160:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -857964,6 +858155,7 @@ const merge_static_data_1 = __nccwpck_require__(16612);
 const override_static_data_1 = __nccwpck_require__(49822);
 const validate_static_data_step_1 = __nccwpck_require__(87328);
 const sync_static_data_step_1 = __nccwpck_require__(78160);
+const shadow_bucket_base_1 = __nccwpck_require__(41855);
 const schema_refs_extractor_1 = __nccwpck_require__(7730);
 const report_deduplication_utils_1 = __nccwpck_require__(5832);
 const is_valid_report_utils_1 = __nccwpck_require__(10470);
@@ -858083,6 +858275,18 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
         // Red job on data errors, dry run included - that is what the PR check is for. Warnings stay green.
         if (errors > 0)
             core.setFailed(`Static data validation found ${errors} error(s) - see the report`);
+        // Shadow run of the planned bucket-based merge: read-only, reports the difference, never changes the result.
+        // Must run before the sync, which replaces the bucket's newest file.
+        await (0, shadow_bucket_base_1.shadowBucketBaseStep)({
+            actionUrl,
+            slackManager,
+            staticDataPath,
+            versions,
+            shipped: overridedData,
+            spreadsheetData,
+            tmpAssetPrefix,
+            prodAssetPrefix,
+        });
         if (!dryRun) {
             if (errors == 0) {
                 logger_utils_1.logger.group('✅ Static data is valid! Sync data 📦');
@@ -858116,7 +858320,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.processUrlsInChunks = processUrlsInChunks;
 exports.getAllFilesInBucket = getAllFilesInBucket;
 exports.validateAssetWithGCS = validateAssetWithGCS;
-const storage_1 = __nccwpck_require__(28525);
+const google_auth_utils_1 = __nccwpck_require__(76586);
 const utils_1 = __nccwpck_require__(40294);
 // Process URLs using GCS validation (one streamed listing + synchronous validation)
 async function processUrlsInChunks(entries, assetSizeLimit, tmpBucket) {
@@ -858127,15 +858331,8 @@ async function processUrlsInChunks(entries, assetSizeLimit, tmpBucket) {
     const gcsOptions = {
         bucketName: process.env.GCP_ASSETS_BUCKET_NAME || 'cdn.mobalytics.gg', // Default to mobalytics CDN bucket
         prefix: prefix.slice(1) || 'assets/example-game', // Default to example-game images directory
-        credentials: process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY
-            ? {
-                client_email: process.env.GOOGLE_CLIENT_EMAIL,
-                private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            }
-            : undefined,
     };
-    const storage = new storage_1.Storage({ credentials: gcsOptions.credentials });
-    const bucket = storage.bucket(gcsOptions.bucketName);
+    const bucket = (0, google_auth_utils_1.buildStorage)().bucket(gcsOptions.bucketName);
     // List the configured prefix, keeping only the files the static data references
     console.log(`🔍 Fetching file list from GCS bucket: ${gcsOptions.bucketName} with prefix: ${gcsOptions.prefix}`);
     const wanted = new Set(entries.map(([url]) => assetPathOf(url)).filter((p) => p !== null));
@@ -858284,6 +858481,8 @@ exports.tryParse = tryParse;
 exports.readSchema = readSchema;
 exports.parseStaticDataPath = parseStaticDataPath;
 exports.describeGameEnv = describeGameEnv;
+exports.versionOf = versionOf;
+exports.compareVersions = compareVersions;
 exports.isScopedAssetsFolder = isScopedAssetsFolder;
 exports.describeError = describeError;
 const slugify_ = __importStar(__nccwpck_require__(14952));
@@ -858480,6 +858679,14 @@ function describeGameEnv(staticDataPath) {
     }
     return [exports.gameNamesMap[slug] || slug, exports.gameIconsMap[slug], environment].filter(Boolean).join(' ');
 }
+// static_data_v1.2.3.json -> [1, 2, 3]; null for anything else
+function versionOf(fileName) {
+    const m = fileName.match(/^static_data_v(\d+)\.(\d+)\.(\d+)\.json$/);
+    return m ? [+m[1], +m[2], +m[3]] : null;
+}
+function compareVersions(a, b) {
+    return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
 // gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
 function isScopedAssetsFolder(folder) {
     return /^gs:\/\/[^/]+(\/[^/]+){2,}\/?$/.test(folder);
@@ -858506,8 +858713,10 @@ function describeError(error, maxLength = 300) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DRIVE_SCOPE = exports.SPREADSHEETS_SCOPE = void 0;
 exports.getServiceAccountEmail = getServiceAccountEmail;
+exports.buildStorage = buildStorage;
 exports.buildGoogleAuth = buildGoogleAuth;
 const google_auth_library_1 = __nccwpck_require__(492);
+const storage_1 = __nccwpck_require__(28525);
 exports.SPREADSHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 exports.DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 function getServiceAccountEmail() {
@@ -858515,6 +858724,13 @@ function getServiceAccountEmail() {
         return process.env.GOOGLE_CLIENT_EMAIL;
     }
     throw new Error('Cannot resolve service account email: GOOGLE_CLIENT_EMAIL is not set.');
+}
+// GCS client with the service-account key when present, application default credentials otherwise
+function buildStorage() {
+    const credentials = process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY
+        ? { client_email: process.env.GOOGLE_CLIENT_EMAIL, private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') }
+        : undefined;
+    return new storage_1.Storage({ credentials });
 }
 function buildGoogleAuth(scopes) {
     if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
@@ -859982,6 +860198,7 @@ exports.widenSheetRequest = widenSheetRequest;
 exports.deleteSheet = deleteSheet;
 exports.clearSheets = clearSheets;
 exports.updateSpreadsheets = updateSpreadsheets;
+exports.emptySpreadsheetReport = emptySpreadsheetReport;
 exports.mergeWithSpreadsheets = mergeWithSpreadsheets;
 const googleapis_1 = __nccwpck_require__(88056);
 const merge_utils_1 = __nccwpck_require__(21066);
@@ -860611,6 +860828,18 @@ async function updateSpreadsheets(spreadsheetId, mergedData, jsonData, oldSpread
     else {
         console.log(`can't edit spreadsheet need to set email`);
     }
+}
+function emptySpreadsheetReport() {
+    return {
+        emptyPages: new Set(),
+        pagesWidthWrongOverrides: {},
+        pagesWidthDuplicatedHeaders: {},
+        pagesWithoutId: new Set(),
+        pagesWithAbscentHeader: new Set(),
+        duplicatedEntities: {},
+        pageWithAbscentId: new Set(),
+        pagesWidthUnprocessedCells: {},
+    };
 }
 async function mergeWithSpreadsheets(actionUrl, slackManager, spreadsheetId, jsonData) {
     const spreadsheetReport = {

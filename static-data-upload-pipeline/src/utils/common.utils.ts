@@ -204,6 +204,16 @@ export function describeGameEnv(staticDataPath: string): string {
   return [gameNamesMap[slug] || slug, gameIconsMap[slug], environment].filter(Boolean).join(' ');
 }
 
+// static_data_v1.2.3.json -> [1, 2, 3]; null for anything else
+export function versionOf(fileName: string): [number, number, number] | null {
+  const m = fileName.match(/^static_data_v(\d+)\.(\d+)\.(\d+)\.json$/);
+  return m ? [+m[1], +m[2], +m[3]] : null;
+}
+
+export function compareVersions(a: [number, number, number], b: [number, number, number]): number {
+  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
+
 // gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
 export function isScopedAssetsFolder(folder: string): boolean {
   return /^gs:\/\/[^/]+(\/[^/]+){2,}\/?$/.test(folder);

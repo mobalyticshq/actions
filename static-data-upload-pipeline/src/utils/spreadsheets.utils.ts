@@ -763,6 +763,19 @@ export async function updateSpreadsheets(
   }
 }
 
+export function emptySpreadsheetReport(): SpreadsheetReport {
+  return {
+    emptyPages: new Set<string>(),
+    pagesWidthWrongOverrides: {},
+    pagesWidthDuplicatedHeaders: {},
+    pagesWithoutId: new Set<string>(),
+    pagesWithAbscentHeader: new Set<string>(),
+    duplicatedEntities: {},
+    pageWithAbscentId: new Set<string>(),
+    pagesWidthUnprocessedCells: {},
+  };
+}
+
 export async function mergeWithSpreadsheets(actionUrl: string, slackManager: SlackMessageManagerV2, spreadsheetId: string, jsonData: StaticData) {
   const spreadsheetReport = {
     emptyPages: new Set<string>(),
