@@ -16,6 +16,7 @@ jest.mock('./pipeline-steps/override-static-data', () => ({
 }));
 jest.mock('./pipeline-steps/create-report', () => ({ createReportStep: jest.fn() }));
 jest.mock('./pipeline-steps/sync-static-data-step', () => ({ syncStaticDataStep: jest.fn() }));
+jest.mock('./pipeline-steps/shadow-bucket-base', () => ({ shadowBucketBaseStep: jest.fn() }));
 jest.mock('./utils/is-valid-report.utils', () => ({ isValidReport: jest.fn() }));
 
 const slackManager: any = { sendMessage: jest.fn(), appendNewLine: jest.fn(), updateMessage: jest.fn(), reset: jest.fn() };
