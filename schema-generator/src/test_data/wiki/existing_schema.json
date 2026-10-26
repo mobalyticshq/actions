@@ -1,0 +1,54 @@
+{
+  "namespace": "someGame.staticData",
+  "typePrefix": "SomeGame",
+  "groups": {
+    "rings": {
+      "wiki": {
+        "enabled": true,
+        "tagMappings": { "unique": "isUnique" }
+      },
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "isUnique": { "type": "Boolean" },
+        "name": { "type": "String", "filter": true, "required": true },
+        "slug": { "type": "String", "filter": true, "required": true }
+      }
+    },
+    "runes": {
+      "wiki": {
+        "enabled": false,
+        "tagMappings": { "unique": "isUnique" }
+      },
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "isUnique": { "type": "Boolean" },
+        "name": { "type": "String", "filter": true, "required": true },
+        "slug": { "type": "String", "filter": true, "required": true }
+      }
+    },
+    "soulCores": {
+      "wiki": { "enabled": true },
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "filter": true, "required": true },
+        "slug": { "type": "String", "filter": true, "required": true }
+      }
+    },
+    "weapons": {
+      "wiki": {
+        "enabled": true,
+        "tagMappings": {
+          "weaponClass": "itemClass",
+          "unique": "isUnique"
+        }
+      },
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "isUnique": { "type": "Boolean" },
+        "itemClass": { "type": "String" },
+        "name": { "type": "String", "filter": true, "required": true },
+        "slug": { "type": "String", "filter": true, "required": true }
+      }
+    }
+  }
+}

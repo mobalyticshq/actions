@@ -158,6 +158,12 @@ export const mergeWithExistingSchema = (newSchema: Schema, existingSchema: Schem
         const existingGroup = existingSchema.groups[groupName];
         if (existingGroup) {
             const newGroup = result.groups[groupName];
+
+            // The wiki config only ever lives in the existing schema, so dropping it here would
+            // disable the group's wiki on every regeneration.
+            if (existingGroup.wiki) {
+                newGroup.wiki = existingGroup.wiki;
+            }
             
             // Merge fields
             if (existingGroup.fields) {

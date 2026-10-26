@@ -15,6 +15,9 @@ export interface ObjectConfig {
 }
 
 export interface GroupConfig {
+    // be-spock's wiki config for the group (`enabled`, `tagMappings`, ...). It is hand-maintained and
+    // never inferred from data, so the generator keeps it opaque and only carries it over.
+    wiki?: Record<string, unknown>;
     fields: Record<string, FieldConfig>;
     objects?: Record<string, ObjectConfig>;
 }

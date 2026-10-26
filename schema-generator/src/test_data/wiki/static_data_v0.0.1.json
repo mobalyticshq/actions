@@ -1,0 +1,33 @@
+{
+  "weapons": [
+    {
+      "id": "sword",
+      "slug": "sword",
+      "name": "Sword",
+      "itemClass": "oneHandSword",
+      "isUnique": false
+    }
+  ],
+  "rings": [
+    {
+      "id": "ruby-ring",
+      "slug": "ruby-ring",
+      "name": "Ruby Ring",
+      "isUnique": true
+    }
+  ],
+  "soulCores": [
+    {
+      "id": "soul-core-of-tacati",
+      "slug": "soul-core-of-tacati",
+      "name": "Soul Core of Tacati"
+    }
+  ],
+  "currencies": [
+    {
+      "id": "exalted-orb",
+      "slug": "exalted-orb",
+      "name": "Exalted Orb"
+    }
+  ]
+}
