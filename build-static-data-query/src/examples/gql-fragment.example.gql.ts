@@ -10,6 +10,10 @@ export const SomeGameStaticDataNocturnalArmsFragmentGql = gql`
     unlock
     formerWielder {
       slug
+      id
+      name
+      iconUrl
+      title
     }
     description
     flavorText

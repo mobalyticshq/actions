@@ -27,6 +27,16 @@ export interface FragmentComparison {
   regressions: DroppedField[];
   /** Selected in the live fragments, missing from the new ones, and gone from the schema too. */
   schemaRemovals: DroppedField[];
+  /**
+   * Selected in the live fragments, missing from the new ones, and deeper than one level of linked
+   * entities - fields an over-expanded live query fetched that the generator is not meant to.
+   */
+  beyondOneLevel: DroppedField[];
+  /**
+   * Live fragments on embedded (non-entity) types with no new counterpart. The generator is asked
+   * for entity fragments only; their fields are covered through the entity fragments.
+   */
+  droppedHelperFragments: string[];
   /** Paths the new fragments select that the live ones did not. */
   addedCount: number;
 }
@@ -94,9 +104,68 @@ export function pathExistsInSchema(schema: GraphQLSchema, typeName: string, path
 }
 
 /**
+ * The entity types: the item type of each group's `data` field under `<Game>StaticDataQuery.groups`.
+ * Empty when the schema has no such query type.
+ */
+export function entityTypeNames(schema: GraphQLSchema): Set<string> {
+  const entities = new Set<string>();
+  for (const type of Object.values(schema.getTypeMap())) {
+    if (!isObjectType(type) || !type.name.endsWith('StaticDataQuery')) {
+      continue;
+    }
+    const groupsField = type.getFields()['groups'];
+    const groups = groupsField && getNamedType(groupsField.type);
+    if (!groups || !isObjectType(groups)) {
+      continue;
+    }
+    for (const group of Object.values(groups.getFields())) {
+      const groupType = getNamedType(group.type);
+      const data = isObjectType(groupType) ? groupType.getFields()['data'] : undefined;
+      if (data) {
+        entities.add(getNamedType(data.type).name);
+      }
+    }
+  }
+  return entities;
+}
+
+/**
+ * Whether `path` stays within one level of linked entities, as the generator is told to: a linked
+ * entity contributes its scalar fields only, never its own object-type fields.
+ */
+export function pathWithinOneLevel(
+  schema: GraphQLSchema,
+  typeName: string,
+  path: string,
+  entities: Set<string>,
+): boolean {
+  let type: GraphQLNamedType | undefined | null = schema.getType(typeName);
+  let insideLinkedEntity = false;
+  for (const segment of path.split('.')) {
+    if (!type || !(isObjectType(type) || isInterfaceType(type))) {
+      return true;
+    }
+    const field = type.getFields()[segment];
+    if (!field) {
+      return true;
+    }
+    type = getNamedType(field.type);
+    const isObject = isObjectType(type) || isInterfaceType(type);
+    if (isObject && insideLinkedEntity) {
+      return false;
+    }
+    if (isObject && entities.has(type.name)) {
+      insideLinkedEntity = true;
+    }
+  }
+  return true;
+}
+
+/**
  * Compares freshly generated fragments with the ones that are live. A field the live fragments
  * select that the new ones do not is a regression if the schema still has it - the generator
- * dropped it - and an acceptable removal if the schema no longer has it.
+ * dropped it - and an acceptable removal if the schema no longer has it, or if it sits deeper than
+ * one level of linked entities.
  */
 export function compareFragments(
   live: FragmentInfo[],
@@ -107,18 +176,27 @@ export function compareFragments(
   const liveByName = new Map(live.map(fragment => [fragment.name, fragment]));
   const regressions: DroppedField[] = [];
   const schemaRemovals: DroppedField[] = [];
+  const beyondOneLevel: DroppedField[] = [];
+  const droppedHelperFragments: string[] = [];
+  const entities = entityTypeNames(schema);
 
   for (const liveFragment of live) {
     const freshFragment = freshByName.get(liveFragment.name);
+    if (!freshFragment && entities.size > 0 && !entities.has(liveFragment.typeCondition)) {
+      droppedHelperFragments.push(liveFragment.name);
+      continue;
+    }
     for (const path of liveFragment.paths) {
       if (freshFragment?.paths.has(path)) {
         continue;
       }
       const dropped = { fragment: liveFragment.name, typeCondition: liveFragment.typeCondition, path };
-      if (pathExistsInSchema(schema, liveFragment.typeCondition, path)) {
-        regressions.push(dropped);
-      } else {
+      if (!pathExistsInSchema(schema, liveFragment.typeCondition, path)) {
         schemaRemovals.push(dropped);
+      } else if (!pathWithinOneLevel(schema, liveFragment.typeCondition, path, entities)) {
+        beyondOneLevel.push(dropped);
+      } else {
+        regressions.push(dropped);
       }
     }
   }
@@ -133,7 +211,55 @@ export function compareFragments(
     }
   }
 
-  return { regressions, schemaRemovals, addedCount };
+  return { regressions, schemaRemovals, beyondOneLevel, droppedHelperFragments, addedCount };
+}
+
+export interface FragmentStats {
+  /** Total selected fields across all fragments. */
+  fields: number;
+  /** Deepest selection, counted in path segments ("effects.spell.name" is 3). */
+  maxDepth: number;
+}
+
+export function fragmentStats(fragments: FragmentInfo[]): FragmentStats {
+  let fields = 0;
+  let maxDepth = 0;
+  for (const fragment of fragments) {
+    for (const path of fragment.paths) {
+      fields++;
+      maxDepth = Math.max(maxDepth, path.split('.').length);
+    }
+  }
+  return { fields, maxDepth };
+}
+
+export interface GrowthLimits {
+  /** Fail when the new fragments select more than this many times the live field count. */
+  maxFieldRatio: number;
+  /** Fail when the new fragments nest more than this many levels deeper than the live ones. */
+  maxDepthIncrease: number;
+}
+
+export interface GrowthCheck {
+  live: FragmentStats;
+  fresh: FragmentStats;
+  tooManyFields: boolean;
+  tooDeep: boolean;
+}
+
+/**
+ * The opposite failure to a regression: the generator expanding linked types far deeper than the
+ * live query does, producing a query too large for the GraphQL server to accept.
+ */
+export function checkGrowth(live: FragmentInfo[], fresh: FragmentInfo[], limits: GrowthLimits): GrowthCheck {
+  const liveStats = fragmentStats(live);
+  const freshStats = fragmentStats(fresh);
+  return {
+    live: liveStats,
+    fresh: freshStats,
+    tooManyFields: freshStats.fields > liveStats.fields * limits.maxFieldRatio,
+    tooDeep: freshStats.maxDepth > liveStats.maxDepth + limits.maxDepthIncrease,
+  };
 }
 
 /**

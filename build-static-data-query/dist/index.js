@@ -410,42 +410,73 @@ function removeGeneratedFragments() {
         fs.unlinkSync(path.join(buildGqlPath, name));
     }
 }
-function report(comparison) {
-    const { regressions, schemaRemovals, addedCount } = comparison;
-    core.info(`Fields added: ${addedCount}`);
+function report(comparison, growth) {
+    const { regressions, schemaRemovals, beyondOneLevel, droppedHelperFragments, addedCount } = comparison;
+    core.info(`Fields: live ${growth.live.fields}, new ${growth.fresh.fields} (${addedCount} added) - max depth: live ${growth.live.maxDepth}, new ${growth.fresh.maxDepth}`);
     if (schemaRemovals.length > 0) {
         core.info(`Fields dropped because the schema no longer has them (allowed): ${schemaRemovals.length}`);
         (0, fragment_paths_1.summariseDropped)(schemaRemovals).forEach(line => core.info(`  ${line}`));
+    }
+    if (beyondOneLevel.length > 0) {
+        core.info(`Fields dropped from deeper than one level of linked entities (allowed): ${beyondOneLevel.length}`);
+        (0, fragment_paths_1.summariseDropped)(beyondOneLevel).forEach(line => core.info(`  ${line}`));
+    }
+    if (droppedHelperFragments.length > 0) {
+        core.info(`Fragments on embedded types not regenerated (allowed): ${droppedHelperFragments.sort().join(', ')}`);
     }
     if (regressions.length > 0) {
         core.warning(`Fields dropped that the schema still has: ${regressions.length}`);
         (0, fragment_paths_1.summariseDropped)(regressions).forEach(line => core.warning(`  ${line}`));
     }
+    if (growth.tooManyFields) {
+        core.warning(`New fragments select ${growth.fresh.fields} fields, more than the allowed multiple of the live ${growth.live.fields}`);
+    }
+    if (growth.tooDeep) {
+        core.warning(`New fragments nest ${growth.fresh.maxDepth} levels deep, against ${growth.live.maxDepth} live`);
+    }
+}
+function describeProblems(comparison, growth) {
+    const problems = [];
+    if (comparison.regressions.length > 0) {
+        problems.push(`drop ${comparison.regressions.length} field(s) that the schema still has`);
+    }
+    if (growth.tooManyFields) {
+        problems.push(`select ${growth.fresh.fields} fields against ${growth.live.fields} live`);
+    }
+    if (growth.tooDeep) {
+        problems.push(`nest ${growth.fresh.maxDepth} levels deep against ${growth.live.maxDepth} live`);
+    }
+    return problems;
 }
 /**
- * Compares the fragments step 4 just generated with the fragments that are live. If the new ones
- * drop fields the schema still has - the generator selecting less from a linked type than it did
- * before - regenerate up to `retries` times, then fail before anything is uploaded, so the live
- * query (and every tooltip built on it) is never replaced by a narrower one.
+ * Compares the fragments step 4 just generated with the fragments that are live, and catches the
+ * generator going wrong in either direction:
+ *   - narrower: dropping fields the schema still has (a linked type cut down to slug/id/name)
+ *   - larger:   expanding linked types far deeper, into a query the GraphQL server rejects
+ * Either way, regenerate up to `retries` times, then fail before anything is uploaded, so the live
+ * query (and every tooltip built on it) is never replaced by a broken one.
  */
 async function guardFragmentRegression(options) {
-    const { bucket, env, gameUrlSlug, liveSchemaVersion, disableQueryAst, retries, allowRegression, regenerate } = options;
+    const { bucket, env, gameUrlSlug, liveSchemaVersion, disableQueryAst, retries, growthLimits, allowRegression, regenerate, } = options;
     if (!liveSchemaVersion) {
-        core.info('No live query to compare against - skipping the regression check');
+        core.info('No live query to compare against - skipping the fragment check');
         return;
     }
     const live = await loadLiveFragments(bucket, env, gameUrlSlug, liveSchemaVersion, disableQueryAst);
     if (live.length === 0) {
-        core.info(`No live fragments found for version ${liveSchemaVersion} - skipping the regression check`);
+        core.info(`No live fragments found for version ${liveSchemaVersion} - skipping the fragment check`);
         return;
     }
     const schema = (0, graphql_1.buildSchema)(fs.readFileSync(cleanedSchemaPath, 'utf8'), { assumeValidSDL: true });
     core.info(`Comparing against ${live.length} live fragments (version ${liveSchemaVersion})`);
     for (let attempt = 0;; attempt++) {
-        const comparison = (0, fragment_paths_1.compareFragments)(live, loadGeneratedFragments(), schema);
-        report(comparison);
-        if (comparison.regressions.length === 0) {
-            core.info('✓ No fragment regressions');
+        const fresh = loadGeneratedFragments();
+        const comparison = (0, fragment_paths_1.compareFragments)(live, fresh, schema);
+        const growth = (0, fragment_paths_1.checkGrowth)(live, fresh, growthLimits);
+        report(comparison, growth);
+        const problems = describeProblems(comparison, growth);
+        if (problems.length === 0) {
+            core.info('✓ Fragments are neither narrower nor much larger than the live ones');
             return;
         }
         if (attempt < retries) {
@@ -454,8 +485,7 @@ async function guardFragmentRegression(options) {
             await regenerate();
             continue;
         }
-        const message = `Generated fragments drop ${comparison.regressions.length} field(s) that the schema still has, ` +
-            `after ${retries} retr${retries === 1 ? 'y' : 'ies'}.`;
+        const message = `Generated fragments ${problems.join(' and ')}, after ${retries} retr${retries === 1 ? 'y' : 'ies'}.`;
         if (allowRegression) {
             core.warning(`${message} Publishing anyway because allow-fragment-regression is set.`);
             return;
@@ -770,7 +800,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.extractGqlFromFragmentFile = extractGqlFromFragmentFile;
 exports.collectFragmentPaths = collectFragmentPaths;
 exports.pathExistsInSchema = pathExistsInSchema;
+exports.entityTypeNames = entityTypeNames;
+exports.pathWithinOneLevel = pathWithinOneLevel;
 exports.compareFragments = compareFragments;
+exports.fragmentStats = fragmentStats;
+exports.checkGrowth = checkGrowth;
 exports.summariseDropped = summariseDropped;
 const graphql_1 = __webpack_require__(1253);
 /**
@@ -833,27 +867,89 @@ function pathExistsInSchema(schema, typeName, path) {
     return true;
 }
 /**
+ * The entity types: the item type of each group's `data` field under `<Game>StaticDataQuery.groups`.
+ * Empty when the schema has no such query type.
+ */
+function entityTypeNames(schema) {
+    const entities = new Set();
+    for (const type of Object.values(schema.getTypeMap())) {
+        if (!(0, graphql_1.isObjectType)(type) || !type.name.endsWith('StaticDataQuery')) {
+            continue;
+        }
+        const groupsField = type.getFields()['groups'];
+        const groups = groupsField && (0, graphql_1.getNamedType)(groupsField.type);
+        if (!groups || !(0, graphql_1.isObjectType)(groups)) {
+            continue;
+        }
+        for (const group of Object.values(groups.getFields())) {
+            const groupType = (0, graphql_1.getNamedType)(group.type);
+            const data = (0, graphql_1.isObjectType)(groupType) ? groupType.getFields()['data'] : undefined;
+            if (data) {
+                entities.add((0, graphql_1.getNamedType)(data.type).name);
+            }
+        }
+    }
+    return entities;
+}
+/**
+ * Whether `path` stays within one level of linked entities, as the generator is told to: a linked
+ * entity contributes its scalar fields only, never its own object-type fields.
+ */
+function pathWithinOneLevel(schema, typeName, path, entities) {
+    let type = schema.getType(typeName);
+    let insideLinkedEntity = false;
+    for (const segment of path.split('.')) {
+        if (!type || !((0, graphql_1.isObjectType)(type) || (0, graphql_1.isInterfaceType)(type))) {
+            return true;
+        }
+        const field = type.getFields()[segment];
+        if (!field) {
+            return true;
+        }
+        type = (0, graphql_1.getNamedType)(field.type);
+        const isObject = (0, graphql_1.isObjectType)(type) || (0, graphql_1.isInterfaceType)(type);
+        if (isObject && insideLinkedEntity) {
+            return false;
+        }
+        if (isObject && entities.has(type.name)) {
+            insideLinkedEntity = true;
+        }
+    }
+    return true;
+}
+/**
  * Compares freshly generated fragments with the ones that are live. A field the live fragments
  * select that the new ones do not is a regression if the schema still has it - the generator
- * dropped it - and an acceptable removal if the schema no longer has it.
+ * dropped it - and an acceptable removal if the schema no longer has it, or if it sits deeper than
+ * one level of linked entities.
  */
 function compareFragments(live, fresh, schema) {
     const freshByName = new Map(fresh.map(fragment => [fragment.name, fragment]));
     const liveByName = new Map(live.map(fragment => [fragment.name, fragment]));
     const regressions = [];
     const schemaRemovals = [];
+    const beyondOneLevel = [];
+    const droppedHelperFragments = [];
+    const entities = entityTypeNames(schema);
     for (const liveFragment of live) {
         const freshFragment = freshByName.get(liveFragment.name);
+        if (!freshFragment && entities.size > 0 && !entities.has(liveFragment.typeCondition)) {
+            droppedHelperFragments.push(liveFragment.name);
+            continue;
+        }
         for (const path of liveFragment.paths) {
             if (freshFragment?.paths.has(path)) {
                 continue;
             }
             const dropped = { fragment: liveFragment.name, typeCondition: liveFragment.typeCondition, path };
-            if (pathExistsInSchema(schema, liveFragment.typeCondition, path)) {
-                regressions.push(dropped);
+            if (!pathExistsInSchema(schema, liveFragment.typeCondition, path)) {
+                schemaRemovals.push(dropped);
+            }
+            else if (!pathWithinOneLevel(schema, liveFragment.typeCondition, path, entities)) {
+                beyondOneLevel.push(dropped);
             }
             else {
-                schemaRemovals.push(dropped);
+                regressions.push(dropped);
             }
         }
     }
@@ -866,7 +962,32 @@ function compareFragments(live, fresh, schema) {
             }
         }
     }
-    return { regressions, schemaRemovals, addedCount };
+    return { regressions, schemaRemovals, beyondOneLevel, droppedHelperFragments, addedCount };
+}
+function fragmentStats(fragments) {
+    let fields = 0;
+    let maxDepth = 0;
+    for (const fragment of fragments) {
+        for (const path of fragment.paths) {
+            fields++;
+            maxDepth = Math.max(maxDepth, path.split('.').length);
+        }
+    }
+    return { fields, maxDepth };
+}
+/**
+ * The opposite failure to a regression: the generator expanding linked types far deeper than the
+ * live query does, producing a query too large for the GraphQL server to accept.
+ */
+function checkGrowth(live, fresh, limits) {
+    const liveStats = fragmentStats(live);
+    const freshStats = fragmentStats(fresh);
+    return {
+        live: liveStats,
+        fresh: freshStats,
+        tooManyFields: freshStats.fields > liveStats.fields * limits.maxFieldRatio,
+        tooDeep: freshStats.maxDepth > liveStats.maxDepth + limits.maxDepthIncrease,
+    };
 }
 /**
  * One line per fragment listing its dropped paths. When a whole sub-object was dropped, only the
@@ -3346,6 +3467,8 @@ async function run() {
         const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
         const fragmentRegressionRetries = parseInt(core.getInput('fragment-regression-retries') || '2', 10);
         const allowFragmentRegression = core.getInput('allow-fragment-regression') === 'true';
+        const fragmentGrowthMaxRatio = parseFloat(core.getInput('fragment-growth-max-ratio') || '3');
+        const fragmentMaxDepthIncrease = parseInt(core.getInput('fragment-max-depth-increase') || '1', 10);
         core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
         // Initialize Storage and Bucket
         const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
@@ -3400,8 +3523,8 @@ async function run() {
         });
         core.info(`✓ Fragments generation completed`);
         core.endGroup();
-        // Step 4b: Make sure the new fragments do not select less than the live ones
-        core.startGroup('🛡️ Step 4b: Checking fragments for regressions');
+        // Step 4b: Make sure the new fragments are neither narrower nor much larger than the live ones
+        core.startGroup('🛡️ Step 4b: Checking fragments against the live query');
         await (0, _4b_check_fragment_regression_1.guardFragmentRegression)({
             bucket,
             env: dynamicModulesEnv,
@@ -3409,6 +3532,7 @@ async function run() {
             liveSchemaVersion: schemaVersionCheck.existingSchemaVersion,
             disableQueryAst,
             retries: fragmentRegressionRetries,
+            growthLimits: { maxFieldRatio: fragmentGrowthMaxRatio, maxDepthIncrease: fragmentMaxDepthIncrease },
             allowRegression: allowFragmentRegression,
             regenerate: () => (0, _4_generate_fragments_1.generateFragments)({ timeoutMs, model }),
         });

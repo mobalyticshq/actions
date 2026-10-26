@@ -30,6 +30,8 @@ export async function run(): Promise<void> {
     const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
     const fragmentRegressionRetries = parseInt(core.getInput('fragment-regression-retries') || '2', 10);
     const allowFragmentRegression = core.getInput('allow-fragment-regression') === 'true';
+    const fragmentGrowthMaxRatio = parseFloat(core.getInput('fragment-growth-max-ratio') || '3');
+    const fragmentMaxDepthIncrease = parseInt(core.getInput('fragment-max-depth-increase') || '1', 10);
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
 
@@ -94,8 +96,8 @@ export async function run(): Promise<void> {
     core.info(`✓ Fragments generation completed`);
     core.endGroup();
 
-    // Step 4b: Make sure the new fragments do not select less than the live ones
-    core.startGroup('🛡️ Step 4b: Checking fragments for regressions');
+    // Step 4b: Make sure the new fragments are neither narrower nor much larger than the live ones
+    core.startGroup('🛡️ Step 4b: Checking fragments against the live query');
     await guardFragmentRegression({
       bucket,
       env: dynamicModulesEnv,
@@ -103,6 +105,7 @@ export async function run(): Promise<void> {
       liveSchemaVersion: schemaVersionCheck.existingSchemaVersion,
       disableQueryAst,
       retries: fragmentRegressionRetries,
+      growthLimits: { maxFieldRatio: fragmentGrowthMaxRatio, maxDepthIncrease: fragmentMaxDepthIncrease },
       allowRegression: allowFragmentRegression,
       regenerate: () => generateFragments({ timeoutMs, model }),
     });
