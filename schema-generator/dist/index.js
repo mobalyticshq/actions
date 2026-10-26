@@ -1327,6 +1327,11 @@ const mergeWithExistingSchema = (newSchema, existingSchema, ignoreDeleted = fals
         const existingGroup = existingSchema.groups[groupName];
         if (existingGroup) {
             const newGroup = result.groups[groupName];
+            // The wiki config only ever lives in the existing schema, so dropping it here would
+            // disable the group's wiki on every regeneration.
+            if (existingGroup.wiki) {
+                newGroup.wiki = existingGroup.wiki;
+            }
             // Merge fields
             if (existingGroup.fields) {
                 (0, exports.mergeFields)(newGroup.fields, existingGroup.fields, groupNames, ignoreDeleted);
@@ -1434,6 +1439,29 @@ exports.applyRefConfig = applyRefConfig;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.serializeToJson = void 0;
+const indent = (n) => '  '.repeat(n);
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+// Keeps the hand-written style of opaque blocks such as `wiki`: an object with a single scalar
+// entry stays on one line, anything larger gets one entry per line. Key order is preserved
+// because it is not alphabetical in existing schemas.
+const writeJsonValue = (value, depth) => {
+    if (!isPlainObject(value)) {
+        return JSON.stringify(value);
+    }
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+        return '{}';
+    }
+    if (entries.length === 1 && !isPlainObject(entries[0][1])) {
+        const [key, entryValue] = entries[0];
+        return `{ ${JSON.stringify(key)}: ${JSON.stringify(entryValue)} }`;
+    }
+    const lines = entries.map(([key, entryValue], idx) => {
+        const comma = idx < entries.length - 1 ? ',' : '';
+        return `${indent(depth + 1)}${JSON.stringify(key)}: ${writeJsonValue(entryValue, depth + 1)}${comma}`;
+    });
+    return ['{', ...lines, `${indent(depth)}}`].join('\n');
+};
 const writeFieldConfigInline = (fieldConfig) => {
     const parts = [`"type": "${fieldConfig.type}"`];
     if (fieldConfig.array) {
@@ -1460,7 +1488,6 @@ const writeFieldConfigInline = (fieldConfig) => {
     return `{ ${parts.join(', ')} }`;
 };
 const serializeToJson = (cfg) => {
-    const indent = (n) => '  '.repeat(n);
     const lines = [];
     lines.push('{');
     lines.push(`${indent(1)}"namespace": "${cfg.namespace}",`);
@@ -1482,6 +1509,9 @@ const serializeToJson = (cfg) => {
     groupNames.forEach((groupName, groupIdx) => {
         const group = cfg.groups[groupName];
         lines.push(`${indent(2)}"${groupName}": {`);
+        if (group.wiki) {
+            lines.push(`${indent(3)}"wiki": ${writeJsonValue(group.wiki, 3)},`);
+        }
         lines.push(`${indent(3)}"fields": {`);
         const fieldNames = Object.keys(group.fields).sort();
         if (fieldNames.length > 0) {

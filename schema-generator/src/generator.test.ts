@@ -89,6 +89,54 @@ describe('processSchemaGeneration', () => {
     expect((result.match(/"translatable": true/g) || []).length).toBe(3);
   });
 
+  it('should preserve group wiki configs from the existing schema', () => {
+    // Arrange:
+    // The wiki config only ever lives in the existing schema, so it must survive for groups found
+    // in the data and for groups that only exist in the existing schema.
+    const staticDataPath = path.join(__dirname, 'test_data', "wiki");
+    const existingSchemaPath = path.join(__dirname, 'test_data', "wiki", 'existing_schema.json');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', "wiki", 'expected', 'updated_schema.json');
+
+    const config: SchemaGenerationConfig = {
+      staticDataPath,
+      existingSchemaPath
+    };
+
+    // Act
+    const result = processSchemaGeneration(config);
+
+    // Assert
+    const expectedSchemaContent = fs.readFileSync(expectedSchemaPath, 'utf8');
+
+    // Compare the exact string output (including formatting)
+    expect(result.trim()).toBe(expectedSchemaContent.trim());
+    expect(JSON.parse(result).groups.runes.wiki).toEqual({ enabled: false, tagMappings: { unique: 'isUnique' } });
+    expect(Object.keys(JSON.parse(result).groups.weapons.wiki.tagMappings)).toEqual(['weaponClass', 'unique']);
+  });
+
+  it('should preserve group wiki configs when ignoreDeleted is true', () => {
+    // Arrange
+    const staticDataPath = path.join(__dirname, 'test_data', "wiki");
+    const existingSchemaPath = path.join(__dirname, 'test_data', "wiki", 'existing_schema.json');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', "wiki", 'expected', 'refreshed_schema.json');
+
+    const config: SchemaGenerationConfig = {
+      staticDataPath,
+      existingSchemaPath,
+      ignoreDeleted: true
+    };
+
+    // Act
+    const result = processSchemaGeneration(config);
+
+    // Assert
+    const expectedSchemaContent = fs.readFileSync(expectedSchemaPath, 'utf8');
+
+    // Compare the exact string output (including formatting)
+    expect(result.trim()).toBe(expectedSchemaContent.trim());
+    expect((result.match(/"wiki"/g) || []).length).toBe(3);
+  });
+
   it('should generate schema from deep nested static data', () => {
     // Arrange
     const staticDataPath = path.join(__dirname, 'test_data', "nested");
