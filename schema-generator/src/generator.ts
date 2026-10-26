@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Schema, RefConfig, SchemaGenerationConfig, VersionInfo, applyRefConfig } from './schema';
+import { Schema, RefConfig, SchemaGenerationConfig, VersionInfo, applyRefConfig, replaceUnresolvedRefs } from './schema';
 import { generateSchemaFromData } from './build';
 import { mergeWithExistingSchema } from './merge';
 import { serializeToJson } from './serialization';
@@ -108,7 +108,9 @@ export const processSchemaGeneration = (config: SchemaGenerationConfig): string 
         const refConfigData = readJsonFile(config.refConfigPath);
         schema = applyRefConfig(schema, refConfigData);
     }
-    
+
+    schema = replaceUnresolvedRefs(schema);
+
     // Serialize to JSON
     const processedSchema = serializeToJson(schema);
     

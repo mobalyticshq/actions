@@ -1,4 +1,4 @@
-import { processSchemaGeneration, SchemaGenerationConfig } from './main';
+import { processSchemaGeneration, SchemaGenerationConfig, MANUAL_FILL_PLACEHOLDER } from './main';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -135,6 +135,40 @@ describe('processSchemaGeneration', () => {
     // Compare the exact string output (including formatting)
     expect(result.trim()).toBe(expectedSchemaContent.trim());
     expect((result.match(/"wiki"/g) || []).length).toBe(3);
+  });
+
+  it('should keep existing field types and resolve new references without placeholders', () => {
+    // Arrange:
+    // Inference reads every slug-suffixed field as a Ref and whole-number Floats as Int; the existing
+    // schema must win over both, and new references go through the ref-config or fall back to String.
+    const staticDataPath = path.join(__dirname, 'test_data', "existing_types");
+    const existingSchemaPath = path.join(__dirname, 'test_data', "existing_types", 'existing_schema.json');
+    const refConfigPath = path.join(__dirname, 'test_data', "existing_types", 'config.json');
+    const expectedSchemaPath = path.join(__dirname, 'test_data', "existing_types", 'expected', 'updated_schema.json');
+
+    const config: SchemaGenerationConfig = {
+      staticDataPath,
+      existingSchemaPath,
+      refConfigPath,
+      geckMode: true
+    };
+
+    // Act
+    const result = processSchemaGeneration(config);
+
+    // Assert
+    const expectedSchemaContent = fs.readFileSync(expectedSchemaPath, 'utf8');
+
+    // Compare the exact string output (including formatting)
+    expect(result.trim()).toBe(expectedSchemaContent.trim());
+    const weapons = JSON.parse(result).groups.weapons;
+    expect(weapons.fields.ascendancySlug).toEqual({ type: 'String' });
+    expect(weapons.fields.descriptionRef).toEqual({ type: 'Ref', refTo: 'dictionary' });
+    expect(weapons.fields.x).toEqual({ type: 'Float' });
+    expect(weapons.fields.mainStatSlug).toEqual({ type: 'Ref', refTo: 'dictionary' });
+    expect(weapons.objects.weaponStats.fields.statRef).toEqual({ type: 'Ref', refTo: 'dictionary' });
+    expect(weapons.fields.suffixStatSlugs).toEqual({ type: 'String', array: true });
+    expect(result).not.toContain(MANUAL_FILL_PLACEHOLDER);
   });
 
   it('should generate schema from deep nested static data', () => {

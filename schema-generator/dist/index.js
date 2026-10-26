@@ -985,6 +985,7 @@ const processSchemaGeneration = (config) => {
         const refConfigData = (0, exports.readJsonFile)(config.refConfigPath);
         schema = (0, schema_1.applyRefConfig)(schema, refConfigData);
     }
+    schema = (0, schema_1.replaceUnresolvedRefs)(schema);
     // Serialize to JSON
     const processedSchema = (0, serialization_1.serializeToJson)(schema);
     // Write output file if specified
@@ -1045,7 +1046,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = exports.generateSchemaFromData = exports.serializeToJson = exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = exports.applyRefConfig = exports.GECK_REFERENCE_SUFFIXES = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
+exports.processSchemaGeneration = exports.findLatestStaticDataFile = exports.parseVersionFromFilename = exports.writeJsonFile = exports.readJsonFile = exports.generateSchemaFromData = exports.serializeToJson = exports.mergeWithExistingSchema = exports.mergeGroupObjects = exports.mergeFields = exports.mergeFieldConfig = exports.replaceUnresolvedRefs = exports.applyRefConfig = exports.GECK_REFERENCE_SUFFIXES = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
 const fs = __importStar(__nccwpck_require__(896));
 const path = __importStar(__nccwpck_require__(928));
 // Re-export types and schema operations from schema.ts
@@ -1056,6 +1057,7 @@ Object.defineProperty(exports, "MANUAL_FILL_PLACEHOLDER", ({ enumerable: true, g
 Object.defineProperty(exports, "REFERENCE_SUFFIX", ({ enumerable: true, get: function () { return schema_1.REFERENCE_SUFFIX; } }));
 Object.defineProperty(exports, "GECK_REFERENCE_SUFFIXES", ({ enumerable: true, get: function () { return schema_1.GECK_REFERENCE_SUFFIXES; } }));
 Object.defineProperty(exports, "applyRefConfig", ({ enumerable: true, get: function () { return schema_1.applyRefConfig; } }));
+Object.defineProperty(exports, "replaceUnresolvedRefs", ({ enumerable: true, get: function () { return schema_1.replaceUnresolvedRefs; } }));
 // Re-export merge functions from merge.ts
 var merge_1 = __nccwpck_require__(107);
 Object.defineProperty(exports, "mergeFieldConfig", ({ enumerable: true, get: function () { return merge_1.mergeFieldConfig; } }));
@@ -1203,18 +1205,19 @@ const schema_1 = __nccwpck_require__(60);
 // Helper function to merge field configurations
 const mergeFieldConfig = (newFieldConfig, existingFieldConfig, groupNames, ignoreDeleted = false) => {
     const merged = { ...newFieldConfig };
-    // Override type from existing if new type is placeholder and existing has valid type
-    if (newFieldConfig.type === schema_1.MANUAL_FILL_PLACEHOLDER) {
-        if (existingFieldConfig.type && existingFieldConfig.type !== schema_1.MANUAL_FILL_PLACEHOLDER) {
-            merged.type = existingFieldConfig.type;
+    // Override type from existing if it has a valid one. Inference only sees the latest data file: it reads
+    // every slug-suffixed field as a Ref and a Float whose current values are whole numbers as an Int, while
+    // the validators reject any type change of an existing field as breaking.
+    if (existingFieldConfig.type && existingFieldConfig.type !== schema_1.MANUAL_FILL_PLACEHOLDER) {
+        merged.type = existingFieldConfig.type;
+        if (merged.type !== schema_1.FIELD_TYPES.REF) {
+            delete merged.refTo;
         }
     }
-    // Override refTo from existing if present
-    if (!newFieldConfig.refTo || newFieldConfig.refTo === schema_1.MANUAL_FILL_PLACEHOLDER) {
-        if (existingFieldConfig.refTo && existingFieldConfig.refTo !== schema_1.MANUAL_FILL_PLACEHOLDER) {
-            if (groupNames.includes(existingFieldConfig.refTo)) {
-                merged.refTo = existingFieldConfig.refTo;
-            }
+    // Override refTo from existing if its target group is still there
+    if (merged.type === schema_1.FIELD_TYPES.REF && existingFieldConfig.refTo && existingFieldConfig.refTo !== schema_1.MANUAL_FILL_PLACEHOLDER) {
+        if (groupNames.includes(existingFieldConfig.refTo)) {
+            merged.refTo = existingFieldConfig.refTo;
         }
     }
     // Override refFilters from existing if present
@@ -1364,7 +1367,7 @@ exports.mergeWithExistingSchema = mergeWithExistingSchema;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.applyRefConfig = exports.GECK_REFERENCE_SUFFIXES = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
+exports.replaceUnresolvedRefs = exports.applyRefConfig = exports.GECK_REFERENCE_SUFFIXES = exports.REFERENCE_SUFFIX = exports.MANUAL_FILL_PLACEHOLDER = exports.REQUIRED_FIELD_NAMES = exports.FIELD_TYPES = void 0;
 // Constants
 exports.FIELD_TYPES = {
     STRING: 'String',
@@ -1428,6 +1431,29 @@ const applyRefConfig = (schema, refConfig) => {
     return result;
 };
 exports.applyRefConfig = applyRefConfig;
+// A placeholder refTo never passes validation, and the schema must not be edited by hand, so a reference
+// that neither inference nor the ref-config could resolve is written as a plain String.
+const replaceUnresolvedRefs = (schema) => {
+    const result = JSON.parse(JSON.stringify(schema));
+    const replaceInFields = (groupName, fields) => {
+        Object.keys(fields).forEach(fieldName => {
+            const field = fields[fieldName];
+            if (field.type === exports.FIELD_TYPES.REF && (!field.refTo || field.refTo === exports.MANUAL_FILL_PLACEHOLDER)) {
+                field.type = exports.FIELD_TYPES.STRING;
+                delete field.refTo;
+                delete field.refFilters;
+                console.warn(`Unresolved reference ${groupName}.${fieldName} is written as String; map it in the ref-config to make it a Ref`);
+            }
+        });
+    };
+    Object.keys(result.groups).forEach(groupName => {
+        const group = result.groups[groupName];
+        replaceInFields(groupName, group.fields);
+        Object.values(group.objects ?? {}).forEach(obj => replaceInFields(groupName, obj.fields));
+    });
+    return result;
+};
+exports.replaceUnresolvedRefs = replaceUnresolvedRefs;
 
 
 /***/ }),

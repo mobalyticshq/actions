@@ -129,3 +129,29 @@ export const applyRefConfig = (schema: Schema, refConfig: RefConfig): Schema => 
 
     return result;
 };
+
+// A placeholder refTo never passes validation, and the schema must not be edited by hand, so a reference
+// that neither inference nor the ref-config could resolve is written as a plain String.
+export const replaceUnresolvedRefs = (schema: Schema): Schema => {
+    const result = JSON.parse(JSON.stringify(schema)) as Schema;
+
+    const replaceInFields = (groupName: string, fields: Record<string, FieldConfig>): void => {
+        Object.keys(fields).forEach(fieldName => {
+            const field = fields[fieldName];
+            if (field.type === FIELD_TYPES.REF && (!field.refTo || field.refTo === MANUAL_FILL_PLACEHOLDER)) {
+                field.type = FIELD_TYPES.STRING;
+                delete field.refTo;
+                delete field.refFilters;
+                console.warn(`Unresolved reference ${groupName}.${fieldName} is written as String; map it in the ref-config to make it a Ref`);
+            }
+        });
+    };
+
+    Object.keys(result.groups).forEach(groupName => {
+        const group = result.groups[groupName];
+        replaceInFields(groupName, group.fields);
+        Object.values(group.objects ?? {}).forEach(obj => replaceInFields(groupName, obj.fields));
+    });
+
+    return result;
+};

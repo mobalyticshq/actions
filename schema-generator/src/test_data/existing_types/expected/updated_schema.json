@@ -1,0 +1,51 @@
+{
+  "namespace": "someGame.staticData",
+  "typePrefix": "SomeGame",
+  "deprecatedGeckMode": true,
+  "groups": {
+    "ascendancies": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "filter": true, "required": true },
+        "slug": { "type": "String", "filter": true, "required": true }
+      }
+    },
+    "description": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "filter": true, "required": true },
+        "slug": { "type": "String", "filter": true, "required": true }
+      }
+    },
+    "dictionary": {
+      "fields": {
+        "id": { "type": "String", "filter": true, "required": true },
+        "name": { "type": "String", "filter": true, "required": true },
+        "slug": { "type": "String", "filter": true, "required": true }
+      }
+    },
+    "weapons": {
+      "fields": {
+        "ascendancySlug": { "type": "String" },
+        "descriptionRef": { "type": "Ref", "refTo": "dictionary" },
+        "id": { "type": "String", "filter": true, "required": true },
+        "mainStatSlug": { "type": "Ref", "refTo": "dictionary" },
+        "name": { "type": "String", "filter": true, "required": true },
+        "prefixStatSlugs": { "type": "String", "array": true },
+        "slug": { "type": "String", "filter": true, "required": true },
+        "suffixStatSlugs": { "type": "String", "array": true },
+        "weaponStats": { "type": "Object", "array": true, "objName": "weaponStats" },
+        "x": { "type": "Float" }
+      },
+      "objects": {
+        "weaponStats": {
+          "fields": {
+            "slug": { "type": "String", "required": true },
+            "statRef": { "type": "Ref", "refTo": "dictionary" },
+            "value": { "type": "Float" }
+          }
+        }
+      }
+    }
+  }
+}

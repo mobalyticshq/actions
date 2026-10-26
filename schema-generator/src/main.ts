@@ -24,7 +24,8 @@ export {
     MANUAL_FILL_PLACEHOLDER,
     REFERENCE_SUFFIX,
     GECK_REFERENCE_SUFFIXES,
-    applyRefConfig
+    applyRefConfig,
+    replaceUnresolvedRefs
 } from './schema';
 
 // Re-export merge functions from merge.ts

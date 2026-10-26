@@ -18,7 +18,7 @@
         "id": { "type": "String", "filter": true, "required": true },
         "name": { "type": "String", "filter": true, "required": true },
         "someObject": { "type": "Object", "objName": "someObject" },
-        "someRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" }
+        "someRef": { "type": "String" }
       },
       "objects": {
         "someObject": {
@@ -33,7 +33,7 @@
         "deprecated": { "type": "Boolean", "required": true },
         "id": { "type": "String", "filter": true, "required": true },
         "level": { "type": "Object", "objName": "level" },
-        "recommendationsRef": { "type": "Ref", "array": true, "refTo": "@@@ TO BE FILLED MANUALLY @@@" },
+        "recommendationsRef": { "type": "String", "array": true },
         "secondName": { "type": "String" },
         "setRef": { "type": "Ref", "refTo": "sets" },
         "stats": { "type": "Object", "array": true, "objName": "stats" }

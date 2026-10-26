@@ -19,7 +19,7 @@
           "fields": {
             "contacts": { "type": "Object", "array": true, "objName": "metaCreatorContacts" },
             "name": { "type": "String" },
-            "teamRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" }
+            "teamRef": { "type": "String" }
           }
         },
         "metaCreatorContacts": {
@@ -37,7 +37,7 @@
         },
         "metaCreatorContactsExtraChannel": {
           "fields": {
-            "groupRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" },
+            "groupRef": { "type": "String" },
             "name": { "type": "String" },
             "tags": { "type": "Object", "array": true, "objName": "metaCreatorContactsExtraChannelTags" }
           }
@@ -80,7 +80,7 @@
         "metaHistoryChangesDetailsDeepAB": {
           "fields": {
             "c": { "type": "String" },
-            "ownerRef": { "type": "Ref", "refTo": "@@@ TO BE FILLED MANUALLY @@@" }
+            "ownerRef": { "type": "String" }
           }
         },
         "metaHistoryChangesDetailsSubDetails": {
