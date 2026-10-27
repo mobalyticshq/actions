@@ -17,6 +17,7 @@ export interface UploadBuildOptions {
   env: string;
   gameUrlSlug: string;
   schemaVersion: string;
+  moduleSlug: DynamicModuleSlug;
 }
 
 const buildPath = './build';
@@ -45,8 +46,7 @@ function makeModuleEntrypointName(hash: string): string {
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, gameUrlSlug, schemaVersion } = options;
-    const staticDataQueryModuleSlug = DynamicModuleSlug.STATIC_DATA_QUERY_V3;
+    const { bucket, env, gameUrlSlug, schemaVersion, moduleSlug: staticDataQueryModuleSlug } = options;
     const bucketName = bucket.name;
 
 

@@ -7,6 +7,9 @@ module.exports = {
     '^.+\\.ts$': 'ts-jest',
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleNameMapper: {
+    '^@shared/(.*)$': '<rootDir>/../shared/$1',
+  },
   verbose: true,
 };
 

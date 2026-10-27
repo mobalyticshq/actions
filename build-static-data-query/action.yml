@@ -36,6 +36,10 @@ inputs:
   gcp-service-account-json:
     description: 'Google Cloud Service Account JSON credentials'
     required: true
+  query-module-version:
+    description: 'Dynamic module to build: v2 (static-data-query-v2, fragments written by the LLM) or v3 (static-data-query-v3, fragments generated deterministically from the schema)'
+    required: false
+    default: 'v2'
 
 runs:
   using: 'composite'
@@ -73,3 +77,4 @@ runs:
         INPUT_GCS-BUCKET-NAME: ${{ inputs.gcs-bucket-name }}
         INPUT_GCS-PROJECT-ID: ${{ inputs.gcs-project-id }}
         INPUT_DYNAMIC-MODULES-ENV: ${{ inputs.dynamic-modules-env }}
+        INPUT_QUERY-MODULE-VERSION: ${{ inputs.query-module-version }}

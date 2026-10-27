@@ -14,6 +14,7 @@ export interface CheckSchemaVersionOptions {
   env: string;
   game: string;
   gameUrlSlug: string;
+  moduleSlug: DynamicModuleSlug;
 }
 
 export interface CheckSchemaVersionResult {
@@ -96,8 +97,7 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
 
 export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Promise<CheckSchemaVersionResult> {
   try {
-    const { graphqlEndpoint, bucket, env, game, gameUrlSlug } = options;
-    const staticDataQueryModuleSlug = DynamicModuleSlug.STATIC_DATA_QUERY_V3;
+    const { graphqlEndpoint, bucket, env, game, gameUrlSlug, moduleSlug: staticDataQueryModuleSlug } = options;
 
     core.info(`Checking schema version for game: ${game}`);
 

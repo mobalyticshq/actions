@@ -4,12 +4,13 @@ import { checkSchemaVersion } from './steps/0-check-schema-version';
 import { downloadSchema } from './steps/1-download-schema';
 import { generateScopes } from './steps/2-generate-scopes';
 import { cleanSchema } from './steps/3-clean-schema';
-import { generateFragments } from './steps/4-generate-fragments';
+import { generateFragments, generateFragmentsWithLlm } from './steps/4-generate-fragments';
 import { generateQuery } from './steps/5-generate-query';
 import { generateGqlTypes } from './steps/7-generate-gql-types';
 import { uploadBuild } from './steps/9-upload-build';
 import { compileQueries } from './steps/6-compile-query';
 import { generateWorkerOutputTypes } from './steps/8-generate-worker-output-types';
+import { resolveQueryModuleVersion } from './utils/query-module-version.utils';
 
 /**
  * Main function for the GitHub Action
@@ -26,8 +27,12 @@ export async function run(): Promise<void> {
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
+    const { moduleSlug, deterministicFragments } = resolveQueryModuleVersion(
+      core.getInput('query-module-version', { required: false }),
+    );
 
     core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
+    core.info(`Target dynamic module: ${moduleSlug}`);
 
     // Initialize Storage and Bucket
     const storage = createStorage(gcsProjectId);
@@ -41,6 +46,7 @@ export async function run(): Promise<void> {
       env: dynamicModulesEnv,
       game,
       gameUrlSlug,
+      moduleSlug,
     });
     core.endGroup();
 
@@ -82,10 +88,17 @@ export async function run(): Promise<void> {
 
     // Step 4: Generate fragments
     core.startGroup('🔨 Step 4: Generating fragments');
-    await generateFragments({
-      gameField: game,
-      staticDataFieldName,
-    });
+    if (deterministicFragments) {
+      await generateFragments({
+        gameField: game,
+        staticDataFieldName,
+      });
+    } else {
+      await generateFragmentsWithLlm({
+        timeoutMs,
+        model,
+      });
+    }
     core.info(`✓ Fragments generation completed`);
     core.endGroup();
 
@@ -126,6 +139,7 @@ export async function run(): Promise<void> {
       env: dynamicModulesEnv,
       gameUrlSlug,
       schemaVersion: schemaVersionCheck.currentSchemaVersion,
+      moduleSlug,
     });
     core.info(`✓ Build upload completed`);
     core.endGroup();
