@@ -1,0 +1,1 @@
+{"version":3,"file":"query-module-version.utils.d.ts","sourceRoot":"","sources":["../../../../src/utils/query-module-version.utils.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,iBAAiB,EAAE,MAAM,qCAAqC,CAAC;AAExE,MAAM,WAAW,kBAAkB;IACjC,UAAU,EAAE,iBAAiB,CAAC;IAC9B,sBAAsB,EAAE,OAAO,CAAC;CACjC;AAOD,wBAAgB,yBAAyB,CAAC,OAAO,EAAE,MAAM,GAAG,kBAAkB,CAS7E"}

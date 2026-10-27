@@ -11,26 +11,14 @@ const outputDir = 'build/dist';
 const entryFileName = 'entrypoint.ts';
 const outputFileName = 'entrypoint.js';
 
-export interface CompileQueriesOptions {
-  disableQueryAst: boolean;
-}
-
 // Native ESM dynamic import that survives TS (module: commonjs) and webpack
 // transpilation, which would otherwise rewrite `import()` into `require()`.
 const importEsm = new Function('specifier', 'return import(specifier);') as (
   specifier: string,
 ) => Promise<{ default: Record<string, DocumentNode> }>;
 
-export async function compileQueries(options: CompileQueriesOptions): Promise<void> {
-  const { disableQueryAst } = options;
-
-  if (!disableQueryAst) {
-    // v1: compile the gql template literals into a DocumentNode (AST) bundle.
-    await compileCode(queryDir, outputDir, entryFileName, outputFileName);
-    return;
-  }
-
-  // v2: fragment stitching still runs through the AST, but we print the
+export async function compileQueries(): Promise<void> {
+  // Fragment stitching still runs through the AST, but we print the
   // DocumentNodes to plain strings at build time so the published artifact is a
   // dependency-free string map (no runtime `graphql` require).
   const astFileName = 'entrypoint.ast.mjs';

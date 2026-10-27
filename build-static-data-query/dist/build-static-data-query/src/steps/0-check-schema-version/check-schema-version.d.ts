@@ -1,11 +1,12 @@
 import { Bucket } from '@google-cloud/storage';
+import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
 export interface CheckSchemaVersionOptions {
     graphqlEndpoint: string;
     bucket: Bucket;
     env: string;
     game: string;
     gameUrlSlug: string;
-    disableQueryAst: boolean;
+    moduleSlug: DynamicModuleSlug;
 }
 export interface CheckSchemaVersionResult {
     shouldContinue: boolean;

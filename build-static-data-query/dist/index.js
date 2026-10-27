@@ -2,7 +2,36 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 5:
+/***/ 39:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.uploadBuild = void 0;
+var upload_build_1 = __webpack_require__(2903);
+Object.defineProperty(exports, "uploadBuild", ({ enumerable: true, get: function () { return upload_build_1.uploadBuild; } }));
+
+
+/***/ }),
+
+/***/ 463:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DynamicModuleSlug = void 0;
+var DynamicModuleSlug;
+(function (DynamicModuleSlug) {
+    DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
+    DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
+    DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
+    DynamicModuleSlug["STATIC_DATA_QUERY_V3"] = "static-data-query-v3";
+})(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
+
+
+/***/ }),
+
+/***/ 756:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -39,266 +68,165 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateGqlTypes = generateGqlTypes;
-const cli_1 = __webpack_require__(404);
-const rimraf_1 = __webpack_require__(485);
-const path = __importStar(__webpack_require__(928));
-const fs = __importStar(__webpack_require__(896));
-const core = __importStar(__webpack_require__(659));
-async function generateGqlTypes() {
-    try {
-        core.info('Starting GraphQL types generation...');
-        // Step 1: Clean up old gql-types directories
-        const buildDir = path.resolve(process.cwd(), 'build');
-        const gqlTypesPattern = path.join(buildDir, '**/gql-types');
-        try {
-            await (0, rimraf_1.rimraf)(gqlTypesPattern);
-            core.info('Cleaned up old gql-types directories');
-        }
-        catch (error) {
-            // If cleanup fails, log but continue - directories might not exist yet
-            core.warning(`Could not clean up old gql-types directories: ${error instanceof Error ? error.message : String(error)}`);
-        }
-        // Step 2: Construct the codegen configuration
-        core.info('Constructing codegen configuration...');
-        const scalars = {
-            NgfDateTime: 'string',
-            Diablo4DateTime: 'string',
-            NgfDocumentRichTextContentJson: 'any',
-            NgfDocumentBase64Json: 'string',
-            NgfDocumentContentBase64Json: 'string',
-            TagsScalar: 'string[] | null',
-        };
-        const schemaFilePath = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
-        const documents = path.resolve(process.cwd(), 'build/gql/**/*.gql.ts');
-        const typesFilePath = path.resolve(process.cwd(), 'build/gql/gql-types/types.ts');
-        const typesDirPath = path.resolve(process.cwd(), 'build/gql/gql-types');
-        // Config for the main types file
-        const fileConfig = {
-            schema: schemaFilePath,
-            plugins: [
-                {
-                    add: {
-                        content: '/* @ts-ignore */',
-                    },
-                },
-                'typescript',
-                'fragment-matcher',
-            ],
-            config: {
-                namingConvention: 'keep',
-                avoidOptionals: {
-                    field: true,
-                    inputValue: false,
-                    object: true,
-                    defaultValue: true,
-                },
-                skipTypename: false,
-                scalars,
-                enumsAsTypes: true,
-            },
-        };
-        // Config for the directory (near-operation-file preset)
-        const dirConfig = {
-            schema: schemaFilePath,
-            documents,
-            preset: 'near-operation-file',
-            presetConfig: {
-                extension: '.generated.ts',
-                folder: 'gql-types',
-                baseTypesPath: `./types.ts`,
-            },
-            plugins: [
-                {
-                    add: {
-                        content: '/* @ts-ignore */',
-                    },
-                },
-                'typescript-operations',
-                'typescript-react-apollo',
-            ],
-            config: {
-                avoidOptionals: true,
-                dedupeFragments: true,
-                documentMode: 'documentNode',
-                namingConvention: 'keep',
-                skipTypename: false,
-                dedupeOperationSuffix: true,
-                omitOperationSuffix: false,
-                withComponent: false,
-                withHooks: true,
-                withHOC: false,
-                preResolveTypes: true,
-                scalars,
-                enumsAsTypes: true,
-            },
-        };
-        const config = {
-            generates: {
-                [typesFilePath]: fileConfig,
-                [typesDirPath]: dirConfig,
-            },
-        };
-        // Step 3: Execute the code generation
-        core.info('Running GraphQL codegen...');
-        try {
-            await (0, cli_1.generate)(config, true);
-        }
-        catch (error) {
-            const errorMessage = `Failed to generate GraphQL types: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // Step 4: Verify that types were generated
-        const expectedTypesFile = path.resolve(process.cwd(), 'build/gql/gql-types/types.ts');
-        if (!fs.existsSync(expectedTypesFile)) {
-            core.warning(`Types file was not created at expected path: ${expectedTypesFile}`);
-        }
-        else {
-            core.info(`✓ Types file generated: ${expectedTypesFile}`);
-        }
-        core.info(`✓ GraphQL types generation completed successfully`);
-    }
-    catch (error) {
-        const errorMessage = `Unexpected error in generateGqlTypes: ${error instanceof Error ? error.message : String(error)}`;
-        core.setFailed(errorMessage);
-        throw error instanceof Error ? error : new Error(errorMessage);
-    }
-}
-
-
-/***/ }),
-
-/***/ 16:
-/***/ ((module) => {
-
-module.exports = require("url");
-
-/***/ }),
-
-/***/ 17:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.downloadSchema = downloadSchema;
-const cli_1 = __webpack_require__(404);
-const rimraf_1 = __webpack_require__(485);
-const path = __importStar(__webpack_require__(928));
-const fs = __importStar(__webpack_require__(896));
-const core = __importStar(__webpack_require__(659));
-const user_agent_1 = __webpack_require__(998);
-const outputPath = '_generated/schema.graphql';
-const headers = {
-    'xmoba-no-cache': '1',
-    'User-Agent': user_agent_1.fetchGqlShemaUserAgent,
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-async function downloadSchema(options) {
-    try {
-        const { endpoint } = options;
-        // Resolve the absolute path for the output
-        const absoluteOutputPath = path.resolve(process.cwd(), outputPath);
-        const outputDir = path.dirname(absoluteOutputPath);
-        // Step 1: Clean up old schema files in the output directory
-        // This mimics the behavior of: rimraf ./src/**/*schema.graphql
-        try {
-            const schemaPattern = path.join(outputDir, '**/*schema.graphql');
-            await (0, rimraf_1.rimraf)(schemaPattern);
-            core.info('Cleaned up old schema files');
-        }
-        catch (error) {
-            // If cleanup fails, log but continue - directory might not exist yet
-            core.warning(`Could not clean up old schema files: ${error instanceof Error ? error.message : String(error)}`);
-        }
-        // Step 2: Ensure output directory exists
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-            core.info(`Created output directory: ${outputDir}`);
-        }
-        // Step 3: Configure and execute graphql-codegen
-        const config = {
-            schema: [
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.compileCode = compileCode;
+const path_1 = __importDefault(__webpack_require__(6928));
+const fs_1 = __importDefault(__webpack_require__(9896));
+const core = __importStar(__webpack_require__(1659));
+const webpack_1 = __importDefault(__webpack_require__(6807));
+const graphqlTagPlugin = __webpack_require__(8561);
+const nodeExternals = __webpack_require__(3523);
+async function compileCode(queryDir, outputDir, entryFileName, outputFileName) {
+    const absoluteQueryDir = path_1.default.resolve(process.cwd(), queryDir);
+    const absoluteOutputDir = path_1.default.resolve(process.cwd(), outputDir);
+    const entryFile = path_1.default.join(absoluteQueryDir, entryFileName);
+    if (!fs_1.default.existsSync(absoluteQueryDir)) {
+        throw new Error(`Query directory does not exist: ${absoluteQueryDir}`);
+    }
+    if (!fs_1.default.existsSync(entryFile)) {
+        const errorMessage = `Entry file does not exist: ${entryFile}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+    }
+    core.info(`Bundling query file: ${path_1.default.relative(process.cwd(), entryFile)}`);
+    // Create output directory if it doesn't exist
+    if (!fs_1.default.existsSync(absoluteOutputDir)) {
+        fs_1.default.mkdirSync(absoluteOutputDir, { recursive: true });
+        core.info(`Created output directory: ${absoluteOutputDir}`);
+    }
+    // Webpack configuration
+    const webpackConfig = {
+        mode: 'production',
+        entry: entryFile,
+        target: 'node',
+        output: {
+            path: absoluteOutputDir,
+            filename: outputFileName,
+            chunkFormat: 'module',
+            library: {
+                type: 'module',
+                export: 'default',
+            },
+        },
+        experiments: {
+            outputModule: true,
+        },
+        resolve: {
+            extensions: ['.ts', '.js', '.gql.ts'],
+            modules: ['node_modules', path_1.default.resolve(process.cwd(), 'build/gql')],
+        },
+        module: {
+            rules: [
                 {
-                    [endpoint]: {
-                        headers,
-                    },
+                    test: /\.gql\.ts$/,
+                    use: [
+                        {
+                            loader: 'babel-loader',
+                            options: {
+                                presets: [
+                                    [
+                                        '@babel/preset-env',
+                                        {
+                                            modules: false,
+                                            targets: {
+                                                node: 'current',
+                                            },
+                                        },
+                                    ],
+                                    [
+                                        '@babel/preset-typescript',
+                                        {
+                                            isTSX: false,
+                                            allExtensions: false,
+                                        },
+                                    ],
+                                ],
+                                plugins: [[graphqlTagPlugin]],
+                            },
+                        },
+                    ],
+                    exclude: /node_modules/,
+                },
+                {
+                    test: /\.ts$/,
+                    use: [
+                        {
+                            loader: 'babel-loader',
+                            options: {
+                                presets: [
+                                    [
+                                        '@babel/preset-env',
+                                        {
+                                            modules: false,
+                                            targets: {
+                                                node: 'current',
+                                            },
+                                        },
+                                    ],
+                                    [
+                                        '@babel/preset-typescript',
+                                        {
+                                            isTSX: false,
+                                            allExtensions: false,
+                                        },
+                                    ],
+                                ],
+                            },
+                        },
+                    ],
+                    exclude: /node_modules/,
                 },
             ],
-            generates: {
-                [absoluteOutputPath]: {
-                    plugins: ['schema-ast'],
-                    config: {
-                        includeDirectives: true,
-                        commentDescriptions: true,
-                    },
-                },
-            },
-        };
-        // Step 4: Execute the code generation
-        core.info(`Downloading schema from: ${endpoint}`);
-        try {
-            await (0, cli_1.generate)(config, true);
-        }
-        catch (error) {
-            const errorMessage = `Failed to download schema from ${endpoint}: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // Verify the file was created
-        if (!fs.existsSync(absoluteOutputPath)) {
-            const errorMessage = `Schema file was not created at expected path: ${absoluteOutputPath}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        core.info(`✓ Schema successfully saved to: ${absoluteOutputPath}`);
-        return absoluteOutputPath;
-    }
-    catch (error) {
-        // Catch any unexpected errors
-        const errorMessage = `Unexpected error in downloadSchema: ${error instanceof Error ? error.message : String(error)}`;
-        core.setFailed(errorMessage);
-        throw error instanceof Error ? error : new Error(errorMessage);
-    }
+        },
+        optimization: {
+            minimize: true,
+        },
+        externals: [
+            nodeExternals({
+                allowlist: [],
+            }),
+        ],
+    };
+    // Run webpack
+    return new Promise((resolve, reject) => {
+        (0, webpack_1.default)(webpackConfig, (err, stats) => {
+            if (err) {
+                const errorMessage = `Webpack compilation failed: ${err.message}`;
+                core.setFailed(errorMessage);
+                reject(new Error(errorMessage));
+                return;
+            }
+            if (!stats) {
+                const errorMessage = 'Webpack compilation returned no stats';
+                core.setFailed(errorMessage);
+                reject(new Error(errorMessage));
+                return;
+            }
+            if (stats.hasErrors()) {
+                const errors = stats.compilation.errors.map(e => e.message).join('\n');
+                const errorMessage = `Webpack compilation errors:\n${errors}`;
+                core.setFailed(errorMessage);
+                reject(new Error(errorMessage));
+                return;
+            }
+            if (stats.hasWarnings()) {
+                const warnings = stats.compilation.warnings.map(w => w.message).join('\n');
+                core.warning(`Webpack compilation warnings:\n${warnings}`);
+            }
+            const outputPath = path_1.default.join(absoluteOutputDir, outputFileName);
+            core.info(`✓ Successfully bundled query to: ${path_1.default.relative(process.cwd(), outputPath)}`);
+            resolve();
+        });
+    });
 }
 
 
 /***/ }),
 
-/***/ 37:
+/***/ 898:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -306,43 +234,122 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getAllFilesRecursive = getAllFilesRecursive;
-const fs_1 = __importDefault(__webpack_require__(896));
-const path_1 = __importDefault(__webpack_require__(928));
-function getAllFilesRecursive(dirPath) {
-    const files = [];
-    if (!fs_1.default.existsSync(dirPath) || !fs_1.default.statSync(dirPath).isDirectory()) {
-        return files;
-    }
-    const entries = fs_1.default.readdirSync(dirPath);
-    for (const entry of entries) {
-        const filePath = path_1.default.join(dirPath, entry);
-        if (fs_1.default.statSync(filePath).isDirectory()) {
-            files.push(...getAllFilesRecursive(filePath));
-        }
-        else {
-            files.push(filePath);
-        }
-    }
-    return files;
+exports.computeMd5Hash = computeMd5Hash;
+const fs_1 = __importDefault(__webpack_require__(9896));
+const crypto_1 = __importDefault(__webpack_require__(6982));
+function computeMd5Hash(filePath) {
+    const fileBuffer = fs_1.default.readFileSync(filePath);
+    return crypto_1.default.createHash('md5').update(fileBuffer).digest('hex');
 }
 
 
 /***/ }),
 
-/***/ 39:
+/***/ 985:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateFragmentsWithLlm = exports.generateFragments = void 0;
+var generate_fragments_1 = __webpack_require__(9258);
+Object.defineProperty(exports, "generateFragments", ({ enumerable: true, get: function () { return generate_fragments_1.generateFragments; } }));
+var generate_fragments_llm_1 = __webpack_require__(5023);
+Object.defineProperty(exports, "generateFragmentsWithLlm", ({ enumerable: true, get: function () { return generate_fragments_llm_1.generateFragmentsWithLlm; } }));
+
+
+/***/ }),
+
+/***/ 1039:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateGqlTypes = void 0;
-var generate_gql_types_1 = __webpack_require__(5);
+var generate_gql_types_1 = __webpack_require__(9005);
 Object.defineProperty(exports, "generateGqlTypes", ({ enumerable: true, get: function () { return generate_gql_types_1.generateGqlTypes; } }));
 
 
 /***/ }),
 
-/***/ 58:
+/***/ 1253:
+/***/ ((module) => {
+
+module.exports = require("graphql");
+
+/***/ }),
+
+/***/ 1659:
+/***/ ((module) => {
+
+module.exports = require("@actions/core");
+
+/***/ }),
+
+/***/ 1922:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.cleanSchema = void 0;
+var clean_schema_1 = __webpack_require__(8323);
+Object.defineProperty(exports, "cleanSchema", ({ enumerable: true, get: function () { return clean_schema_1.cleanSchema; } }));
+
+
+/***/ }),
+
+/***/ 1943:
+/***/ ((module) => {
+
+module.exports = require("fs/promises");
+
+/***/ }),
+
+/***/ 1998:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fetchGqlShemaUserAgent = void 0;
+exports.fetchGqlShemaUserAgent = 'moba-frontend-gql-schema-downloader';
+
+
+/***/ }),
+
+/***/ 2517:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateQuery = void 0;
+var generate_query_1 = __webpack_require__(5419);
+Object.defineProperty(exports, "generateQuery", ({ enumerable: true, get: function () { return generate_query_1.generateQuery; } }));
+
+
+/***/ }),
+
+/***/ 2729:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveQueryModuleVersion = resolveQueryModuleVersion;
+const dynamic_modules_types_1 = __webpack_require__(463);
+const QUERY_MODULE_VERSIONS = {
+    v2: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2, deterministicFragments: false },
+    v3: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V3, deterministicFragments: true },
+};
+function resolveQueryModuleVersion(version) {
+    const resolved = QUERY_MODULE_VERSIONS[version || 'v2'];
+    if (!resolved) {
+        throw new Error(`Unknown query-module-version '${version}', expected one of: ${Object.keys(QUERY_MODULE_VERSIONS).join(', ')}`);
+    }
+    return resolved;
+}
+
+
+/***/ }),
+
+/***/ 2903:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -380,128 +387,260 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.checkSchemaVersion = checkSchemaVersion;
-const core = __importStar(__webpack_require__(659));
-const module_folder_utils_1 = __webpack_require__(994);
-const bucket_utils_1 = __webpack_require__(328);
-const dynamic_modules_types_1 = __webpack_require__(463);
-const user_agent_1 = __webpack_require__(998);
-const headers = {
-    'xmoba-no-cache': '1',
-    'Content-Type': 'application/json',
-    'User-Agent': user_agent_1.fetchGqlShemaUserAgent,
-};
-async function fetchSchemaVersionFromGraphQL(endpoint, game) {
-    const query = `
-    query {
-      ${game} {
-        staticData {
-          metadata {
-            schemaVersion
-          }
-        }
-      }
+exports.uploadBuild = uploadBuild;
+const fs = __importStar(__webpack_require__(9896));
+const path = __importStar(__webpack_require__(6928));
+const core = __importStar(__webpack_require__(1659));
+const bucket_utils_1 = __webpack_require__(9328);
+const module_folder_utils_1 = __webpack_require__(2994);
+const dynamic_module_utils_1 = __webpack_require__(4798);
+const fs_utils_1 = __webpack_require__(9037);
+const hash_utils_1 = __webpack_require__(898);
+const buildPath = './build';
+function getFilesInDirectory(dirPath, extension) {
+    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
+        return [];
     }
-  `;
-    core.info(`Fetching schema version from GraphQL endpoint: ${endpoint}`);
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                query,
-                variables: {},
-            }),
-        });
-        if (!response.ok) {
-            throw new Error(`GraphQL request failed with status ${response.status}: ${response.statusText}`);
+    const files = [];
+    const entries = fs.readdirSync(dirPath);
+    for (const entry of entries) {
+        const filePath = path.join(dirPath, entry);
+        if (fs.statSync(filePath).isFile() && entry.endsWith(extension)) {
+            files.push(filePath);
         }
-        const result = (await response.json());
-        if (result.errors) {
-            throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-        }
-        const schemaVersion = result.data?.[game]?.staticData?.metadata?.schemaVersion;
-        if (!schemaVersion) {
-            throw new Error(`Schema version not found in GraphQL response: ${JSON.stringify(result.data)}`);
-        }
-        core.info(`✓ Current schema version from GraphQL: ${schemaVersion}`);
-        return schemaVersion;
     }
-    catch (error) {
-        core.setFailed(`Failed to fetch schema version from GraphQL: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
-    }
+    return files;
 }
-async function checkSchemaVersion(options) {
+function makeModuleEntrypointName(hash) {
+    return `entrypoint.${hash}.js`;
+}
+async function uploadBuild(options) {
     try {
-        const { graphqlEndpoint, bucket, env, game, gameUrlSlug, disableQueryAst } = options;
-        const staticDataQueryModuleSlug = disableQueryAst
-            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
-            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
-        core.info(`Checking schema version for game: ${game}`);
-        // Execute GraphQL query and GCS download in parallel
-        const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
-            fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
-            (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, staticDataQueryModuleSlug).then(result => result?.version),
-        ]);
-        // Check if version folder already exists
-        if (currentSchemaVersion) {
-            const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, currentSchemaVersion, staticDataQueryModuleSlug);
-            if (versionFolderExists) {
-                const bucketName = bucket.name;
-                const versionFolderPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, currentSchemaVersion, staticDataQueryModuleSlug);
-                core.info(`✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`);
-                return {
-                    shouldContinue: false,
-                    currentSchemaVersion,
-                    existingSchemaVersion: existingSchemaVersion,
-                };
+        const { bucket, env, gameUrlSlug, schemaVersion, moduleSlug: staticDataQueryModuleSlug } = options;
+        const bucketName = bucket.name;
+        core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
+        // Step 1: Verify bucket exists
+        try {
+            const [exists] = await bucket.exists();
+            if (!exists) {
+                const errorMessage = `Bucket ${bucketName} does not exist`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
+            }
+            core.info(`✓ Bucket ${bucketName} verified`);
+        }
+        catch (error) {
+            const errorMessage = `Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
+        }
+        // Step 2: Build GCS paths
+        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, schemaVersion, staticDataQueryModuleSlug);
+        core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
+        // Step 3: Check if version folder already exists
+        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, schemaVersion, staticDataQueryModuleSlug);
+        if (moduleFolderExists) {
+            const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
+        core.info(`✓ Version folder does not exist, proceeding with upload`);
+        // Step 4: Resolve build directory paths]
+        const distPath = path.resolve(process.cwd(), buildPath, 'dist');
+        const buildGqlPath = path.resolve(process.cwd(), buildPath, 'gql');
+        const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
+        // Step 5: Upload files according to new structure
+        let uploadedCount = 0;
+        let entrypointName = '';
+        // 6.1: Upload entrypoint query to root
+        const entrypointFile = path.join(distPath, `entrypoint.js`);
+        if (fs.existsSync(entrypointFile)) {
+            const compiledEntrypointHash = (0, hash_utils_1.computeMd5Hash)(entrypointFile);
+            entrypointName = makeModuleEntrypointName(compiledEntrypointHash);
+            const destination = `${fullVersionPath}/${entrypointName}`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, entrypointFile, destination, bucketName, 'entrypoint');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                const errorMessage = `Entrypoint file hasn't been uploaded`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
             }
         }
-        // If config file doesn't exist, continue pipeline
-        if (!existingSchemaVersion) {
-            core.info(`No existing config found, continuing pipeline`);
-            return {
-                shouldContinue: true,
-                currentSchemaVersion,
-            };
+        else {
+            const errorMessage = `Entrypoint file not found: ${entrypointFile}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
         }
-        // If we can't get schema version from the endpoint, pipeline should be stopped
-        if (!currentSchemaVersion) {
-            core.info(`Schema versions can't be fetched. Pipeline will be skipped.`);
-            return {
-                shouldContinue: false,
-                currentSchemaVersion,
-                existingSchemaVersion,
-            };
+        // 6.2: Upload fragments to fragments/ folder
+        const fragmentFiles = getFilesInDirectory(buildGqlPath, '-fragment.gql.ts');
+        if (fragmentFiles.length > 0) {
+            for (const fragmentFile of fragmentFiles) {
+                const fileName = path.basename(fragmentFile);
+                const destination = `${fullVersionPath}/fragments/${fileName}`;
+                const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, fragmentFile, destination, bucketName, `fragment: ${fileName}`);
+                if (success) {
+                    uploadedCount++;
+                }
+                else {
+                    const errorMessage = `Fragment file ${fileName} hasn't been uploaded`;
+                    core.setFailed(errorMessage);
+                    throw new Error(errorMessage);
+                }
+            }
         }
-        // Compare versions
-        if (currentSchemaVersion === existingSchemaVersion) {
-            core.info(`✓ Schema versions match (${currentSchemaVersion}). Pipeline will be skipped.`);
-            return {
-                shouldContinue: false,
-                currentSchemaVersion,
-                existingSchemaVersion,
-            };
+        else {
+            core.warning(`No fragment files found in ${buildGqlPath}`);
         }
-        core.info(`Schema versions differ: current=${currentSchemaVersion}, existing=${existingSchemaVersion}. Continuing pipeline.`);
-        return {
-            shouldContinue: true,
-            currentSchemaVersion,
-            existingSchemaVersion,
-        };
+        // 6.3: Upload ts static data query file to query/ folder
+        const queryFile = path.join(buildGqlPath, `static-data-query.gql.ts`);
+        if (fs.existsSync(queryFile)) {
+            const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, queryFile, destination, bucketName, 'query file');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                const errorMessage = `Query file hasn't been uploaded`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
+            }
+        }
+        else {
+            core.warning(`Query file not found: ${queryFile}`);
+        }
+        // 6.4: Upload ts static data meta query file to query/ folder
+        const metaQueryFile = path.join(buildGqlPath, `static-data-meta-query.gql.ts`);
+        if (fs.existsSync(queryFile)) {
+            const destination = `${fullVersionPath}/query/static-data-meta-query.gql.ts`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, metaQueryFile, destination, bucketName, 'query file');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                const errorMessage = `Meta Query file hasn't been uploaded`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
+            }
+        }
+        else {
+            core.warning(`Meta Query file not found: ${metaQueryFile}`);
+        }
+        // 6.4: Upload all files from gql-types folders to types/ folder
+        const typeSourcePaths = [{ path: buildTypesPath, name: 'gql-types' }];
+        let hasTypeFiles = false;
+        for (const sourcePath of typeSourcePaths) {
+            const typeFiles = (0, fs_utils_1.getAllFilesRecursive)(sourcePath.path);
+            if (typeFiles.length > 0) {
+                hasTypeFiles = true;
+                for (const typeFile of typeFiles) {
+                    const relativePath = path.relative(sourcePath.path, typeFile);
+                    const gcsPath = relativePath.split(path.sep).join('/');
+                    const destination = `${fullVersionPath}/types/${gcsPath}`;
+                    const description = `type file from ${sourcePath.name}: ${relativePath}`;
+                    const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, typeFile, destination, bucketName, description);
+                    if (success) {
+                        uploadedCount++;
+                    }
+                    else {
+                        const errorMessage = `Type file ${relativePath} hasn't been uploaded`;
+                        core.setFailed(errorMessage);
+                        throw new Error(errorMessage);
+                    }
+                }
+            }
+        }
+        if (!hasTypeFiles) {
+            core.warning(`No type files found in any of the gql-types directories`);
+        }
+        // 6.5: Upload cleaned schema to cleaned-schema/ folder
+        const cleanedSchemaFile = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
+        if (fs.existsSync(cleanedSchemaFile)) {
+            const destination = `${fullVersionPath}/cleaned-schema/cleaned-schema.graphql`;
+            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, cleanedSchemaFile, destination, bucketName, 'cleaned schema');
+            if (success) {
+                uploadedCount++;
+            }
+            else {
+                const errorMessage = `Cleaned schema file hasn't been uploaded`;
+                core.setFailed(errorMessage);
+                throw new Error(errorMessage);
+            }
+        }
+        else {
+            core.warning(`Cleaned schema file not found: ${cleanedSchemaFile}`);
+        }
+        // Step 6: Report results
+        core.info(`✓ Upload completed: ${uploadedCount} files uploaded`);
+        core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
+        // Step 7: Upload config.json
+        try {
+            const config = {
+                moduleFolder: `${moduleFolder}/`,
+                name: `${moduleFolder}/${entrypointName}`,
+                version: schemaVersion,
+            };
+            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, staticDataQueryModuleSlug);
+            const configDestination = `${basePath}/config.json`;
+            const configFile = bucket.file(configDestination);
+            const configJson = JSON.stringify(config, null, 2);
+            core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
+            await configFile.save(configJson);
+            core.info(`✓ Config.json successfully uploaded`);
+        }
+        catch (error) {
+            const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw error instanceof Error ? error : new Error(errorMessage);
+        }
     }
     catch (error) {
-        // GraphQL errors should fail the pipeline
-        core.setFailed(`Error in checkSchemaVersion: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
+        const errorMessage = `Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
     }
 }
 
 
 /***/ }),
 
-/***/ 76:
+/***/ 2911:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkSchemaVersion = void 0;
+var check_schema_version_1 = __webpack_require__(6058);
+Object.defineProperty(exports, "checkSchemaVersion", ({ enumerable: true, get: function () { return check_schema_version_1.checkSchemaVersion; } }));
+
+
+/***/ }),
+
+/***/ 2994:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildStaticDataQueryModuleFolderPath = buildStaticDataQueryModuleFolderPath;
+exports.checkStaticDataQueryModuleFolderExists = checkStaticDataQueryModuleFolderExists;
+const dynamic_module_utils_1 = __webpack_require__(4798);
+const bucket_utils_1 = __webpack_require__(9328);
+function buildStaticDataQueryModuleFolderPath(env, game, schemaVersion, slug) {
+    const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, slug);
+    const versionFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
+    return `${basePath}/${versionFolder}`;
+}
+async function checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion, slug) {
+    const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion, slug);
+    return (0, bucket_utils_1.isFolderExists)(bucket, versionFolderPath);
+}
+
+
+/***/ }),
+
+/***/ 3076:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -540,9 +679,9 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateScopes = generateScopes;
-const fs = __importStar(__webpack_require__(896));
-const graphql_1 = __webpack_require__(253);
-const core = __importStar(__webpack_require__(659));
+const fs = __importStar(__webpack_require__(9896));
+const graphql_1 = __webpack_require__(1253);
+const core = __importStar(__webpack_require__(1659));
 function generateScopes(options) {
     try {
         const { schemaPath, gameField } = options;
@@ -638,663 +777,7 @@ function generateScopes(options) {
 
 /***/ }),
 
-/***/ 99:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TimeoutError = void 0;
-exports.spawnWithTimeout = spawnWithTimeout;
-const child_process_1 = __webpack_require__(317);
-const core = __importStar(__webpack_require__(659));
-exports.TimeoutError = 'TIMEOUT_ERROR';
-function makeSpawnPromise(input) {
-    const { command, args, timeoutMs, env } = input;
-    return new Promise((resolve, reject) => {
-        const child = (0, child_process_1.spawn)(command, args, {
-            env: { ...process.env, ...env },
-            shell: true,
-            stdio: 'inherit',
-        });
-        let stderr = '';
-        child.stdout?.on('data', data => {
-            core.info(data.toString());
-        });
-        child.stderr?.on('data', data => {
-            stderr += data.toString();
-            core.warning(data.toString());
-        });
-        const timeout = setTimeout(() => {
-            core.warning(`Command timeout reached (${timeoutMs}ms), killing process...`);
-            child.kill('SIGTERM');
-            // Даем процессу время на корректное завершение
-            setTimeout(() => {
-                if (!child.killed) {
-                    child.kill('SIGKILL');
-                }
-            }, 5000);
-            reject(new Error(exports.TimeoutError));
-        }, timeoutMs);
-        child.on('close', (code, signal) => {
-            clearTimeout(timeout);
-            if (code === 0) {
-                resolve('Command completed successfully');
-            }
-            else if (signal === 'SIGTERM') {
-                reject(new Error(exports.TimeoutError));
-            }
-            else {
-                reject(new Error(`Process exited with code ${code}. stderr: ${stderr}`));
-            }
-        });
-        child.on('error', error => {
-            clearTimeout(timeout);
-            reject(error);
-        });
-    });
-}
-function spawnWithTimeout(input) {
-    const { extraConditionPromise, ...restInput } = input;
-    const spawnPromise = makeSpawnPromise(restInput);
-    if (extraConditionPromise) {
-        return Promise.race([spawnPromise, extraConditionPromise]);
-    }
-    return spawnPromise;
-}
-
-
-/***/ }),
-
-/***/ 154:
-/***/ ((module) => {
-
-module.exports = require("google-auth-library");
-
-/***/ }),
-
-/***/ 156:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = run;
-const core = __importStar(__webpack_require__(659));
-const storage_utils_1 = __webpack_require__(931);
-const _0_check_schema_version_1 = __webpack_require__(911);
-const _1_download_schema_1 = __webpack_require__(309);
-const _2_generate_scopes_1 = __webpack_require__(559);
-const _3_clean_schema_1 = __webpack_require__(922);
-const _4_generate_fragments_1 = __webpack_require__(985);
-const _5_generate_query_1 = __webpack_require__(517);
-const _7_generate_gql_types_1 = __webpack_require__(39);
-const _9_upload_build_1 = __webpack_require__(420);
-const _6_compile_query_1 = __webpack_require__(304);
-const _8_generate_worker_output_types_1 = __webpack_require__(484);
-/**
- * Main function for the GitHub Action
- */
-async function run() {
-    try {
-        // Get inputs
-        const game = core.getInput('game', { required: true });
-        const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
-        const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
-        const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
-        const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
-        const model = core.getInput('model-version', { required: false });
-        const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
-        const gcsProjectId = core.getInput('gcs-project-id', { required: true });
-        const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
-        const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
-        core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
-        // Initialize Storage and Bucket
-        const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
-        const bucket = storage.bucket(gcsBucketName);
-        // Step 0: Check schema version
-        core.startGroup('🔍 Step 0: Checking schema version');
-        const schemaVersionCheck = await (0, _0_check_schema_version_1.checkSchemaVersion)({
-            graphqlEndpoint,
-            bucket,
-            env: dynamicModulesEnv,
-            game,
-            gameUrlSlug,
-            disableQueryAst,
-        });
-        core.endGroup();
-        if (!schemaVersionCheck.shouldContinue) {
-            core.info(`✓ Schema version has not changed (${schemaVersionCheck.currentSchemaVersion}). Pipeline skipped.`);
-            return;
-        }
-        if (!schemaVersionCheck.currentSchemaVersion) {
-            core.setFailed('Schema version is not found, pipeline will be skipped');
-            return;
-        }
-        // Step 1: Download GraphQL schema
-        core.startGroup('📥 Step 1: Downloading GraphQL schema');
-        const downloadedSchemaPath = await (0, _1_download_schema_1.downloadSchema)({ endpoint: graphqlEndpoint });
-        core.info(`✓ Schema downloaded to: ${downloadedSchemaPath}`);
-        core.endGroup();
-        // Step 2: Generate scopes
-        core.startGroup('🔧 Step 2: Generating scopes');
-        const scopesData = (0, _2_generate_scopes_1.generateScopes)({
-            schemaPath: downloadedSchemaPath,
-            gameField: game,
-        });
-        core.info(`✓ Scopes generated`);
-        core.endGroup();
-        // Step 3: Clean schema
-        core.startGroup('🧹 Step 3: Cleaning schema');
-        const cleanedSchemaPath = await (0, _3_clean_schema_1.cleanSchema)({
-            schemaPath: downloadedSchemaPath,
-            gameField: game,
-            staticDataFieldName,
-            scopesData,
-        });
-        core.info(`✓ Schema cleaned: ${cleanedSchemaPath}`);
-        core.endGroup();
-        // Step 4: Generate fragments
-        core.startGroup('🔨 Step 4: Generating fragments');
-        await (0, _4_generate_fragments_1.generateFragments)({
-            timeoutMs,
-            model,
-        });
-        core.info(`✓ Fragments generation completed`);
-        core.endGroup();
-        // Step 5: Generate query
-        core.startGroup('🔨 Step 5: Generating query');
-        await (0, _5_generate_query_1.generateQuery)({
-            timeoutMs,
-            model,
-        });
-        core.info(`✓ Query generation completed`);
-        core.endGroup();
-        // Step 6: Compile query
-        core.startGroup('🔨 Step 6: Compiling queries');
-        await (0, _6_compile_query_1.compileQueries)({ disableQueryAst });
-        core.info(`✓ Queries Compiling completed`);
-        core.endGroup();
-        // Step 7: Generate GraphQL types
-        core.startGroup('📝 Step 7: Generating GraphQL types');
-        await (0, _7_generate_gql_types_1.generateGqlTypes)();
-        core.info(`✓ GraphQL types generation completed`);
-        core.endGroup();
-        // Step 8: Generate worker output types
-        core.startGroup('🔨 Step 8: Generating worker output types');
-        await (0, _8_generate_worker_output_types_1.generateWorkerOutputTypes)({
-            timeoutMs,
-            model,
-        });
-        core.info(`✓ Worker output types generation completed`);
-        core.endGroup();
-        // Step 9: Upload build to GCS
-        core.startGroup('☁️ Step 9: Uploading build to GCS');
-        await (0, _9_upload_build_1.uploadBuild)({
-            bucket,
-            env: dynamicModulesEnv,
-            gameUrlSlug,
-            schemaVersion: schemaVersionCheck.currentSchemaVersion,
-            disableQueryAst,
-        });
-        core.info(`✓ Build upload completed`);
-        core.endGroup();
-        core.info(`✓ Pipeline completed successfully`);
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(error.message);
-        }
-        else {
-            core.setFailed('An unknown error occurred');
-        }
-    }
-}
-run();
-
-
-/***/ }),
-
-/***/ 253:
-/***/ ((module) => {
-
-module.exports = require("graphql");
-
-/***/ }),
-
-/***/ 258:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateFragments = generateFragments;
-const run_cursor_generation_1 = __webpack_require__(550);
-const path_1 = __importDefault(__webpack_require__(928));
-async function generateFragments(options) {
-    const { timeoutMs, model } = options;
-    const promptFilePath = path_1.default.resolve(__dirname, 'generate-fragments.md');
-    return await (0, run_cursor_generation_1.runCursorGeneration)({
-        timeoutMs,
-        prompt: `"Implement instructions in the file ${promptFilePath}"`,
-        model,
-    });
-}
-
-
-/***/ }),
-
-/***/ 304:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compileQueries = void 0;
-var compile_query_1 = __webpack_require__(380);
-Object.defineProperty(exports, "compileQueries", ({ enumerable: true, get: function () { return compile_query_1.compileQueries; } }));
-
-
-/***/ }),
-
-/***/ 309:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.downloadSchema = void 0;
-var download_schema_1 = __webpack_require__(17);
-Object.defineProperty(exports, "downloadSchema", ({ enumerable: true, get: function () { return download_schema_1.downloadSchema; } }));
-
-
-/***/ }),
-
-/***/ 317:
-/***/ ((module) => {
-
-module.exports = require("child_process");
-
-/***/ }),
-
-/***/ 323:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cleanSchema = cleanSchema;
-const cli_1 = __webpack_require__(404);
-const clean_schema_by_game_js_1 = __webpack_require__(384);
-const path = __importStar(__webpack_require__(928));
-const fs = __importStar(__webpack_require__(896));
-const core = __importStar(__webpack_require__(659));
-const OUTPUT_PATH = '_generated/cleaned-schema.graphql';
-async function cleanSchema(options) {
-    try {
-        const { schemaPath, gameField, staticDataFieldName, scopesData } = options;
-        core.info(`Cleaning schema from: ${schemaPath}`);
-        core.info(`Game field: ${gameField}`);
-        core.info(`Static data field: ${staticDataFieldName}`);
-        // Verify input schema exists
-        if (!fs.existsSync(schemaPath)) {
-            const errorMessage = `Input schema file not found: ${schemaPath}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // Resolve the absolute path for the output
-        const absoluteOutputPath = path.resolve(process.cwd(), OUTPUT_PATH);
-        const outputDir = path.dirname(absoluteOutputPath);
-        // Ensure output directory exists
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-            core.info(`Created output directory: ${outputDir}`);
-        }
-        // Configure graphql-codegen with getCleanedSchemaByGame loader
-        const config = {
-            schema: {
-                [schemaPath]: {
-                    loader: (0, clean_schema_by_game_js_1.getCleanedSchemaByGame)({
-                        includedScopes: [gameField],
-                        staticDataFieldName,
-                        scopesData,
-                    }),
-                },
-            },
-            generates: {
-                [absoluteOutputPath]: {
-                    plugins: ['schema-ast'],
-                    config: {
-                        includeDirectives: true,
-                        commentDescriptions: true,
-                    },
-                },
-            },
-        };
-        // Execute the code generation
-        core.info('Running schema cleanup...');
-        try {
-            await (0, cli_1.generate)(config, true);
-        }
-        catch (error) {
-            const errorMessage = `Failed to clean schema: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // Verify the file was created
-        if (!fs.existsSync(absoluteOutputPath)) {
-            const errorMessage = `Cleaned schema file was not created at expected path: ${absoluteOutputPath}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        core.info(`✓ Schema successfully cleaned and saved to: ${absoluteOutputPath}`);
-        return absoluteOutputPath;
-    }
-    catch (error) {
-        const errorMessage = `Unexpected error in cleanSchema: ${error instanceof Error ? error.message : String(error)}`;
-        core.setFailed(errorMessage);
-        throw error instanceof Error ? error : new Error(errorMessage);
-    }
-}
-
-
-/***/ }),
-
-/***/ 328:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.uploadFileToBucket = uploadFileToBucket;
-exports.downloadConfigFromBucket = downloadConfigFromBucket;
-exports.downloadFolderFromBucket = downloadFolderFromBucket;
-exports.uploadFolderToBucket = uploadFolderToBucket;
-exports.isFolderExists = isFolderExists;
-const core = __importStar(__webpack_require__(659));
-const fs = __importStar(__webpack_require__(896));
-const path = __importStar(__webpack_require__(928));
-const dynamic_module_utils_1 = __webpack_require__(798);
-const fs_utils_1 = __webpack_require__(37);
-async function uploadFileToBucket(bucket, sourcePath, destination, bucketName, description) {
-    try {
-        const logPrefix = description ? `${description}: ` : '';
-        core.info(`Uploading: ${logPrefix}${sourcePath} -> gs://${bucketName}/${destination}`);
-        const options = { destination };
-        await bucket.upload(sourcePath, options);
-        const successMessage = description ? `✓ Uploaded ${description}` : `✓ Uploaded file`;
-        core.info(successMessage);
-        return true;
-    }
-    catch (error) {
-        const errorMessage = description
-            ? `Failed to upload ${description}: ${error instanceof Error ? error.message : String(error)}`
-            : `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`;
-        core.error(errorMessage);
-        return false;
-    }
-}
-async function downloadConfigFromBucket(bucket, env, game, dynamicModuleSlug) {
-    const configPath = `${(0, dynamic_module_utils_1.generateModulePath)(env, game, dynamicModuleSlug)}/config.json`;
-    const bucketName = bucket.name;
-    core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
-    try {
-        const file = bucket.file(configPath);
-        // Download file
-        const [fileContents] = await file.download();
-        const configJson = JSON.parse(fileContents.toString('utf-8'));
-        core.info(`✓ Config.json downloaded: ${configJson.version}`);
-        return configJson;
-    }
-    catch (error) {
-        // Handle 404 (file not found) as a normal case
-        if (error?.code === 404 || error?.message?.includes('No such object')) {
-            core.info(`Config file not found at gs://${bucketName}/${configPath}, continuing pipeline`);
-            return null;
-        }
-        // For other errors, log warning but continue
-        core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
-        return null;
-    }
-}
-async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles) {
-    const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
-    core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
-    // Get all files in the folder
-    const [files] = await bucket.getFiles({ prefix });
-    // Filter out files that are exactly the prefix (folder markers)
-    let actualFiles = files.filter(file => file.name !== prefix);
-    // Apply file filter if provided
-    if (filterFiles) {
-        actualFiles = actualFiles.filter(file => {
-            const relativePath = file.name.replace(prefix, '');
-            const fileName = path.basename(relativePath);
-            return filterFiles(fileName);
-        });
-    }
-    if (actualFiles.length === 0) {
-        const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
-        core.setFailed(errorMessage);
-        throw new Error(errorMessage);
-    }
-    core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
-    // Create promises for all file downloads
-    const downloadPromises = actualFiles.map(async (file) => {
-        // Get relative path from the folder prefix
-        const relativePath = file.name.replace(prefix, '');
-        const localFilePath = path.join(localFolderPath, relativePath);
-        const localFileDir = path.dirname(localFilePath);
-        // Create directory if it doesn't exist
-        if (!fs.existsSync(localFileDir)) {
-            fs.mkdirSync(localFileDir, { recursive: true });
-        }
-        // Download file
-        await file.download({ destination: localFilePath });
-        core.info(`Downloaded: ${relativePath}`);
-    });
-    const results = await Promise.allSettled(downloadPromises);
-    // Check for failures and collect error information
-    const failures = [];
-    for (let i = 0; i < results.length; i++) {
-        const result = results[i];
-        if (result.status === 'rejected') {
-            const relativePath = actualFiles[i].name.replace(prefix, '');
-            failures.push({
-                file: relativePath,
-                error: result.reason instanceof Error ? result.reason.message : String(result.reason),
-            });
-        }
-    }
-    // If there are failures, throw an error with details
-    if (failures.length > 0) {
-        const errorDetails = failures.map(f => `  - ${f.file}: ${f.error}`).join('\n');
-        const errorMessage = `Failed to download ${failures.length} file(s) from folder ${folderName}:\n${errorDetails}`;
-        core.setFailed(errorMessage);
-        throw new Error(errorMessage);
-    }
-    core.info(`✓ Successfully downloaded folder ${folderName}`);
-}
-async function uploadFolderToBucket(bucket, bucketName, sourcePath, destinationPrefix, fileTypeDescription, requireExists = true) {
-    if (!fs.existsSync(sourcePath)) {
-        if (requireExists) {
-            const errorMessage = `Directory does not exist: ${sourcePath}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        else {
-            core.warning(`Directory does not exist: ${sourcePath}, skipping`);
-            return { uploadedCount: 0, failedCount: 0 };
-        }
-    }
-    const files = (0, fs_utils_1.getAllFilesRecursive)(sourcePath);
-    if (files.length === 0) {
-        core.warning(`No files found in ${sourcePath}`);
-        return { uploadedCount: 0, failedCount: 0 };
-    }
-    core.info(`Uploading ${files.length} file(s) from ${path.relative(process.cwd(), sourcePath)} to ${destinationPrefix}`);
-    // Create promises for all file uploads
-    const uploadPromises = files.map(filePath => {
-        const relativePath = path.relative(sourcePath, filePath);
-        const gcsPath = relativePath.split(path.sep).join('/');
-        const destination = `${destinationPrefix}${gcsPath}`;
-        const description = `${fileTypeDescription}: ${relativePath}`;
-        return uploadFileToBucket(bucket, filePath, destination, bucketName, description);
-    });
-    const results = await Promise.allSettled(uploadPromises);
-    // Count successful and failed uploads
-    let resultUploadedCount = 0;
-    let resultFailedCount = 0;
-    for (const result of results) {
-        if (result.status === 'fulfilled' && result.value === true) {
-            resultUploadedCount++;
-        }
-        else {
-            resultFailedCount++;
-        }
-    }
-    return {
-        uploadedCount: resultUploadedCount,
-        failedCount: resultFailedCount,
-    };
-}
-async function isFolderExists(bucket, folderPath) {
-    const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
-    const [files] = await bucket.getFiles({ prefix, maxResults: 1 });
-    return files.length > 0;
-}
-
-
-/***/ }),
-
-/***/ 380:
+/***/ 3380:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1336,11 +819,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.compileQueries = compileQueries;
-const path_1 = __importDefault(__webpack_require__(928));
-const fs_1 = __importDefault(__webpack_require__(896));
-const url_1 = __webpack_require__(16);
-const graphql_1 = __webpack_require__(253);
-const core = __importStar(__webpack_require__(659));
+const path_1 = __importDefault(__webpack_require__(6928));
+const fs_1 = __importDefault(__webpack_require__(9896));
+const url_1 = __webpack_require__(7016);
+const graphql_1 = __webpack_require__(1253);
+const core = __importStar(__webpack_require__(1659));
 const compile_utils_1 = __webpack_require__(756);
 const queryDir = 'build/gql';
 const outputDir = 'build/dist';
@@ -1349,14 +832,8 @@ const outputFileName = 'entrypoint.js';
 // Native ESM dynamic import that survives TS (module: commonjs) and webpack
 // transpilation, which would otherwise rewrite `import()` into `require()`.
 const importEsm = new Function('specifier', 'return import(specifier);');
-async function compileQueries(options) {
-    const { disableQueryAst } = options;
-    if (!disableQueryAst) {
-        // v1: compile the gql template literals into a DocumentNode (AST) bundle.
-        await (0, compile_utils_1.compileCode)(queryDir, outputDir, entryFileName, outputFileName);
-        return;
-    }
-    // v2: fragment stitching still runs through the AST, but we print the
+async function compileQueries() {
+    // Fragment stitching still runs through the AST, but we print the
     // DocumentNodes to plain strings at build time so the published artifact is a
     // dependency-free string map (no runtime `graphql` require).
     const astFileName = 'entrypoint.ast.mjs';
@@ -1379,7 +856,275 @@ async function compileQueries(options) {
 
 /***/ }),
 
-/***/ 384:
+/***/ 3523:
+/***/ ((module) => {
+
+module.exports = require("webpack-node-externals");
+
+/***/ }),
+
+/***/ 3869:
+/***/ ((module) => {
+
+module.exports = require("@google-cloud/storage");
+
+/***/ }),
+
+/***/ 3931:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createStorage = createStorage;
+const storage_1 = __webpack_require__(3869);
+const google_auth_library_1 = __webpack_require__(6154);
+const gaxios_1 = __webpack_require__(6445);
+/**
+ * Scopes that `@google-cloud/storage` requests for its own auth client. We must
+ * replicate them here because we provide a custom `authClient` (see below).
+ */
+const STORAGE_SCOPES = [
+    'https://www.googleapis.com/auth/iam',
+    'https://www.googleapis.com/auth/cloud-platform',
+    'https://www.googleapis.com/auth/devstorage.full_control',
+];
+/**
+ * Native `fetch` (undici) wrapper that adds `duplex: 'half'` whenever a request
+ * carries a body. undici rejects streaming request bodies without this option
+ * (`RequestInit: duplex option is required when sending a body`), which surfaces
+ * during GCS uploads (multipart bodies are streams). `node-fetch` did not need
+ * it, so the option must be supplied explicitly now that we use the native fetch.
+ */
+const nativeFetchWithDuplex = (input, init) => {
+    if (init && init.body != null && init.duplex == null) {
+        init = { ...init, duplex: 'half' };
+    }
+    return globalThis.fetch(input, init);
+};
+/**
+ * Creates a GCS Storage client whose HTTP requests go through Node's native
+ * `fetch` (undici) instead of `node-fetch`.
+ *
+ * Why: `@google-cloud/storage@7` pins `google-auth-library@9`, which ships
+ * `gaxios@6`. gaxios 6 always uses `node-fetch` in Node (it only picks the
+ * native fetch when a browser `window.fetch` exists). `node-fetch` fails against
+ * the Google OAuth token endpoint with `Invalid response body while trying to
+ * fetch https://www.googleapis.com/oauth2/v4/token: Premature close`, whereas
+ * the native fetch works (verified). By giving the auth client a Gaxios
+ * transporter with `fetchImplementation` set to the native fetch, gtoken/JWT
+ * mint tokens via undici and the failure disappears.
+ *
+ * The same transporter is reused by `@google-cloud/storage` for JSON-API
+ * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
+ *
+ * TODO (remove this workaround when upstream upgrades): there is currently no
+ * `@google-cloud/storage` release that drops gaxios 6 — even the latest (7.21)
+ * still depends on `google-auth-library@^9`. Native fetch arrives only with
+ * gaxios 7 (`google-auth-library@10`). Once `@google-cloud/storage` officially
+ * moves to google-auth 10, delete this whole file, replace `createStorage(id)`
+ * with `new Storage({ projectId: id })` at the call sites, and drop the explicit
+ * `gaxios` / `google-auth-library` dependencies from package.json.
+ */
+function createStorage(projectId) {
+    const authClient = new google_auth_library_1.GoogleAuth({
+        projectId,
+        scopes: STORAGE_SCOPES,
+        clientOptions: {
+            transporter: new gaxios_1.Gaxios({ fetchImplementation: nativeFetchWithDuplex }),
+        },
+    });
+    return new storage_1.Storage({
+        projectId,
+        authClient,
+        retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
+    });
+}
+
+
+/***/ }),
+
+/***/ 4017:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.downloadSchema = downloadSchema;
+const cli_1 = __webpack_require__(7404);
+const rimraf_1 = __webpack_require__(9485);
+const path = __importStar(__webpack_require__(6928));
+const fs = __importStar(__webpack_require__(9896));
+const core = __importStar(__webpack_require__(1659));
+const user_agent_1 = __webpack_require__(1998);
+const outputPath = '_generated/schema.graphql';
+const headers = {
+    'xmoba-no-cache': '1',
+    'User-Agent': user_agent_1.fetchGqlShemaUserAgent,
+};
+async function downloadSchema(options) {
+    try {
+        const { endpoint } = options;
+        // Resolve the absolute path for the output
+        const absoluteOutputPath = path.resolve(process.cwd(), outputPath);
+        const outputDir = path.dirname(absoluteOutputPath);
+        // Step 1: Clean up old schema files in the output directory
+        // This mimics the behavior of: rimraf ./src/**/*schema.graphql
+        try {
+            const schemaPattern = path.join(outputDir, '**/*schema.graphql');
+            await (0, rimraf_1.rimraf)(schemaPattern);
+            core.info('Cleaned up old schema files');
+        }
+        catch (error) {
+            // If cleanup fails, log but continue - directory might not exist yet
+            core.warning(`Could not clean up old schema files: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        // Step 2: Ensure output directory exists
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+            core.info(`Created output directory: ${outputDir}`);
+        }
+        // Step 3: Configure and execute graphql-codegen
+        const config = {
+            schema: [
+                {
+                    [endpoint]: {
+                        headers,
+                    },
+                },
+            ],
+            generates: {
+                [absoluteOutputPath]: {
+                    plugins: ['schema-ast'],
+                    config: {
+                        includeDirectives: true,
+                        commentDescriptions: true,
+                    },
+                },
+            },
+        };
+        // Step 4: Execute the code generation
+        core.info(`Downloading schema from: ${endpoint}`);
+        try {
+            await (0, cli_1.generate)(config, true);
+        }
+        catch (error) {
+            const errorMessage = `Failed to download schema from ${endpoint}: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Verify the file was created
+        if (!fs.existsSync(absoluteOutputPath)) {
+            const errorMessage = `Schema file was not created at expected path: ${absoluteOutputPath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        core.info(`✓ Schema successfully saved to: ${absoluteOutputPath}`);
+        return absoluteOutputPath;
+    }
+    catch (error) {
+        // Catch any unexpected errors
+        const errorMessage = `Unexpected error in downloadSchema: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
+    }
+}
+
+
+/***/ }),
+
+/***/ 4304:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.compileQueries = void 0;
+var compile_query_1 = __webpack_require__(3380);
+Object.defineProperty(exports, "compileQueries", ({ enumerable: true, get: function () { return compile_query_1.compileQueries; } }));
+
+
+/***/ }),
+
+/***/ 4798:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateModulePath = generateModulePath;
+exports.generateModuleFolderName = generateModuleFolderName;
+function generateModulePath(env, game, moduleSlug) {
+    return `dynamic-modules/${env}/${game}/${moduleSlug}`;
+}
+function generateModuleFolderName(version) {
+    return `v${version}`;
+}
+
+
+/***/ }),
+
+/***/ 5023:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateFragmentsWithLlm = generateFragmentsWithLlm;
+const run_cursor_generation_1 = __webpack_require__(5550);
+const path_1 = __importDefault(__webpack_require__(6928));
+async function generateFragmentsWithLlm(options) {
+    const { timeoutMs, model } = options;
+    const promptFilePath = path_1.default.resolve(__dirname, 'generate-fragments.md');
+    return await (0, run_cursor_generation_1.runCursorGeneration)({
+        timeoutMs,
+        prompt: `"Implement instructions in the file ${promptFilePath}"`,
+        model,
+    });
+}
+
+
+/***/ }),
+
+/***/ 5317:
+/***/ ((module) => {
+
+module.exports = require("child_process");
+
+/***/ }),
+
+/***/ 5384:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 // ESM COMPAT FLAG
@@ -1393,7 +1138,7 @@ __webpack_require__.d(__webpack_exports__, {
 ;// external "node:fs"
 const external_node_fs_namespaceObject = require("node:fs");
 // EXTERNAL MODULE: external "graphql"
-var external_graphql_ = __webpack_require__(253);
+var external_graphql_ = __webpack_require__(1253);
 ;// external "microfiber"
 const external_microfiber_namespaceObject = require("microfiber");
 ;// ./codegen/utils/graphql-tools/Interfaces.js
@@ -2876,14 +2621,7 @@ const getCleanedSchemaByGame = ({ includedScopes, staticDataFieldName, scopesDat
 
 /***/ }),
 
-/***/ 404:
-/***/ ((module) => {
-
-module.exports = require("@graphql-codegen/cli");
-
-/***/ }),
-
-/***/ 419:
+/***/ 5419:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2892,9 +2630,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateQuery = generateQuery;
-const run_cursor_generation_1 = __webpack_require__(550);
-const path_1 = __importDefault(__webpack_require__(928));
-const promises_1 = __webpack_require__(943);
+const run_cursor_generation_1 = __webpack_require__(5550);
+const path_1 = __importDefault(__webpack_require__(6928));
+const promises_1 = __webpack_require__(1943);
 const entrypointFileTemplate = `
 import staticDataQuery from './static-data-query.gql.ts';
 import staticDataMetaQuery from './static-data-meta-query.gql.ts';
@@ -2919,80 +2657,19 @@ async function generateQuery(options) {
 
 /***/ }),
 
-/***/ 420:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.uploadBuild = void 0;
-var upload_build_1 = __webpack_require__(903);
-Object.defineProperty(exports, "uploadBuild", ({ enumerable: true, get: function () { return upload_build_1.uploadBuild; } }));
-
-
-/***/ }),
-
-/***/ 445:
-/***/ ((module) => {
-
-module.exports = require("gaxios");
-
-/***/ }),
-
-/***/ 463:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DynamicModuleSlug = void 0;
-var DynamicModuleSlug;
-(function (DynamicModuleSlug) {
-    DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
-    DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
-    DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
-})(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
-
-
-/***/ }),
-
-/***/ 484:
+/***/ 5484:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateWorkerOutputTypes = void 0;
-var generate_worker_output_types_1 = __webpack_require__(584);
+var generate_worker_output_types_1 = __webpack_require__(6584);
 Object.defineProperty(exports, "generateWorkerOutputTypes", ({ enumerable: true, get: function () { return generate_worker_output_types_1.generateWorkerOutputTypes; } }));
 
 
 /***/ }),
 
-/***/ 485:
-/***/ ((module) => {
-
-module.exports = require("rimraf");
-
-/***/ }),
-
-/***/ 517:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateQuery = void 0;
-var generate_query_1 = __webpack_require__(419);
-Object.defineProperty(exports, "generateQuery", ({ enumerable: true, get: function () { return generate_query_1.generateQuery; } }));
-
-
-/***/ }),
-
-/***/ 523:
-/***/ ((module) => {
-
-module.exports = require("webpack-node-externals");
-
-/***/ }),
-
-/***/ 550:
+/***/ 5550:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3031,8 +2708,8 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.runCursorGeneration = runCursorGeneration;
-const core = __importStar(__webpack_require__(659));
-const exec_utils_1 = __webpack_require__(99);
+const core = __importStar(__webpack_require__(1659));
+const exec_utils_1 = __webpack_require__(9099);
 async function runCursorGeneration(input) {
     try {
         const { timeoutMs, model = 'sonnet-4.5', prompt } = input;
@@ -3090,26 +2767,200 @@ async function runCursorGeneration(input) {
 
 /***/ }),
 
-/***/ 559:
+/***/ 6058:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkSchemaVersion = checkSchemaVersion;
+const core = __importStar(__webpack_require__(1659));
+const module_folder_utils_1 = __webpack_require__(2994);
+const bucket_utils_1 = __webpack_require__(9328);
+const user_agent_1 = __webpack_require__(1998);
+const headers = {
+    'xmoba-no-cache': '1',
+    'Content-Type': 'application/json',
+    'User-Agent': user_agent_1.fetchGqlShemaUserAgent,
+};
+async function fetchSchemaVersionFromGraphQL(endpoint, game) {
+    const query = `
+    query {
+      ${game} {
+        staticData {
+          metadata {
+            schemaVersion
+          }
+        }
+      }
+    }
+  `;
+    core.info(`Fetching schema version from GraphQL endpoint: ${endpoint}`);
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                query,
+                variables: {},
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`GraphQL request failed with status ${response.status}: ${response.statusText}`);
+        }
+        const result = (await response.json());
+        if (result.errors) {
+            throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+        }
+        const schemaVersion = result.data?.[game]?.staticData?.metadata?.schemaVersion;
+        if (!schemaVersion) {
+            throw new Error(`Schema version not found in GraphQL response: ${JSON.stringify(result.data)}`);
+        }
+        core.info(`✓ Current schema version from GraphQL: ${schemaVersion}`);
+        return schemaVersion;
+    }
+    catch (error) {
+        core.setFailed(`Failed to fetch schema version from GraphQL: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
+    }
+}
+async function checkSchemaVersion(options) {
+    try {
+        const { graphqlEndpoint, bucket, env, game, gameUrlSlug, moduleSlug: staticDataQueryModuleSlug } = options;
+        core.info(`Checking schema version for game: ${game}`);
+        // Execute GraphQL query and GCS download in parallel
+        const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
+            fetchSchemaVersionFromGraphQL(graphqlEndpoint, game),
+            (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, staticDataQueryModuleSlug).then(result => result?.version),
+        ]);
+        // Check if version folder already exists
+        if (currentSchemaVersion) {
+            const versionFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, currentSchemaVersion, staticDataQueryModuleSlug);
+            if (versionFolderExists) {
+                const bucketName = bucket.name;
+                const versionFolderPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, currentSchemaVersion, staticDataQueryModuleSlug);
+                core.info(`✓ Version folder already exists at gs://${bucketName}/${versionFolderPath}. Pipeline will be skipped.`);
+                return {
+                    shouldContinue: false,
+                    currentSchemaVersion,
+                    existingSchemaVersion: existingSchemaVersion,
+                };
+            }
+        }
+        // If config file doesn't exist, continue pipeline
+        if (!existingSchemaVersion) {
+            core.info(`No existing config found, continuing pipeline`);
+            return {
+                shouldContinue: true,
+                currentSchemaVersion,
+            };
+        }
+        // If we can't get schema version from the endpoint, pipeline should be stopped
+        if (!currentSchemaVersion) {
+            core.info(`Schema versions can't be fetched. Pipeline will be skipped.`);
+            return {
+                shouldContinue: false,
+                currentSchemaVersion,
+                existingSchemaVersion,
+            };
+        }
+        // Compare versions
+        if (currentSchemaVersion === existingSchemaVersion) {
+            core.info(`✓ Schema versions match (${currentSchemaVersion}). Pipeline will be skipped.`);
+            return {
+                shouldContinue: false,
+                currentSchemaVersion,
+                existingSchemaVersion,
+            };
+        }
+        core.info(`Schema versions differ: current=${currentSchemaVersion}, existing=${existingSchemaVersion}. Continuing pipeline.`);
+        return {
+            shouldContinue: true,
+            currentSchemaVersion,
+            existingSchemaVersion,
+        };
+    }
+    catch (error) {
+        // GraphQL errors should fail the pipeline
+        core.setFailed(`Error in checkSchemaVersion: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
+    }
+}
+
+
+/***/ }),
+
+/***/ 6154:
+/***/ ((module) => {
+
+module.exports = require("google-auth-library");
+
+/***/ }),
+
+/***/ 6309:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.downloadSchema = void 0;
+var download_schema_1 = __webpack_require__(4017);
+Object.defineProperty(exports, "downloadSchema", ({ enumerable: true, get: function () { return download_schema_1.downloadSchema; } }));
+
+
+/***/ }),
+
+/***/ 6445:
+/***/ ((module) => {
+
+module.exports = require("gaxios");
+
+/***/ }),
+
+/***/ 6559:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateScopes = void 0;
-var generate_scopes_1 = __webpack_require__(76);
+var generate_scopes_1 = __webpack_require__(3076);
 Object.defineProperty(exports, "generateScopes", ({ enumerable: true, get: function () { return generate_scopes_1.generateScopes; } }));
 
 
 /***/ }),
 
-/***/ 561:
-/***/ ((module) => {
-
-module.exports = require("babel-plugin-graphql-tag");
-
-/***/ }),
-
-/***/ 584:
+/***/ 6584:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3118,8 +2969,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateWorkerOutputTypes = generateWorkerOutputTypes;
-const run_cursor_generation_1 = __webpack_require__(550);
-const path_1 = __importDefault(__webpack_require__(928));
+const run_cursor_generation_1 = __webpack_require__(5550);
+const path_1 = __importDefault(__webpack_require__(6928));
 async function generateWorkerOutputTypes(options) {
     const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-worker-output-types.md');
@@ -3133,266 +2984,42 @@ async function generateWorkerOutputTypes(options) {
 
 /***/ }),
 
-/***/ 659:
-/***/ ((module) => {
-
-module.exports = require("@actions/core");
-
-/***/ }),
-
-/***/ 756:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compileCode = compileCode;
-const path_1 = __importDefault(__webpack_require__(928));
-const fs_1 = __importDefault(__webpack_require__(896));
-const core = __importStar(__webpack_require__(659));
-const webpack_1 = __importDefault(__webpack_require__(807));
-const graphqlTagPlugin = __webpack_require__(561);
-const nodeExternals = __webpack_require__(523);
-async function compileCode(queryDir, outputDir, entryFileName, outputFileName) {
-    const absoluteQueryDir = path_1.default.resolve(process.cwd(), queryDir);
-    const absoluteOutputDir = path_1.default.resolve(process.cwd(), outputDir);
-    const entryFile = path_1.default.join(absoluteQueryDir, entryFileName);
-    if (!fs_1.default.existsSync(absoluteQueryDir)) {
-        throw new Error(`Query directory does not exist: ${absoluteQueryDir}`);
-    }
-    if (!fs_1.default.existsSync(entryFile)) {
-        const errorMessage = `Entry file does not exist: ${entryFile}`;
-        core.setFailed(errorMessage);
-        throw new Error(errorMessage);
-    }
-    core.info(`Bundling query file: ${path_1.default.relative(process.cwd(), entryFile)}`);
-    // Create output directory if it doesn't exist
-    if (!fs_1.default.existsSync(absoluteOutputDir)) {
-        fs_1.default.mkdirSync(absoluteOutputDir, { recursive: true });
-        core.info(`Created output directory: ${absoluteOutputDir}`);
-    }
-    // Webpack configuration
-    const webpackConfig = {
-        mode: 'production',
-        entry: entryFile,
-        target: 'node',
-        output: {
-            path: absoluteOutputDir,
-            filename: outputFileName,
-            chunkFormat: 'module',
-            library: {
-                type: 'module',
-                export: 'default',
-            },
-        },
-        experiments: {
-            outputModule: true,
-        },
-        resolve: {
-            extensions: ['.ts', '.js', '.gql.ts'],
-            modules: ['node_modules', path_1.default.resolve(process.cwd(), 'build/gql')],
-        },
-        module: {
-            rules: [
-                {
-                    test: /\.gql\.ts$/,
-                    use: [
-                        {
-                            loader: 'babel-loader',
-                            options: {
-                                presets: [
-                                    [
-                                        '@babel/preset-env',
-                                        {
-                                            modules: false,
-                                            targets: {
-                                                node: 'current',
-                                            },
-                                        },
-                                    ],
-                                    [
-                                        '@babel/preset-typescript',
-                                        {
-                                            isTSX: false,
-                                            allExtensions: false,
-                                        },
-                                    ],
-                                ],
-                                plugins: [[graphqlTagPlugin]],
-                            },
-                        },
-                    ],
-                    exclude: /node_modules/,
-                },
-                {
-                    test: /\.ts$/,
-                    use: [
-                        {
-                            loader: 'babel-loader',
-                            options: {
-                                presets: [
-                                    [
-                                        '@babel/preset-env',
-                                        {
-                                            modules: false,
-                                            targets: {
-                                                node: 'current',
-                                            },
-                                        },
-                                    ],
-                                    [
-                                        '@babel/preset-typescript',
-                                        {
-                                            isTSX: false,
-                                            allExtensions: false,
-                                        },
-                                    ],
-                                ],
-                            },
-                        },
-                    ],
-                    exclude: /node_modules/,
-                },
-            ],
-        },
-        optimization: {
-            minimize: true,
-        },
-        externals: [
-            nodeExternals({
-                allowlist: [],
-            }),
-        ],
-    };
-    // Run webpack
-    return new Promise((resolve, reject) => {
-        (0, webpack_1.default)(webpackConfig, (err, stats) => {
-            if (err) {
-                const errorMessage = `Webpack compilation failed: ${err.message}`;
-                core.setFailed(errorMessage);
-                reject(new Error(errorMessage));
-                return;
-            }
-            if (!stats) {
-                const errorMessage = 'Webpack compilation returned no stats';
-                core.setFailed(errorMessage);
-                reject(new Error(errorMessage));
-                return;
-            }
-            if (stats.hasErrors()) {
-                const errors = stats.compilation.errors.map(e => e.message).join('\n');
-                const errorMessage = `Webpack compilation errors:\n${errors}`;
-                core.setFailed(errorMessage);
-                reject(new Error(errorMessage));
-                return;
-            }
-            if (stats.hasWarnings()) {
-                const warnings = stats.compilation.warnings.map(w => w.message).join('\n');
-                core.warning(`Webpack compilation warnings:\n${warnings}`);
-            }
-            const outputPath = path_1.default.join(absoluteOutputDir, outputFileName);
-            core.info(`✓ Successfully bundled query to: ${path_1.default.relative(process.cwd(), outputPath)}`);
-            resolve();
-        });
-    });
-}
-
-
-/***/ }),
-
-/***/ 798:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateModulePath = generateModulePath;
-exports.generateModuleFolderName = generateModuleFolderName;
-function generateModulePath(env, game, moduleSlug) {
-    return `dynamic-modules/${env}/${game}/${moduleSlug}`;
-}
-function generateModuleFolderName(version) {
-    return `v${version}`;
-}
-
-
-/***/ }),
-
-/***/ 807:
+/***/ 6807:
 /***/ ((module) => {
 
 module.exports = require("webpack");
 
 /***/ }),
 
-/***/ 869:
+/***/ 6928:
 /***/ ((module) => {
 
-module.exports = require("@google-cloud/storage");
+module.exports = require("path");
 
 /***/ }),
 
-/***/ 896:
+/***/ 6982:
 /***/ ((module) => {
 
-module.exports = require("fs");
+module.exports = require("crypto");
 
 /***/ }),
 
-/***/ 898:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 7016:
+/***/ ((module) => {
 
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.computeMd5Hash = computeMd5Hash;
-const fs_1 = __importDefault(__webpack_require__(896));
-const crypto_1 = __importDefault(__webpack_require__(982));
-function computeMd5Hash(filePath) {
-    const fileBuffer = fs_1.default.readFileSync(filePath);
-    return crypto_1.default.createHash('md5').update(fileBuffer).digest('hex');
-}
-
+module.exports = require("url");
 
 /***/ }),
 
-/***/ 903:
+/***/ 7404:
+/***/ ((module) => {
+
+module.exports = require("@graphql-codegen/cli");
+
+/***/ }),
+
+/***/ 8156:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3430,221 +3057,259 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.uploadBuild = uploadBuild;
-const fs = __importStar(__webpack_require__(896));
-const path = __importStar(__webpack_require__(928));
-const core = __importStar(__webpack_require__(659));
-const bucket_utils_1 = __webpack_require__(328);
-const module_folder_utils_1 = __webpack_require__(994);
-const dynamic_modules_types_1 = __webpack_require__(463);
-const dynamic_module_utils_1 = __webpack_require__(798);
-const fs_utils_1 = __webpack_require__(37);
-const hash_utils_1 = __webpack_require__(898);
-const buildPath = './build';
-function getFilesInDirectory(dirPath, extension) {
-    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
-        return [];
-    }
-    const files = [];
-    const entries = fs.readdirSync(dirPath);
-    for (const entry of entries) {
-        const filePath = path.join(dirPath, entry);
-        if (fs.statSync(filePath).isFile() && entry.endsWith(extension)) {
-            files.push(filePath);
-        }
-    }
-    return files;
-}
-function makeModuleEntrypointName(hash) {
-    return `entrypoint.${hash}.js`;
-}
-async function uploadBuild(options) {
+exports.run = run;
+const core = __importStar(__webpack_require__(1659));
+const storage_utils_1 = __webpack_require__(3931);
+const _0_check_schema_version_1 = __webpack_require__(2911);
+const _1_download_schema_1 = __webpack_require__(6309);
+const _2_generate_scopes_1 = __webpack_require__(6559);
+const _3_clean_schema_1 = __webpack_require__(1922);
+const _4_generate_fragments_1 = __webpack_require__(985);
+const _5_generate_query_1 = __webpack_require__(2517);
+const _7_generate_gql_types_1 = __webpack_require__(1039);
+const _9_upload_build_1 = __webpack_require__(39);
+const _6_compile_query_1 = __webpack_require__(4304);
+const _8_generate_worker_output_types_1 = __webpack_require__(5484);
+const query_module_version_utils_1 = __webpack_require__(2729);
+/**
+ * Main function for the GitHub Action
+ */
+async function run() {
     try {
-        const { bucket, env, gameUrlSlug, schemaVersion, disableQueryAst } = options;
-        const bucketName = bucket.name;
-        const staticDataQueryModuleSlug = disableQueryAst
-            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
-            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
-        core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
-        // Step 1: Verify bucket exists
-        try {
-            const [exists] = await bucket.exists();
-            if (!exists) {
-                const errorMessage = `Bucket ${bucketName} does not exist`;
-                core.setFailed(errorMessage);
-                throw new Error(errorMessage);
-            }
-            core.info(`✓ Bucket ${bucketName} verified`);
+        // Get inputs
+        const game = core.getInput('game', { required: true });
+        const gameUrlSlug = core.getInput('game-url-slug', { required: false }) || game;
+        const graphqlEndpoint = core.getInput('graphql-endpoint', { required: true });
+        const staticDataFieldName = core.getInput('static-data-field-name') || 'staticData';
+        const timeoutMs = parseInt(core.getInput('timeout') || '600000', 10);
+        const model = core.getInput('model-version', { required: false });
+        const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
+        const gcsProjectId = core.getInput('gcs-project-id', { required: true });
+        const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
+        const { moduleSlug, deterministicFragments } = (0, query_module_version_utils_1.resolveQueryModuleVersion)(core.getInput('query-module-version', { required: false }));
+        core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
+        core.info(`Target dynamic module: ${moduleSlug}`);
+        // Initialize Storage and Bucket
+        const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
+        const bucket = storage.bucket(gcsBucketName);
+        // Step 0: Check schema version
+        core.startGroup('🔍 Step 0: Checking schema version');
+        const schemaVersionCheck = await (0, _0_check_schema_version_1.checkSchemaVersion)({
+            graphqlEndpoint,
+            bucket,
+            env: dynamicModulesEnv,
+            game,
+            gameUrlSlug,
+            moduleSlug,
+        });
+        core.endGroup();
+        if (!schemaVersionCheck.shouldContinue) {
+            core.info(`✓ Schema version has not changed (${schemaVersionCheck.currentSchemaVersion}). Pipeline skipped.`);
+            return;
         }
-        catch (error) {
-            const errorMessage = `Failed to verify bucket: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw error instanceof Error ? error : new Error(errorMessage);
+        if (!schemaVersionCheck.currentSchemaVersion) {
+            core.setFailed('Schema version is not found, pipeline will be skipped');
+            return;
         }
-        // Step 2: Build GCS paths
-        const fullVersionPath = (0, module_folder_utils_1.buildStaticDataQueryModuleFolderPath)(env, gameUrlSlug, schemaVersion, staticDataQueryModuleSlug);
-        core.info(`Target path: gs://${bucketName}/${fullVersionPath}`);
-        // Step 3: Check if version folder already exists
-        const moduleFolderExists = await (0, module_folder_utils_1.checkStaticDataQueryModuleFolderExists)(bucket, env, gameUrlSlug, schemaVersion, staticDataQueryModuleSlug);
-        if (moduleFolderExists) {
-            const errorMessage = `Folder ${fullVersionPath} already exists in bucket ${bucketName}. Cannot overwrite existing version.`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        const moduleFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
-        core.info(`✓ Version folder does not exist, proceeding with upload`);
-        // Step 4: Resolve build directory paths]
-        const distPath = path.resolve(process.cwd(), buildPath, 'dist');
-        const buildGqlPath = path.resolve(process.cwd(), buildPath, 'gql');
-        const buildTypesPath = path.resolve(process.cwd(), buildPath, 'gql', 'gql-types');
-        // Step 5: Upload files according to new structure
-        let uploadedCount = 0;
-        let entrypointName = '';
-        // 6.1: Upload entrypoint query to root
-        const entrypointFile = path.join(distPath, `entrypoint.js`);
-        if (fs.existsSync(entrypointFile)) {
-            const compiledEntrypointHash = (0, hash_utils_1.computeMd5Hash)(entrypointFile);
-            entrypointName = makeModuleEntrypointName(compiledEntrypointHash);
-            const destination = `${fullVersionPath}/${entrypointName}`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, entrypointFile, destination, bucketName, 'entrypoint');
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                const errorMessage = `Entrypoint file hasn't been uploaded`;
-                core.setFailed(errorMessage);
-                throw new Error(errorMessage);
-            }
-        }
-        else {
-            const errorMessage = `Entrypoint file not found: ${entrypointFile}`;
-            core.setFailed(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // 6.2: Upload fragments to fragments/ folder
-        const fragmentFiles = getFilesInDirectory(buildGqlPath, '-fragment.gql.ts');
-        if (fragmentFiles.length > 0) {
-            for (const fragmentFile of fragmentFiles) {
-                const fileName = path.basename(fragmentFile);
-                const destination = `${fullVersionPath}/fragments/${fileName}`;
-                const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, fragmentFile, destination, bucketName, `fragment: ${fileName}`);
-                if (success) {
-                    uploadedCount++;
-                }
-                else {
-                    const errorMessage = `Fragment file ${fileName} hasn't been uploaded`;
-                    core.setFailed(errorMessage);
-                    throw new Error(errorMessage);
-                }
-            }
+        // Step 1: Download GraphQL schema
+        core.startGroup('📥 Step 1: Downloading GraphQL schema');
+        const downloadedSchemaPath = await (0, _1_download_schema_1.downloadSchema)({ endpoint: graphqlEndpoint });
+        core.info(`✓ Schema downloaded to: ${downloadedSchemaPath}`);
+        core.endGroup();
+        // Step 2: Generate scopes
+        core.startGroup('🔧 Step 2: Generating scopes');
+        const scopesData = (0, _2_generate_scopes_1.generateScopes)({
+            schemaPath: downloadedSchemaPath,
+            gameField: game,
+        });
+        core.info(`✓ Scopes generated`);
+        core.endGroup();
+        // Step 3: Clean schema
+        core.startGroup('🧹 Step 3: Cleaning schema');
+        const cleanedSchemaPath = await (0, _3_clean_schema_1.cleanSchema)({
+            schemaPath: downloadedSchemaPath,
+            gameField: game,
+            staticDataFieldName,
+            scopesData,
+        });
+        core.info(`✓ Schema cleaned: ${cleanedSchemaPath}`);
+        core.endGroup();
+        // Step 4: Generate fragments
+        core.startGroup('🔨 Step 4: Generating fragments');
+        if (deterministicFragments) {
+            await (0, _4_generate_fragments_1.generateFragments)({
+                gameField: game,
+                staticDataFieldName,
+            });
         }
         else {
-            core.warning(`No fragment files found in ${buildGqlPath}`);
+            await (0, _4_generate_fragments_1.generateFragmentsWithLlm)({
+                timeoutMs,
+                model,
+            });
         }
-        // 6.3: Upload ts static data query file to query/ folder
-        const queryFile = path.join(buildGqlPath, `static-data-query.gql.ts`);
-        if (fs.existsSync(queryFile)) {
-            const destination = `${fullVersionPath}/query/static-data-query.gql.ts`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, queryFile, destination, bucketName, 'query file');
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                const errorMessage = `Query file hasn't been uploaded`;
-                core.setFailed(errorMessage);
-                throw new Error(errorMessage);
-            }
-        }
-        else {
-            core.warning(`Query file not found: ${queryFile}`);
-        }
-        // 6.4: Upload ts static data meta query file to query/ folder
-        const metaQueryFile = path.join(buildGqlPath, `static-data-meta-query.gql.ts`);
-        if (fs.existsSync(queryFile)) {
-            const destination = `${fullVersionPath}/query/static-data-meta-query.gql.ts`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, metaQueryFile, destination, bucketName, 'query file');
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                const errorMessage = `Meta Query file hasn't been uploaded`;
-                core.setFailed(errorMessage);
-                throw new Error(errorMessage);
-            }
-        }
-        else {
-            core.warning(`Meta Query file not found: ${metaQueryFile}`);
-        }
-        // 6.4: Upload all files from gql-types folders to types/ folder
-        const typeSourcePaths = [{ path: buildTypesPath, name: 'gql-types' }];
-        let hasTypeFiles = false;
-        for (const sourcePath of typeSourcePaths) {
-            const typeFiles = (0, fs_utils_1.getAllFilesRecursive)(sourcePath.path);
-            if (typeFiles.length > 0) {
-                hasTypeFiles = true;
-                for (const typeFile of typeFiles) {
-                    const relativePath = path.relative(sourcePath.path, typeFile);
-                    const gcsPath = relativePath.split(path.sep).join('/');
-                    const destination = `${fullVersionPath}/types/${gcsPath}`;
-                    const description = `type file from ${sourcePath.name}: ${relativePath}`;
-                    const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, typeFile, destination, bucketName, description);
-                    if (success) {
-                        uploadedCount++;
-                    }
-                    else {
-                        const errorMessage = `Type file ${relativePath} hasn't been uploaded`;
-                        core.setFailed(errorMessage);
-                        throw new Error(errorMessage);
-                    }
-                }
-            }
-        }
-        if (!hasTypeFiles) {
-            core.warning(`No type files found in any of the gql-types directories`);
-        }
-        // 6.5: Upload cleaned schema to cleaned-schema/ folder
-        const cleanedSchemaFile = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
-        if (fs.existsSync(cleanedSchemaFile)) {
-            const destination = `${fullVersionPath}/cleaned-schema/cleaned-schema.graphql`;
-            const success = await (0, bucket_utils_1.uploadFileToBucket)(bucket, cleanedSchemaFile, destination, bucketName, 'cleaned schema');
-            if (success) {
-                uploadedCount++;
-            }
-            else {
-                const errorMessage = `Cleaned schema file hasn't been uploaded`;
-                core.setFailed(errorMessage);
-                throw new Error(errorMessage);
-            }
-        }
-        else {
-            core.warning(`Cleaned schema file not found: ${cleanedSchemaFile}`);
-        }
-        // Step 6: Report results
-        core.info(`✓ Upload completed: ${uploadedCount} files uploaded`);
-        core.info(`✓ All files successfully uploaded to gs://${bucketName}/${fullVersionPath}/`);
-        // Step 7: Upload config.json
-        try {
-            const config = {
-                moduleFolder: `${moduleFolder}/`,
-                name: `${moduleFolder}/${entrypointName}`,
-                version: schemaVersion,
-            };
-            const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, gameUrlSlug, staticDataQueryModuleSlug);
-            const configDestination = `${basePath}/config.json`;
-            const configFile = bucket.file(configDestination);
-            const configJson = JSON.stringify(config, null, 2);
-            core.info(`Uploading config.json to gs://${bucketName}/${configDestination}`);
-            await configFile.save(configJson);
-            core.info(`✓ Config.json successfully uploaded`);
-        }
-        catch (error) {
-            const errorMessage = `Failed to upload config.json: ${error instanceof Error ? error.message : String(error)}`;
-            core.setFailed(errorMessage);
-            throw error instanceof Error ? error : new Error(errorMessage);
-        }
+        core.info(`✓ Fragments generation completed`);
+        core.endGroup();
+        // Step 5: Generate query
+        core.startGroup('🔨 Step 5: Generating query');
+        await (0, _5_generate_query_1.generateQuery)({
+            timeoutMs,
+            model,
+        });
+        core.info(`✓ Query generation completed`);
+        core.endGroup();
+        // Step 6: Compile query
+        core.startGroup('🔨 Step 6: Compiling queries');
+        await (0, _6_compile_query_1.compileQueries)();
+        core.info(`✓ Queries Compiling completed`);
+        core.endGroup();
+        // Step 7: Generate GraphQL types
+        core.startGroup('📝 Step 7: Generating GraphQL types');
+        await (0, _7_generate_gql_types_1.generateGqlTypes)();
+        core.info(`✓ GraphQL types generation completed`);
+        core.endGroup();
+        // Step 8: Generate worker output types
+        core.startGroup('🔨 Step 8: Generating worker output types');
+        await (0, _8_generate_worker_output_types_1.generateWorkerOutputTypes)({
+            timeoutMs,
+            model,
+        });
+        core.info(`✓ Worker output types generation completed`);
+        core.endGroup();
+        // Step 9: Upload build to GCS
+        core.startGroup('☁️ Step 9: Uploading build to GCS');
+        await (0, _9_upload_build_1.uploadBuild)({
+            bucket,
+            env: dynamicModulesEnv,
+            gameUrlSlug,
+            schemaVersion: schemaVersionCheck.currentSchemaVersion,
+            moduleSlug,
+        });
+        core.info(`✓ Build upload completed`);
+        core.endGroup();
+        core.info(`✓ Pipeline completed successfully`);
     }
     catch (error) {
-        const errorMessage = `Unexpected error in uploadBuild: ${error instanceof Error ? error.message : String(error)}`;
+        if (error instanceof Error) {
+            core.setFailed(error.message);
+        }
+        else {
+            core.setFailed('An unknown error occurred');
+        }
+    }
+}
+run();
+
+
+/***/ }),
+
+/***/ 8323:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.cleanSchema = cleanSchema;
+const cli_1 = __webpack_require__(7404);
+const clean_schema_by_game_js_1 = __webpack_require__(5384);
+const path = __importStar(__webpack_require__(6928));
+const fs = __importStar(__webpack_require__(9896));
+const core = __importStar(__webpack_require__(1659));
+const OUTPUT_PATH = '_generated/cleaned-schema.graphql';
+async function cleanSchema(options) {
+    try {
+        const { schemaPath, gameField, staticDataFieldName, scopesData } = options;
+        core.info(`Cleaning schema from: ${schemaPath}`);
+        core.info(`Game field: ${gameField}`);
+        core.info(`Static data field: ${staticDataFieldName}`);
+        // Verify input schema exists
+        if (!fs.existsSync(schemaPath)) {
+            const errorMessage = `Input schema file not found: ${schemaPath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Resolve the absolute path for the output
+        const absoluteOutputPath = path.resolve(process.cwd(), OUTPUT_PATH);
+        const outputDir = path.dirname(absoluteOutputPath);
+        // Ensure output directory exists
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+            core.info(`Created output directory: ${outputDir}`);
+        }
+        // Configure graphql-codegen with getCleanedSchemaByGame loader
+        const config = {
+            schema: {
+                [schemaPath]: {
+                    loader: (0, clean_schema_by_game_js_1.getCleanedSchemaByGame)({
+                        includedScopes: [gameField],
+                        staticDataFieldName,
+                        scopesData,
+                    }),
+                },
+            },
+            generates: {
+                [absoluteOutputPath]: {
+                    plugins: ['schema-ast'],
+                    config: {
+                        includeDirectives: true,
+                        commentDescriptions: true,
+                    },
+                },
+            },
+        };
+        // Execute the code generation
+        core.info('Running schema cleanup...');
+        try {
+            await (0, cli_1.generate)(config, true);
+        }
+        catch (error) {
+            const errorMessage = `Failed to clean schema: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Verify the file was created
+        if (!fs.existsSync(absoluteOutputPath)) {
+            const errorMessage = `Cleaned schema file was not created at expected path: ${absoluteOutputPath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        core.info(`✓ Schema successfully cleaned and saved to: ${absoluteOutputPath}`);
+        return absoluteOutputPath;
+    }
+    catch (error) {
+        const errorMessage = `Unexpected error in cleanSchema: ${error instanceof Error ? error.message : String(error)}`;
         core.setFailed(errorMessage);
         throw error instanceof Error ? error : new Error(errorMessage);
     }
@@ -3653,166 +3318,667 @@ async function uploadBuild(options) {
 
 /***/ }),
 
-/***/ 911:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.checkSchemaVersion = void 0;
-var check_schema_version_1 = __webpack_require__(58);
-Object.defineProperty(exports, "checkSchemaVersion", ({ enumerable: true, get: function () { return check_schema_version_1.checkSchemaVersion; } }));
-
-
-/***/ }),
-
-/***/ 922:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cleanSchema = void 0;
-var clean_schema_1 = __webpack_require__(323);
-Object.defineProperty(exports, "cleanSchema", ({ enumerable: true, get: function () { return clean_schema_1.cleanSchema; } }));
-
-
-/***/ }),
-
-/***/ 928:
+/***/ 8561:
 /***/ ((module) => {
 
-module.exports = require("path");
+module.exports = require("babel-plugin-graphql-tag");
 
 /***/ }),
 
-/***/ 931:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ 9005:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createStorage = createStorage;
-const storage_1 = __webpack_require__(869);
-const google_auth_library_1 = __webpack_require__(154);
-const gaxios_1 = __webpack_require__(445);
-/**
- * Scopes that `@google-cloud/storage` requests for its own auth client. We must
- * replicate them here because we provide a custom `authClient` (see below).
- */
-const STORAGE_SCOPES = [
-    'https://www.googleapis.com/auth/iam',
-    'https://www.googleapis.com/auth/cloud-platform',
-    'https://www.googleapis.com/auth/devstorage.full_control',
-];
-/**
- * Native `fetch` (undici) wrapper that adds `duplex: 'half'` whenever a request
- * carries a body. undici rejects streaming request bodies without this option
- * (`RequestInit: duplex option is required when sending a body`), which surfaces
- * during GCS uploads (multipart bodies are streams). `node-fetch` did not need
- * it, so the option must be supplied explicitly now that we use the native fetch.
- */
-const nativeFetchWithDuplex = (input, init) => {
-    if (init && init.body != null && init.duplex == null) {
-        init = { ...init, duplex: 'half' };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-    return globalThis.fetch(input, init);
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateGqlTypes = generateGqlTypes;
+const cli_1 = __webpack_require__(7404);
+const rimraf_1 = __webpack_require__(9485);
+const path = __importStar(__webpack_require__(6928));
+const fs = __importStar(__webpack_require__(9896));
+const core = __importStar(__webpack_require__(1659));
+async function generateGqlTypes() {
+    try {
+        core.info('Starting GraphQL types generation...');
+        // Step 1: Clean up old gql-types directories
+        const buildDir = path.resolve(process.cwd(), 'build');
+        const gqlTypesPattern = path.join(buildDir, '**/gql-types');
+        try {
+            await (0, rimraf_1.rimraf)(gqlTypesPattern);
+            core.info('Cleaned up old gql-types directories');
+        }
+        catch (error) {
+            // If cleanup fails, log but continue - directories might not exist yet
+            core.warning(`Could not clean up old gql-types directories: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        // Step 2: Construct the codegen configuration
+        core.info('Constructing codegen configuration...');
+        const scalars = {
+            NgfDateTime: 'string',
+            Diablo4DateTime: 'string',
+            NgfDocumentRichTextContentJson: 'any',
+            NgfDocumentBase64Json: 'string',
+            NgfDocumentContentBase64Json: 'string',
+            TagsScalar: 'string[] | null',
+        };
+        const schemaFilePath = path.resolve(process.cwd(), '_generated/cleaned-schema.graphql');
+        const documents = path.resolve(process.cwd(), 'build/gql/**/*.gql.ts');
+        const typesFilePath = path.resolve(process.cwd(), 'build/gql/gql-types/types.ts');
+        const typesDirPath = path.resolve(process.cwd(), 'build/gql/gql-types');
+        // Config for the main types file
+        const fileConfig = {
+            schema: schemaFilePath,
+            plugins: [
+                {
+                    add: {
+                        content: '/* @ts-ignore */',
+                    },
+                },
+                'typescript',
+                'fragment-matcher',
+            ],
+            config: {
+                namingConvention: 'keep',
+                avoidOptionals: {
+                    field: true,
+                    inputValue: false,
+                    object: true,
+                    defaultValue: true,
+                },
+                skipTypename: false,
+                scalars,
+                enumsAsTypes: true,
+            },
+        };
+        // Config for the directory (near-operation-file preset)
+        const dirConfig = {
+            schema: schemaFilePath,
+            documents,
+            preset: 'near-operation-file',
+            presetConfig: {
+                extension: '.generated.ts',
+                folder: 'gql-types',
+                baseTypesPath: `./types.ts`,
+            },
+            plugins: [
+                {
+                    add: {
+                        content: '/* @ts-ignore */',
+                    },
+                },
+                'typescript-operations',
+                'typescript-react-apollo',
+            ],
+            config: {
+                avoidOptionals: true,
+                dedupeFragments: true,
+                documentMode: 'documentNode',
+                namingConvention: 'keep',
+                skipTypename: false,
+                dedupeOperationSuffix: true,
+                omitOperationSuffix: false,
+                withComponent: false,
+                withHooks: true,
+                withHOC: false,
+                preResolveTypes: true,
+                scalars,
+                enumsAsTypes: true,
+            },
+        };
+        const config = {
+            generates: {
+                [typesFilePath]: fileConfig,
+                [typesDirPath]: dirConfig,
+            },
+        };
+        // Step 3: Execute the code generation
+        core.info('Running GraphQL codegen...');
+        try {
+            await (0, cli_1.generate)(config, true);
+        }
+        catch (error) {
+            const errorMessage = `Failed to generate GraphQL types: ${error instanceof Error ? error.message : String(error)}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        // Step 4: Verify that types were generated
+        const expectedTypesFile = path.resolve(process.cwd(), 'build/gql/gql-types/types.ts');
+        if (!fs.existsSync(expectedTypesFile)) {
+            core.warning(`Types file was not created at expected path: ${expectedTypesFile}`);
+        }
+        else {
+            core.info(`✓ Types file generated: ${expectedTypesFile}`);
+        }
+        core.info(`✓ GraphQL types generation completed successfully`);
+    }
+    catch (error) {
+        const errorMessage = `Unexpected error in generateGqlTypes: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
+    }
+}
+
+
+/***/ }),
+
+/***/ 9037:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getAllFilesRecursive = getAllFilesRecursive;
+const fs_1 = __importDefault(__webpack_require__(9896));
+const path_1 = __importDefault(__webpack_require__(6928));
+function getAllFilesRecursive(dirPath) {
+    const files = [];
+    if (!fs_1.default.existsSync(dirPath) || !fs_1.default.statSync(dirPath).isDirectory()) {
+        return files;
+    }
+    const entries = fs_1.default.readdirSync(dirPath);
+    for (const entry of entries) {
+        const filePath = path_1.default.join(dirPath, entry);
+        if (fs_1.default.statSync(filePath).isDirectory()) {
+            files.push(...getAllFilesRecursive(filePath));
+        }
+        else {
+            files.push(filePath);
+        }
+    }
+    return files;
+}
+
+
+/***/ }),
+
+/***/ 9099:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TimeoutError = void 0;
+exports.spawnWithTimeout = spawnWithTimeout;
+const child_process_1 = __webpack_require__(5317);
+const core = __importStar(__webpack_require__(1659));
+exports.TimeoutError = 'TIMEOUT_ERROR';
+function makeSpawnPromise(input) {
+    const { command, args, timeoutMs, env } = input;
+    return new Promise((resolve, reject) => {
+        const child = (0, child_process_1.spawn)(command, args, {
+            env: { ...process.env, ...env },
+            shell: true,
+            stdio: 'inherit',
+        });
+        let stderr = '';
+        child.stdout?.on('data', data => {
+            core.info(data.toString());
+        });
+        child.stderr?.on('data', data => {
+            stderr += data.toString();
+            core.warning(data.toString());
+        });
+        const timeout = setTimeout(() => {
+            core.warning(`Command timeout reached (${timeoutMs}ms), killing process...`);
+            child.kill('SIGTERM');
+            // Даем процессу время на корректное завершение
+            setTimeout(() => {
+                if (!child.killed) {
+                    child.kill('SIGKILL');
+                }
+            }, 5000);
+            reject(new Error(exports.TimeoutError));
+        }, timeoutMs);
+        child.on('close', (code, signal) => {
+            clearTimeout(timeout);
+            if (code === 0) {
+                resolve('Command completed successfully');
+            }
+            else if (signal === 'SIGTERM') {
+                reject(new Error(exports.TimeoutError));
+            }
+            else {
+                reject(new Error(`Process exited with code ${code}. stderr: ${stderr}`));
+            }
+        });
+        child.on('error', error => {
+            clearTimeout(timeout);
+            reject(error);
+        });
+    });
+}
+function spawnWithTimeout(input) {
+    const { extraConditionPromise, ...restInput } = input;
+    const spawnPromise = makeSpawnPromise(restInput);
+    if (extraConditionPromise) {
+        return Promise.race([spawnPromise, extraConditionPromise]);
+    }
+    return spawnPromise;
+}
+
+
+/***/ }),
+
+/***/ 9258:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getEntityTypes = getEntityTypes;
+exports.buildFragments = buildFragments;
+exports.generateFragments = generateFragments;
+const fs = __importStar(__webpack_require__(9896));
+const path = __importStar(__webpack_require__(6928));
+const core = __importStar(__webpack_require__(1659));
+const graphql_1 = __webpack_require__(1253);
+const SCHEMA_PATH = '_generated/cleaned-schema.graphql';
+const OUTPUT_DIR = 'build/gql';
+const INDENT = '  ';
+function getObjectFieldType(type, fieldName) {
+    const field = type.getFields()[fieldName];
+    if (!field) {
+        throw new Error(`Field '${fieldName}' not found in type '${type.name}'`);
+    }
+    const fieldType = (0, graphql_1.getNamedType)(field.type);
+    if (!(0, graphql_1.isObjectType)(fieldType)) {
+        throw new Error(`Field '${type.name}.${fieldName}' is not an object type`);
+    }
+    return fieldType;
+}
+function getEntityTypes(schema, options) {
+    const queryType = schema.getQueryType();
+    if (!queryType) {
+        throw new Error('Schema has no Query type');
+    }
+    const gameType = getObjectFieldType(queryType, options.gameField);
+    const staticDataType = getObjectFieldType(gameType, options.staticDataFieldName);
+    const groupsType = getObjectFieldType(staticDataType, 'groups');
+    return Object.keys(groupsType.getFields()).map(groupName => getObjectFieldType(getObjectFieldType(groupsType, groupName), 'data'));
+}
+function block(header, body) {
+    if (body.length === 0) {
+        return [];
+    }
+    return [`${header} {`, ...body.map(line => INDENT + line), '}'];
+}
 /**
- * Creates a GCS Storage client whose HTTP requests go through Node's native
- * `fetch` (undici) instead of `node-fetch`.
- *
- * Why: `@google-cloud/storage@7` pins `google-auth-library@9`, which ships
- * `gaxios@6`. gaxios 6 always uses `node-fetch` in Node (it only picks the
- * native fetch when a browser `window.fetch` exists). `node-fetch` fails against
- * the Google OAuth token endpoint with `Invalid response body while trying to
- * fetch https://www.googleapis.com/oauth2/v4/token: Premature close`, whereas
- * the native fetch works (verified). By giving the auth client a Gaxios
- * transporter with `fetchImplementation` set to the native fetch, gtoken/JWT
- * mint tokens via undici and the failure disappears.
- *
- * The same transporter is reused by `@google-cloud/storage` for JSON-API
- * uploads/downloads, hence {@link nativeFetchWithDuplex} for streaming bodies.
- *
- * TODO (remove this workaround when upstream upgrades): there is currently no
- * `@google-cloud/storage` release that drops gaxios 6 — even the latest (7.21)
- * still depends on `google-auth-library@^9`. Native fetch arrives only with
- * gaxios 7 (`google-auth-library@10`). Once `@google-cloud/storage` officially
- * moves to google-auth 10, delete this whole file, replace `createStorage(id)`
- * with `new Storage({ projectId: id })` at the call sites, and drop the explicit
- * `gaxios` / `google-auth-library` dependencies from package.json.
+ * Entities from other groups are selected by their scalar fields only: the client already loads every
+ * group in full and links entities by id, so expanding them again only multiplies the response size.
+ * Embedded value objects (stats, bonuses, grid cells...) are expanded recursively, falling back to
+ * scalars only for a type that is already on the current path.
  */
-function createStorage(projectId) {
-    const authClient = new google_auth_library_1.GoogleAuth({
-        projectId,
-        scopes: STORAGE_SCOPES,
-        clientOptions: {
-            transporter: new gaxios_1.Gaxios({ fetchImplementation: nativeFetchWithDuplex }),
-        },
+function selectType(type, entityNames, ancestors) {
+    if ((0, graphql_1.isUnionType)(type)) {
+        return [
+            '__typename',
+            ...type.getTypes().flatMap(member => block(`... on ${member.name}`, selectType(member, entityNames, ancestors))),
+        ];
+    }
+    const isExpandable = !entityNames.has(type.name) && !ancestors.has(type.name);
+    return selectFields(type, entityNames, isExpandable ? new Set([...ancestors, type.name]) : null);
+}
+function selectFields(type, entityNames, ancestors) {
+    if (!(0, graphql_1.isObjectType)(type) && !(0, graphql_1.isInterfaceType)(type)) {
+        return [];
+    }
+    return Object.values(type.getFields()).flatMap(field => {
+        if (field.args.some(arg => (0, graphql_1.isNonNullType)(arg.type))) {
+            return [];
+        }
+        const fieldType = (0, graphql_1.getNamedType)(field.type);
+        if ((0, graphql_1.isLeafType)(fieldType)) {
+            return [field.name];
+        }
+        return ancestors ? block(field.name, selectType(fieldType, entityNames, ancestors)) : [];
     });
-    return new storage_1.Storage({
-        projectId,
-        authClient,
-        retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
+}
+function toKebabCase(value) {
+    return value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+function buildFragments(schema, options) {
+    const entityTypes = getEntityTypes(schema, options);
+    const entityNames = new Set(entityTypes.map(type => type.name));
+    return entityTypes.map(type => {
+        const fragmentName = `${type.name}Fragment`;
+        const selections = selectFields(type, entityNames, new Set([type.name]));
+        const fragment = block(`fragment ${fragmentName} on ${type.name}`, selections);
+        return {
+            fileName: `${toKebabCase(type.name)}-fragment.gql.ts`,
+            content: [
+                `import { gql } from '@apollo/client';`,
+                '',
+                `export const ${fragmentName}Gql = gql\``,
+                ...fragment.map(line => INDENT + line),
+                '`;',
+                '',
+            ].join('\n'),
+        };
     });
+}
+async function generateFragments(options) {
+    const schemaPath = path.resolve(process.cwd(), SCHEMA_PATH);
+    const outputDir = path.resolve(process.cwd(), OUTPUT_DIR);
+    const schema = (0, graphql_1.buildSchema)(fs.readFileSync(schemaPath, 'utf-8'));
+    const fragments = buildFragments(schema, options);
+    fs.mkdirSync(outputDir, { recursive: true });
+    for (const { fileName, content } of fragments) {
+        fs.writeFileSync(path.join(outputDir, fileName), content, 'utf-8');
+        core.info(`✓ ${fileName}`);
+    }
+    core.info(`✓ Generated ${fragments.length} fragments in ${OUTPUT_DIR}`);
 }
 
 
 /***/ }),
 
-/***/ 943:
+/***/ 9328:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.uploadFileToBucket = uploadFileToBucket;
+exports.downloadConfigFromBucket = downloadConfigFromBucket;
+exports.downloadFolderFromBucket = downloadFolderFromBucket;
+exports.uploadFolderToBucket = uploadFolderToBucket;
+exports.isFolderExists = isFolderExists;
+const core = __importStar(__webpack_require__(1659));
+const fs = __importStar(__webpack_require__(9896));
+const path = __importStar(__webpack_require__(6928));
+const dynamic_module_utils_1 = __webpack_require__(4798);
+const fs_utils_1 = __webpack_require__(9037);
+async function uploadFileToBucket(bucket, sourcePath, destination, bucketName, description) {
+    try {
+        const logPrefix = description ? `${description}: ` : '';
+        core.info(`Uploading: ${logPrefix}${sourcePath} -> gs://${bucketName}/${destination}`);
+        const options = { destination };
+        await bucket.upload(sourcePath, options);
+        const successMessage = description ? `✓ Uploaded ${description}` : `✓ Uploaded file`;
+        core.info(successMessage);
+        return true;
+    }
+    catch (error) {
+        const errorMessage = description
+            ? `Failed to upload ${description}: ${error instanceof Error ? error.message : String(error)}`
+            : `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`;
+        core.error(errorMessage);
+        return false;
+    }
+}
+async function downloadConfigFromBucket(bucket, env, game, dynamicModuleSlug) {
+    const configPath = `${(0, dynamic_module_utils_1.generateModulePath)(env, game, dynamicModuleSlug)}/config.json`;
+    const bucketName = bucket.name;
+    core.info(`Downloading config.json from gs://${bucketName}/${configPath}`);
+    try {
+        const file = bucket.file(configPath);
+        // Download file
+        const [fileContents] = await file.download();
+        const configJson = JSON.parse(fileContents.toString('utf-8'));
+        core.info(`✓ Config.json downloaded: ${configJson.version}`);
+        return configJson;
+    }
+    catch (error) {
+        // Handle 404 (file not found) as a normal case
+        if (error?.code === 404 || error?.message?.includes('No such object')) {
+            core.info(`Config file not found at gs://${bucketName}/${configPath}, continuing pipeline`);
+            return null;
+        }
+        // For other errors, log warning but continue
+        core.warning(`Failed to download config.json: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
+    }
+}
+async function downloadFolderFromBucket(bucket, bucketFolderPath, localFolderPath, folderName, filterFiles) {
+    const prefix = bucketFolderPath.endsWith('/') ? bucketFolderPath : `${bucketFolderPath}/`;
+    core.info(`Checking folder: ${folderName} at gs://${bucket.name}/${prefix}`);
+    // Get all files in the folder
+    const [files] = await bucket.getFiles({ prefix });
+    // Filter out files that are exactly the prefix (folder markers)
+    let actualFiles = files.filter(file => file.name !== prefix);
+    // Apply file filter if provided
+    if (filterFiles) {
+        actualFiles = actualFiles.filter(file => {
+            const relativePath = file.name.replace(prefix, '');
+            const fileName = path.basename(relativePath);
+            return filterFiles(fileName);
+        });
+    }
+    if (actualFiles.length === 0) {
+        const errorMessage = `Folder ${folderName} is empty or does not exist at gs://${bucket.name}/${prefix}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+    }
+    core.info(`Found ${actualFiles.length} file(s) in folder ${folderName}`);
+    // Create promises for all file downloads
+    const downloadPromises = actualFiles.map(async (file) => {
+        // Get relative path from the folder prefix
+        const relativePath = file.name.replace(prefix, '');
+        const localFilePath = path.join(localFolderPath, relativePath);
+        const localFileDir = path.dirname(localFilePath);
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(localFileDir)) {
+            fs.mkdirSync(localFileDir, { recursive: true });
+        }
+        // Download file
+        await file.download({ destination: localFilePath });
+        core.info(`Downloaded: ${relativePath}`);
+    });
+    const results = await Promise.allSettled(downloadPromises);
+    // Check for failures and collect error information
+    const failures = [];
+    for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        if (result.status === 'rejected') {
+            const relativePath = actualFiles[i].name.replace(prefix, '');
+            failures.push({
+                file: relativePath,
+                error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+            });
+        }
+    }
+    // If there are failures, throw an error with details
+    if (failures.length > 0) {
+        const errorDetails = failures.map(f => `  - ${f.file}: ${f.error}`).join('\n');
+        const errorMessage = `Failed to download ${failures.length} file(s) from folder ${folderName}:\n${errorDetails}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+    }
+    core.info(`✓ Successfully downloaded folder ${folderName}`);
+}
+async function uploadFolderToBucket(bucket, bucketName, sourcePath, destinationPrefix, fileTypeDescription, requireExists = true) {
+    if (!fs.existsSync(sourcePath)) {
+        if (requireExists) {
+            const errorMessage = `Directory does not exist: ${sourcePath}`;
+            core.setFailed(errorMessage);
+            throw new Error(errorMessage);
+        }
+        else {
+            core.warning(`Directory does not exist: ${sourcePath}, skipping`);
+            return { uploadedCount: 0, failedCount: 0 };
+        }
+    }
+    const files = (0, fs_utils_1.getAllFilesRecursive)(sourcePath);
+    if (files.length === 0) {
+        core.warning(`No files found in ${sourcePath}`);
+        return { uploadedCount: 0, failedCount: 0 };
+    }
+    core.info(`Uploading ${files.length} file(s) from ${path.relative(process.cwd(), sourcePath)} to ${destinationPrefix}`);
+    // Create promises for all file uploads
+    const uploadPromises = files.map(filePath => {
+        const relativePath = path.relative(sourcePath, filePath);
+        const gcsPath = relativePath.split(path.sep).join('/');
+        const destination = `${destinationPrefix}${gcsPath}`;
+        const description = `${fileTypeDescription}: ${relativePath}`;
+        return uploadFileToBucket(bucket, filePath, destination, bucketName, description);
+    });
+    const results = await Promise.allSettled(uploadPromises);
+    // Count successful and failed uploads
+    let resultUploadedCount = 0;
+    let resultFailedCount = 0;
+    for (const result of results) {
+        if (result.status === 'fulfilled' && result.value === true) {
+            resultUploadedCount++;
+        }
+        else {
+            resultFailedCount++;
+        }
+    }
+    return {
+        uploadedCount: resultUploadedCount,
+        failedCount: resultFailedCount,
+    };
+}
+async function isFolderExists(bucket, folderPath) {
+    const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    const [files] = await bucket.getFiles({ prefix, maxResults: 1 });
+    return files.length > 0;
+}
+
+
+/***/ }),
+
+/***/ 9485:
 /***/ ((module) => {
 
-module.exports = require("fs/promises");
+module.exports = require("rimraf");
 
 /***/ }),
 
-/***/ 982:
+/***/ 9896:
 /***/ ((module) => {
 
-module.exports = require("crypto");
-
-/***/ }),
-
-/***/ 985:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateFragments = void 0;
-var generate_fragments_1 = __webpack_require__(258);
-Object.defineProperty(exports, "generateFragments", ({ enumerable: true, get: function () { return generate_fragments_1.generateFragments; } }));
-
-
-/***/ }),
-
-/***/ 994:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildStaticDataQueryModuleFolderPath = buildStaticDataQueryModuleFolderPath;
-exports.checkStaticDataQueryModuleFolderExists = checkStaticDataQueryModuleFolderExists;
-const dynamic_module_utils_1 = __webpack_require__(798);
-const bucket_utils_1 = __webpack_require__(328);
-function buildStaticDataQueryModuleFolderPath(env, game, schemaVersion, slug) {
-    const basePath = (0, dynamic_module_utils_1.generateModulePath)(env, game, slug);
-    const versionFolder = (0, dynamic_module_utils_1.generateModuleFolderName)(schemaVersion);
-    return `${basePath}/${versionFolder}`;
-}
-async function checkStaticDataQueryModuleFolderExists(bucket, env, game, schemaVersion, slug) {
-    const versionFolderPath = buildStaticDataQueryModuleFolderPath(env, game, schemaVersion, slug);
-    return (0, bucket_utils_1.isFolderExists)(bucket, versionFolderPath);
-}
-
-
-/***/ }),
-
-/***/ 998:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fetchGqlShemaUserAgent = void 0;
-exports.fetchGqlShemaUserAgent = 'moba-frontend-gql-schema-downloader';
-
+module.exports = require("fs");
 
 /***/ })
 
@@ -3876,7 +4042,7 @@ exports.fetchGqlShemaUserAgent = 'moba-frontend-gql-schema-downloader';
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__(156);
+/******/ 	var __webpack_exports__ = __webpack_require__(8156);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	
 /******/ })()
