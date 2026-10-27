@@ -5,7 +5,6 @@ export interface CheckSchemaVersionOptions {
     env: string;
     game: string;
     gameUrlSlug: string;
-    disableQueryAst: boolean;
 }
 export interface CheckSchemaVersionResult {
     shouldContinue: boolean;

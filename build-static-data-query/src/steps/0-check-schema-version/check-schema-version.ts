@@ -14,7 +14,6 @@ export interface CheckSchemaVersionOptions {
   env: string;
   game: string;
   gameUrlSlug: string;
-  disableQueryAst: boolean;
 }
 
 export interface CheckSchemaVersionResult {
@@ -97,11 +96,8 @@ async function fetchSchemaVersionFromGraphQL(endpoint: string, game: string): Pr
 
 export async function checkSchemaVersion(options: CheckSchemaVersionOptions): Promise<CheckSchemaVersionResult> {
   try {
-    const { graphqlEndpoint, bucket, env, game, gameUrlSlug, disableQueryAst } = options;
-
-    const staticDataQueryModuleSlug = disableQueryAst
-      ? DynamicModuleSlug.STATIC_DATA_QUERY_V2
-      : DynamicModuleSlug.STATIC_DATA_QUERY;
+    const { graphqlEndpoint, bucket, env, game, gameUrlSlug } = options;
+    const staticDataQueryModuleSlug = DynamicModuleSlug.STATIC_DATA_QUERY_V3;
 
     core.info(`Checking schema version for game: ${game}`);
 

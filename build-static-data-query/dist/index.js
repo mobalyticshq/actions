@@ -434,10 +434,8 @@ async function fetchSchemaVersionFromGraphQL(endpoint, game) {
 }
 async function checkSchemaVersion(options) {
     try {
-        const { graphqlEndpoint, bucket, env, game, gameUrlSlug, disableQueryAst } = options;
-        const staticDataQueryModuleSlug = disableQueryAst
-            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
-            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
+        const { graphqlEndpoint, bucket, env, game, gameUrlSlug } = options;
+        const staticDataQueryModuleSlug = dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V3;
         core.info(`Checking schema version for game: ${game}`);
         // Execute GraphQL query and GCS download in parallel
         const [currentSchemaVersion, existingSchemaVersion] = await Promise.all([
@@ -811,7 +809,6 @@ async function run() {
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
-        const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
         core.info(`🚀 Starting build static data query pipeline for game: ${game}`);
         // Initialize Storage and Bucket
         const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
@@ -824,7 +821,6 @@ async function run() {
             env: dynamicModulesEnv,
             game,
             gameUrlSlug,
-            disableQueryAst,
         });
         core.endGroup();
         if (!schemaVersionCheck.shouldContinue) {
@@ -861,8 +857,8 @@ async function run() {
         // Step 4: Generate fragments
         core.startGroup('🔨 Step 4: Generating fragments');
         await (0, _4_generate_fragments_1.generateFragments)({
-            timeoutMs,
-            model,
+            gameField: game,
+            staticDataFieldName,
         });
         core.info(`✓ Fragments generation completed`);
         core.endGroup();
@@ -876,7 +872,7 @@ async function run() {
         core.endGroup();
         // Step 6: Compile query
         core.startGroup('🔨 Step 6: Compiling queries');
-        await (0, _6_compile_query_1.compileQueries)({ disableQueryAst });
+        await (0, _6_compile_query_1.compileQueries)();
         core.info(`✓ Queries Compiling completed`);
         core.endGroup();
         // Step 7: Generate GraphQL types
@@ -899,7 +895,6 @@ async function run() {
             env: dynamicModulesEnv,
             gameUrlSlug,
             schemaVersion: schemaVersionCheck.currentSchemaVersion,
-            disableQueryAst,
         });
         core.info(`✓ Build upload completed`);
         core.endGroup();
@@ -930,21 +925,142 @@ module.exports = require("graphql");
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getEntityTypes = getEntityTypes;
+exports.buildFragments = buildFragments;
 exports.generateFragments = generateFragments;
-const run_cursor_generation_1 = __webpack_require__(550);
-const path_1 = __importDefault(__webpack_require__(928));
-async function generateFragments(options) {
-    const { timeoutMs, model } = options;
-    const promptFilePath = path_1.default.resolve(__dirname, 'generate-fragments.md');
-    return await (0, run_cursor_generation_1.runCursorGeneration)({
-        timeoutMs,
-        prompt: `"Implement instructions in the file ${promptFilePath}"`,
-        model,
+const fs = __importStar(__webpack_require__(896));
+const path = __importStar(__webpack_require__(928));
+const core = __importStar(__webpack_require__(659));
+const graphql_1 = __webpack_require__(253);
+const SCHEMA_PATH = '_generated/cleaned-schema.graphql';
+const OUTPUT_DIR = 'build/gql';
+const INDENT = '  ';
+function getObjectFieldType(type, fieldName) {
+    const field = type.getFields()[fieldName];
+    if (!field) {
+        throw new Error(`Field '${fieldName}' not found in type '${type.name}'`);
+    }
+    const fieldType = (0, graphql_1.getNamedType)(field.type);
+    if (!(0, graphql_1.isObjectType)(fieldType)) {
+        throw new Error(`Field '${type.name}.${fieldName}' is not an object type`);
+    }
+    return fieldType;
+}
+function getEntityTypes(schema, options) {
+    const queryType = schema.getQueryType();
+    if (!queryType) {
+        throw new Error('Schema has no Query type');
+    }
+    const gameType = getObjectFieldType(queryType, options.gameField);
+    const staticDataType = getObjectFieldType(gameType, options.staticDataFieldName);
+    const groupsType = getObjectFieldType(staticDataType, 'groups');
+    return Object.keys(groupsType.getFields()).map(groupName => getObjectFieldType(getObjectFieldType(groupsType, groupName), 'data'));
+}
+function block(header, body) {
+    if (body.length === 0) {
+        return [];
+    }
+    return [`${header} {`, ...body.map(line => INDENT + line), '}'];
+}
+/**
+ * Entities from other groups are selected by their scalar fields only: the client already loads every
+ * group in full and links entities by id, so expanding them again only multiplies the response size.
+ * Embedded value objects (stats, bonuses, grid cells...) are expanded recursively, falling back to
+ * scalars only for a type that is already on the current path.
+ */
+function selectType(type, entityNames, ancestors) {
+    if ((0, graphql_1.isUnionType)(type)) {
+        return [
+            '__typename',
+            ...type.getTypes().flatMap(member => block(`... on ${member.name}`, selectType(member, entityNames, ancestors))),
+        ];
+    }
+    const isExpandable = !entityNames.has(type.name) && !ancestors.has(type.name);
+    return selectFields(type, entityNames, isExpandable ? new Set([...ancestors, type.name]) : null);
+}
+function selectFields(type, entityNames, ancestors) {
+    if (!(0, graphql_1.isObjectType)(type) && !(0, graphql_1.isInterfaceType)(type)) {
+        return [];
+    }
+    return Object.values(type.getFields()).flatMap(field => {
+        if (field.args.some(arg => (0, graphql_1.isNonNullType)(arg.type))) {
+            return [];
+        }
+        const fieldType = (0, graphql_1.getNamedType)(field.type);
+        if ((0, graphql_1.isLeafType)(fieldType)) {
+            return [field.name];
+        }
+        return ancestors ? block(field.name, selectType(fieldType, entityNames, ancestors)) : [];
     });
+}
+function toKebabCase(value) {
+    return value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+function buildFragments(schema, options) {
+    const entityTypes = getEntityTypes(schema, options);
+    const entityNames = new Set(entityTypes.map(type => type.name));
+    return entityTypes.map(type => {
+        const fragmentName = `${type.name}Fragment`;
+        const selections = selectFields(type, entityNames, new Set([type.name]));
+        const fragment = block(`fragment ${fragmentName} on ${type.name}`, selections);
+        return {
+            fileName: `${toKebabCase(type.name)}-fragment.gql.ts`,
+            content: [
+                `import { gql } from '@apollo/client';`,
+                '',
+                `export const ${fragmentName}Gql = gql\``,
+                ...fragment.map(line => INDENT + line),
+                '`;',
+                '',
+            ].join('\n'),
+        };
+    });
+}
+async function generateFragments(options) {
+    const schemaPath = path.resolve(process.cwd(), SCHEMA_PATH);
+    const outputDir = path.resolve(process.cwd(), OUTPUT_DIR);
+    const schema = (0, graphql_1.buildSchema)(fs.readFileSync(schemaPath, 'utf-8'));
+    const fragments = buildFragments(schema, options);
+    fs.mkdirSync(outputDir, { recursive: true });
+    for (const { fileName, content } of fragments) {
+        fs.writeFileSync(path.join(outputDir, fileName), content, 'utf-8');
+        core.info(`✓ ${fileName}`);
+    }
+    core.info(`✓ Generated ${fragments.length} fragments in ${OUTPUT_DIR}`);
 }
 
 
@@ -1349,14 +1465,8 @@ const outputFileName = 'entrypoint.js';
 // Native ESM dynamic import that survives TS (module: commonjs) and webpack
 // transpilation, which would otherwise rewrite `import()` into `require()`.
 const importEsm = new Function('specifier', 'return import(specifier);');
-async function compileQueries(options) {
-    const { disableQueryAst } = options;
-    if (!disableQueryAst) {
-        // v1: compile the gql template literals into a DocumentNode (AST) bundle.
-        await (0, compile_utils_1.compileCode)(queryDir, outputDir, entryFileName, outputFileName);
-        return;
-    }
-    // v2: fragment stitching still runs through the AST, but we print the
+async function compileQueries() {
+    // Fragment stitching still runs through the AST, but we print the
     // DocumentNodes to plain strings at build time so the published artifact is a
     // dependency-free string map (no runtime `graphql` require).
     const astFileName = 'entrypoint.ast.mjs';
@@ -2949,6 +3059,7 @@ var DynamicModuleSlug;
     DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
     DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
     DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
+    DynamicModuleSlug["STATIC_DATA_QUERY_V3"] = "static-data-query-v3";
 })(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
 
 
@@ -3460,11 +3571,9 @@ function makeModuleEntrypointName(hash) {
 }
 async function uploadBuild(options) {
     try {
-        const { bucket, env, gameUrlSlug, schemaVersion, disableQueryAst } = options;
+        const { bucket, env, gameUrlSlug, schemaVersion } = options;
+        const staticDataQueryModuleSlug = dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V3;
         const bucketName = bucket.name;
-        const staticDataQueryModuleSlug = disableQueryAst
-            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
-            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
         core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
         // Step 1: Verify bucket exists
         try {

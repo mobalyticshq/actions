@@ -17,7 +17,6 @@ export interface UploadBuildOptions {
   env: string;
   gameUrlSlug: string;
   schemaVersion: string;
-  disableQueryAst: boolean;
 }
 
 const buildPath = './build';
@@ -46,12 +45,10 @@ function makeModuleEntrypointName(hash: string): string {
 
 export async function uploadBuild(options: UploadBuildOptions): Promise<void> {
   try {
-    const { bucket, env, gameUrlSlug, schemaVersion, disableQueryAst } = options;
+    const { bucket, env, gameUrlSlug, schemaVersion } = options;
+    const staticDataQueryModuleSlug = DynamicModuleSlug.STATIC_DATA_QUERY_V3;
     const bucketName = bucket.name;
 
-    const staticDataQueryModuleSlug = disableQueryAst
-      ? DynamicModuleSlug.STATIC_DATA_QUERY_V2
-      : DynamicModuleSlug.STATIC_DATA_QUERY;
 
     core.info(`Starting upload of build files to GCS bucket: ${bucketName}`);
 
