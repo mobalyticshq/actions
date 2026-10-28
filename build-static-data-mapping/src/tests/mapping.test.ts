@@ -1,4 +1,3 @@
-import { print, type DocumentNode } from 'graphql';
 import queryObject from '../../build/downloaded/query';
 import staticDataMappers from '../../build/mapping/index';
 import { fetchGqlShemaUserAgent } from '../../../shared/constants/user-agent';
@@ -7,13 +6,6 @@ const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT;
 if (!GRAPHQL_ENDPOINT) {
   throw new Error('GRAPHQL_ENDPOINT environment variable is required');
 }
-
-// In v2 mode the downloaded query artifact is already a plain string, so it is
-// used directly; otherwise it is a compiled AST that must be printed.
-const queryIsString = process.env.DISABLE_QUERY_AST_COMPILATION === 'true';
-
-const toQueryString = (query: unknown): string =>
-  queryIsString ? (query as string) : print(query as DocumentNode);
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -32,10 +24,7 @@ const headers = {
 
 describe('Static Data Mapping Integration Test', () => {
   it('should fetch static data and map it without runtime errors', async () => {
-    // Convert GraphQL DocumentNode to query string
-    const { staticDataQuery } = queryObject;
-
-    const queryString = toQueryString(staticDataQuery);
+    const { staticDataQuery: queryString } = queryObject;
 
     // Execute GraphQL request
     let response: Response;
@@ -143,10 +132,7 @@ describe('Static Data Mapping Integration Test', () => {
   }, 30000); // 30 second timeout for network request
 
   it('should fetch static data meta and verify version exists', async () => {
-    // Convert GraphQL DocumentNode to query string
-    const { staticDataMetaQuery } = queryObject;
-
-    const queryString = toQueryString(staticDataMetaQuery);
+    const { staticDataMetaQuery: queryString } = queryObject;
 
     // Execute GraphQL request
     let response: Response;

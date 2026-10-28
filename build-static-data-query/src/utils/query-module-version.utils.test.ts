@@ -1,5 +1,5 @@
 import { DynamicModuleSlug } from '@shared/types/dynamic-modules.types';
-import { resolveQueryModuleVersion } from './query-module-version.utils';
+import { resolveQueryModuleVersion } from '@shared/utils/query-module-version.utils';
 
 describe('resolveQueryModuleVersion', () => {
   it('defaults to v2 built from LLM fragments', () => {

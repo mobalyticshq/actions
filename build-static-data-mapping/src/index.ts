@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import { createStorage } from '@shared/utils/storage.utils';
+import { resolveQueryModuleVersion } from '@shared/utils/query-module-version.utils';
 import { downloadBuildArtifacts } from './steps/1-download-build-artifacts';
 import { extractEntitiesEnum } from './steps/2-extract-entities-enum';
 import { copyUserPrompts } from './steps/3-copy-user-prompts';
@@ -19,7 +20,7 @@ export async function run(): Promise<void> {
     const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
     const gcsProjectId = core.getInput('gcs-project-id', { required: true });
     const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
-    const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
+    const { moduleSlug } = resolveQueryModuleVersion(core.getInput('query-module-version', { required: false }));
 
     core.info(`🚀 Starting build static data mapping pipeline for game: ${game}`);
 
@@ -33,7 +34,7 @@ export async function run(): Promise<void> {
       bucket,
       env: dynamicModulesEnv,
       gameUrlSlug,
-      disableQueryAst,
+      moduleSlug,
     });
     core.endGroup();
 

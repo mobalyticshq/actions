@@ -46,15 +46,11 @@ const fs = __importStar(__webpack_require__(896));
 const path = __importStar(__webpack_require__(928));
 const bucket_utils_1 = __webpack_require__(328);
 const dynamic_module_utils_1 = __webpack_require__(798);
-const dynamic_modules_types_1 = __webpack_require__(463);
 const filterTypesFiles = (fileName) => fileName.endsWith('fragment.gql.generated.ts') || fileName === 'types.ts';
 async function downloadBuildArtifacts(options) {
     try {
-        const { bucket, env, gameUrlSlug, disableQueryAst } = options;
+        const { bucket, env, gameUrlSlug, moduleSlug: staticDataQueryModuleSlug } = options;
         const bucketName = bucket.name;
-        const staticDataQueryModuleSlug = disableQueryAst
-            ? dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2
-            : dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY;
         // Step 1: Download config.json
         const config = await (0, bucket_utils_1.downloadConfigFromBucket)(bucket, env, gameUrlSlug, staticDataQueryModuleSlug);
         if (!config) {
@@ -302,6 +298,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__webpack_require__(659));
 const storage_utils_1 = __webpack_require__(931);
+const query_module_version_utils_1 = __webpack_require__(980);
 const _1_download_build_artifacts_1 = __webpack_require__(244);
 const _2_extract_entities_enum_1 = __webpack_require__(779);
 const _3_copy_user_prompts_1 = __webpack_require__(330);
@@ -320,7 +317,7 @@ async function run() {
         const gcsBucketName = core.getInput('gcs-bucket-name', { required: true });
         const gcsProjectId = core.getInput('gcs-project-id', { required: true });
         const dynamicModulesEnv = core.getInput('dynamic-modules-env', { required: true });
-        const disableQueryAst = core.getBooleanInput('disable-query-ast-compilation');
+        const { moduleSlug } = (0, query_module_version_utils_1.resolveQueryModuleVersion)(core.getInput('query-module-version', { required: false }));
         core.info(`🚀 Starting build static data mapping pipeline for game: ${game}`);
         // Initialize Storage and Bucket
         const storage = (0, storage_utils_1.createStorage)(gcsProjectId);
@@ -331,7 +328,7 @@ async function run() {
             bucket,
             env: dynamicModulesEnv,
             gameUrlSlug,
-            disableQueryAst,
+            moduleSlug,
         });
         core.endGroup();
         // Step 2: Extract entities enum
@@ -640,6 +637,7 @@ var DynamicModuleSlug;
     DynamicModuleSlug["STATIC_DATA_MAPPING"] = "static-data-mapping";
     DynamicModuleSlug["STATIC_DATA_QUERY"] = "static-data-query";
     DynamicModuleSlug["STATIC_DATA_QUERY_V2"] = "static-data-query-v2";
+    DynamicModuleSlug["STATIC_DATA_QUERY_V3"] = "static-data-query-v3";
 })(DynamicModuleSlug || (exports.DynamicModuleSlug = DynamicModuleSlug = {}));
 
 
@@ -943,6 +941,28 @@ function createStorage(projectId) {
         authClient,
         retryOptions: { autoRetry: true, maxRetries: 5, totalTimeout: 120 },
     });
+}
+
+
+/***/ }),
+
+/***/ 980:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveQueryModuleVersion = resolveQueryModuleVersion;
+const dynamic_modules_types_1 = __webpack_require__(463);
+const QUERY_MODULE_VERSIONS = {
+    v2: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2, deterministicFragments: false },
+    v3: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V3, deterministicFragments: true },
+};
+function resolveQueryModuleVersion(version) {
+    const resolved = QUERY_MODULE_VERSIONS[version || 'v2'];
+    if (!resolved) {
+        throw new Error(`Unknown query-module-version '${version}', expected one of: ${Object.keys(QUERY_MODULE_VERSIONS).join(', ')}`);
+    }
+    return resolved;
 }
 
 

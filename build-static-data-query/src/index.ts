@@ -10,7 +10,7 @@ import { generateGqlTypes } from './steps/7-generate-gql-types';
 import { uploadBuild } from './steps/9-upload-build';
 import { compileQueries } from './steps/6-compile-query';
 import { generateWorkerOutputTypes } from './steps/8-generate-worker-output-types';
-import { resolveQueryModuleVersion } from './utils/query-module-version.utils';
+import { resolveQueryModuleVersion } from '@shared/utils/query-module-version.utils';
 
 /**
  * Main function for the GitHub Action

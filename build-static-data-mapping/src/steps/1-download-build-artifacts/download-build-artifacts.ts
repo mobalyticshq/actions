@@ -10,7 +10,7 @@ export interface DownloadBuildArtifactsOptions {
   bucket: Bucket;
   env: string;
   gameUrlSlug: string;
-  disableQueryAst: boolean;
+  moduleSlug: DynamicModuleSlug;
 }
 
 const filterTypesFiles = (fileName: string) =>
@@ -18,12 +18,8 @@ const filterTypesFiles = (fileName: string) =>
 
 export async function downloadBuildArtifacts(options: DownloadBuildArtifactsOptions): Promise<void> {
   try {
-    const { bucket, env, gameUrlSlug, disableQueryAst } = options;
+    const { bucket, env, gameUrlSlug, moduleSlug: staticDataQueryModuleSlug } = options;
     const bucketName = bucket.name;
-
-    const staticDataQueryModuleSlug = disableQueryAst
-      ? DynamicModuleSlug.STATIC_DATA_QUERY_V2
-      : DynamicModuleSlug.STATIC_DATA_QUERY;
 
     // Step 1: Download config.json
     const config = await downloadConfigFromBucket(bucket, env, gameUrlSlug, staticDataQueryModuleSlug);
