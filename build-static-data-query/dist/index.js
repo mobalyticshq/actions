@@ -304,6 +304,28 @@ module.exports = require("fs/promises");
 
 /***/ }),
 
+/***/ 1980:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveQueryModuleVersion = resolveQueryModuleVersion;
+const dynamic_modules_types_1 = __webpack_require__(463);
+const QUERY_MODULE_VERSIONS = {
+    v2: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2, deterministicFragments: false },
+    v3: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V3, deterministicFragments: true },
+};
+function resolveQueryModuleVersion(version) {
+    const resolved = QUERY_MODULE_VERSIONS[version || 'v2'];
+    if (!resolved) {
+        throw new Error(`Unknown query-module-version '${version}', expected one of: ${Object.keys(QUERY_MODULE_VERSIONS).join(', ')}`);
+    }
+    return resolved;
+}
+
+
+/***/ }),
+
 /***/ 1998:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -323,28 +345,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateQuery = void 0;
 var generate_query_1 = __webpack_require__(5419);
 Object.defineProperty(exports, "generateQuery", ({ enumerable: true, get: function () { return generate_query_1.generateQuery; } }));
-
-
-/***/ }),
-
-/***/ 2729:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.resolveQueryModuleVersion = resolveQueryModuleVersion;
-const dynamic_modules_types_1 = __webpack_require__(463);
-const QUERY_MODULE_VERSIONS = {
-    v2: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V2, deterministicFragments: false },
-    v3: { moduleSlug: dynamic_modules_types_1.DynamicModuleSlug.STATIC_DATA_QUERY_V3, deterministicFragments: true },
-};
-function resolveQueryModuleVersion(version) {
-    const resolved = QUERY_MODULE_VERSIONS[version || 'v2'];
-    if (!resolved) {
-        throw new Error(`Unknown query-module-version '${version}', expected one of: ${Object.keys(QUERY_MODULE_VERSIONS).join(', ')}`);
-    }
-    return resolved;
-}
 
 
 /***/ }),
@@ -3070,7 +3070,7 @@ const _7_generate_gql_types_1 = __webpack_require__(1039);
 const _9_upload_build_1 = __webpack_require__(39);
 const _6_compile_query_1 = __webpack_require__(4304);
 const _8_generate_worker_output_types_1 = __webpack_require__(5484);
-const query_module_version_utils_1 = __webpack_require__(2729);
+const query_module_version_utils_1 = __webpack_require__(1980);
 /**
  * Main function for the GitHub Action
  */
