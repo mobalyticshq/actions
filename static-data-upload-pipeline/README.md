@@ -120,6 +120,17 @@ The pipeline will automatically discover or create the required spreadsheets in 
 
 Make sure the service account (`GOOGLE_CLIENT_EMAIL`) has **Contributor** access to the shared Drive folder.
 
+## Override spreadsheet
+
+Every successful sync rewrites the `<game_env_slug> overrides sheet` with one tab per group and one row per entity. People edit it to patch data without a new static data file:
+
+- the plain field columns are what the pipeline writes on every sync; editing them does nothing for an existing entity;
+- a column named `<field>_override` replaces that field's value for the row (`id_override` is not allowed);
+- a column whose name is not a field of the static data is added to the entity as a new field;
+- a row whose `id` is not in the static data is added as a new live entity, built from its plain columns.
+
+**Deleting a row has no effect** and the row comes back on the next sync - the sheet is merged into the data, never the other way round. To retire an entity, remove it from the static data file; the merge then marks it `deprecated: true`.
+
 ## Testing locally
 
 Copy `.env.example` to `.env` and fill in `GOOGLE_CLIENT_EMAIL` and `GOOGLE_PRIVATE_KEY` from the service account JSON key file downloaded from GCP Console.
@@ -145,6 +156,7 @@ Files must match: `static_data_vX.Y.Z.json` where X, Y, Z are numbers in range `
 
 Every run also computes what a **bucket-based** merge would ship: the highest-version `static_data_v*.json` already in `GCP_BUCKET_NAME` as the base, plus every git version file with a version >= the base, plus the override spreadsheet. It compares that with the data the run actually produced and posts one Slack line (`Shadow bucket-base merge: identical...` or `...differs: N live->deprecated, ...`), with the per-entity list in the Actions log. It is read-only and never changes what ships; it measures the planned switch away from re-merging the whole git history on every run. It is skipped, with the reason in the line, when the bucket has no version file yet, the newest one was not written by the pipeline (no `deprecated` keys), or the bucket cannot be read.
 
+<a id="static-data-report-messages" name="static-data-report-messages"></a>
 ## Validation report messages
 
 | Message | Level | Description |
@@ -155,10 +167,9 @@ Every run also computes what a **bucket-based** merge would ship: the highest-ve
 | group is not array | ERROR | All root fields must be arrays of entity objects |
 | id is absent | ERROR | Entity must have an `id` field |
 | id is not unique | ERROR | Two or more objects in a group share the same `id` |
-| id!=gameId\|\|id!=slugify(name) | ERROR | If entity has `gameId` then `id` must equal `gameId`, else if it has `name` then `id` must equal `slugify(name)` |
+| wrong id, expected: `<value>` | ERROR | If entity has `gameId` then `id` must equal `gameId`, else if it has `name` then `id` must equal `slugify(name)` |
 | slug is not unique | ERROR | Two or more objects in a group share the same `slug` |
 | gameId is not unique | ERROR | Two or more objects in a group share the same `gameId` |
-| slug!=slugify(name) | ERROR | `slug` must equal `slugify(name)` |
 | not in camel case | ERROR | Field name must be in camelCase |
 | can't find ref in config file | ERROR | Config file has no ref with `from` for this field |
 | can't find group for ref | ERROR | No group in the JSON file matches the ref `to` for this field |
@@ -175,3 +186,5 @@ Every run also computes what a **bucket-based** merge would ship: the highest-ve
 | field disappeared | WARNING | Field not present in the latest version of static data |
 | asset changed | WARNING | Asset URL was changed in the latest version of static data |
 | new entity | INFO | New `id` found in the latest version of static data |
+
+**No longer checked:** `slug!=slugify(name)` ("`slug` must equal `slugify(name)`") was an ERROR in the first pipeline version (June 2025). It was switched off on 2025-07-17 (`7c8aaa3`, *update msgs for slugs*) and the rule has not applied since: a slug is free-form and does not have to be derived from `name`. What is still checked about slugs is `slug is not unique`, `slug changed` and `slug moved` above.
