@@ -2,7 +2,7 @@ import { logger } from '../utils/logger.utils';
 import { ValidationReport } from '../types';
 import { createReport } from '../utils/report.utils';
 import { SlackMessageManagerV2 } from '../utils/slack-manager-v2.utils';
-import { describeError } from '../utils/common.utils';
+import { describeError, docsLink } from '../utils/common.utils';
 
 export async function createReportStep(
   actionUrl: string,
@@ -41,7 +41,7 @@ export async function createReportStep(
 
     await slackManager.appendNewLine({
         id: 'spreadsheet-report-error',
-        content: `Can't create mistakes report: ${describeError(reportError)}. <${actionUrl}|See pipeline logs>`,
+        content: `Can't create mistakes report: ${describeError(reportError)}. <${actionUrl}|See pipeline logs> ${docsLink('spreadsheet-access')}`,
         emoji: ':mild-panic:',
     });
   }

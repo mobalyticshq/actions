@@ -4,7 +4,7 @@ dotenv.config();
 import * as core from '@actions/core';
 import { existsSync, readdirSync } from 'fs';
 import * as path from 'path';
-import { describeGameEnv, initSlugify, isScopedAssetsFolder, readSchema } from './utils/common.utils';
+import { describeGameEnv, docsLink, initSlugify, isScopedAssetsFolder, readSchema } from './utils/common.utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './utils/logger.utils';
@@ -51,7 +51,7 @@ async function run() {
     const message = `Assets folder must look like gs://BUCKET/assets/GAME, got: ${unscoped.map(f => `\`${f || '(empty)'}\``).join(', ')}`;
     console.log(`❌ ${message}`);
     await slackManager.sendMessage([
-      { id: 'header', content: `Invalid assets folder for ${describeGameEnv(staticDataPath)}. ${message}`, emoji: ':x:' },
+      { id: 'header', content: `Invalid assets folder for ${describeGameEnv(staticDataPath)}. ${message}. ${docsLink('action-inputs')}`, emoji: ':x:' },
     ]);
     core.setFailed(message);
     return;
@@ -96,7 +96,7 @@ async function run() {
     await slackManager.sendMessage([
       {
         id: 'header',
-        content: `Invalid static data file name for ${describeGameEnv(staticDataPath)}: \`${names}\` - ${expected}`,
+        content: `Invalid static data file name for ${describeGameEnv(staticDataPath)}: \`${names}\` - ${expected}. ${docsLink('static-data-file-naming')}`,
         emoji: ':x:',
       },
     ]);

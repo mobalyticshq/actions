@@ -856311,7 +856311,7 @@ async function run() {
         const message = `Assets folder must look like gs://BUCKET/assets/GAME, got: ${unscoped.map(f => `\`${f || '(empty)'}\``).join(', ')}`;
         console.log(`❌ ${message}`);
         await slackManager.sendMessage([
-            { id: 'header', content: `Invalid assets folder for ${(0, common_utils_1.describeGameEnv)(staticDataPath)}. ${message}`, emoji: ':x:' },
+            { id: 'header', content: `Invalid assets folder for ${(0, common_utils_1.describeGameEnv)(staticDataPath)}. ${message}. ${(0, common_utils_1.docsLink)('action-inputs')}`, emoji: ':x:' },
         ]);
         core.setFailed(message);
         return;
@@ -856353,7 +856353,7 @@ async function run() {
         await slackManager.sendMessage([
             {
                 id: 'header',
-                content: `Invalid static data file name for ${(0, common_utils_1.describeGameEnv)(staticDataPath)}: \`${names}\` - ${expected}`,
+                content: `Invalid static data file name for ${(0, common_utils_1.describeGameEnv)(staticDataPath)}: \`${names}\` - ${expected}. ${(0, common_utils_1.docsLink)('static-data-file-naming')}`,
                 emoji: ':x:',
             },
         ]);
@@ -856438,7 +856438,7 @@ async function createReportStep(actionUrl, slackManager, reports, reportSpreadsh
         });
         await slackManager.appendNewLine({
             id: 'spreadsheet-report-error',
-            content: `Can't create mistakes report: ${(0, common_utils_1.describeError)(reportError)}. <${actionUrl}|See pipeline logs>`,
+            content: `Can't create mistakes report: ${(0, common_utils_1.describeError)(reportError)}. <${actionUrl}|See pipeline logs> ${(0, common_utils_1.docsLink)('spreadsheet-access')}`,
             emoji: ':mild-panic:',
         });
     }
@@ -856517,7 +856517,7 @@ async function mergeStaticDataStep(actionUrl, slackManager, versions) {
                 // The newest file is the one being shipped - name the problem instead of validating raw data
                 const message = `${path.basename(versions[i])} is not valid for merge - ${problem}`;
                 console.log(`❌ ${message}`);
-                await slackManager.updateMessage('merge-static-data', `Merging static data files failed: ${message}`, ':x:');
+                await slackManager.updateMessage('merge-static-data', `Merging static data files failed: ${message}. ${(0, common_utils_1.docsLink)('merging-static-data-files')}`, ':x:');
                 return { staticData: data, oldData, success: false, problem: message };
             }
             console.log(`✍ Merge: ${logger_utils_1.logColors.green} ${versions[i]} ${logger_utils_1.logColors.reset}`);
@@ -858172,7 +858172,7 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
         const message = [
             {
                 id: 'header',
-                content: `There is no static data files for ${gameEnv}`,
+                content: `There is no static data files for ${gameEnv}. ${(0, common_utils_1.docsLink)('static-data-file-naming')}`,
                 emoji: ':x:',
             },
         ];
@@ -858480,7 +858480,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.initSlugify = exports.gameNamesMap = exports.gameIconsMap = void 0;
+exports.docsLink = exports.DOCS_URL = exports.initSlugify = exports.gameNamesMap = exports.gameIconsMap = void 0;
 exports.slugify = slugify;
 exports.isImage = isImage;
 exports.stringify = stringify;
@@ -858708,6 +858708,10 @@ function describeError(error, maxLength = 300) {
     const short = oneLine.length > maxLength ? `${oneLine.slice(0, maxLength)}…` : oneLine;
     return short.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+// The action's own README; a Slack failure line points at the section that explains the rule
+exports.DOCS_URL = 'https://github.com/mobalyticshq/actions/tree/main/static-data-upload-pipeline';
+const docsLink = (anchor) => `<${exports.DOCS_URL}#${anchor}|Docs>`;
+exports.docsLink = docsLink;
 
 
 /***/ }),
@@ -860880,7 +860884,7 @@ async function mergeWithSpreadsheets(actionUrl, slackManager, spreadsheetId, jso
         slackManager.updateMessage('override-static-data', 'Override static data by spreadsheets failed', ':x:');
         await slackManager.appendNewLine({
             id: 'override-static-data-error',
-            content: `Unable to access spreadsheets. <${actionUrl}|See pipeline logs>`,
+            content: `Unable to access spreadsheets. <${actionUrl}|See pipeline logs> ${(0, common_utils_1.docsLink)('spreadsheet-access')}`,
             emoji: ':warning:',
         });
         return { overridedData: jsonData, spreadsheetReport, spreadsheetData: null };

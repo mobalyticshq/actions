@@ -2,7 +2,7 @@ import { google, sheets_v4 } from 'googleapis';
 import { Entity, StaticData } from '../types';
 import { mergeStaticData } from './merge.utils';
 import { GoogleAuth } from 'google-auth-library';
-import { isImage, stringify, tryParse } from './common.utils';
+import { docsLink, isImage, stringify, tryParse } from './common.utils';
 import { buildGoogleAuth, getServiceAccountEmail, SPREADSHEETS_SCOPE } from './google-auth.utils';
 import { ApiSchema } from '../pipeline-steps/schema-validation/types';
 import { SlackMessageManagerV2 } from './slack-manager-v2.utils';
@@ -807,7 +807,7 @@ export async function mergeWithSpreadsheets(actionUrl: string, slackManager: Sla
     slackManager.updateMessage('override-static-data', 'Override static data by spreadsheets failed', ':x:');
     await slackManager.appendNewLine({
       id: 'override-static-data-error',
-      content: `Unable to access spreadsheets. <${actionUrl}|See pipeline logs>`,
+      content: `Unable to access spreadsheets. <${actionUrl}|See pipeline logs> ${docsLink('spreadsheet-access')}`,
       emoji: ':warning:',
     });
 

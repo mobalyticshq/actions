@@ -1,7 +1,7 @@
 // Interface for runPipeline parameters
 import * as core from '@actions/core';
 import { ApiSchema } from './pipeline-steps/schema-validation/types';
-import { describeError, describeGameEnv } from './utils/common.utils';
+import { describeError, describeGameEnv, docsLink } from './utils/common.utils';
 import { logColors, logger } from './utils/logger.utils';
 import { schemaValidationStep } from './pipeline-steps/schema-validation/schema-validation';
 import { createReportStep } from './pipeline-steps/create-report';
@@ -57,7 +57,7 @@ export async function runPipeline({
     const message = [
       {
         id: 'header',
-        content: `There is no static data files for ${gameEnv}`,
+        content: `There is no static data files for ${gameEnv}. ${docsLink('static-data-file-naming')}`,
         emoji: ':x:',
       },
     ];

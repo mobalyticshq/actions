@@ -3,7 +3,7 @@ import { StaticData } from '../types';
 import { readFileSync } from 'fs';
 import { mergeProblem, mergeStaticData } from '../utils/merge.utils';
 import { SlackMessageManagerV2 } from '../utils/slack-manager-v2.utils';
-import { describeError } from '../utils/common.utils';
+import { describeError, docsLink } from '../utils/common.utils';
 import * as path from 'path';
 
 interface MergeStaticDataOutput {
@@ -43,7 +43,7 @@ export async function mergeStaticDataStep(
         // The newest file is the one being shipped - name the problem instead of validating raw data
         const message = `${path.basename(versions[i])} is not valid for merge - ${problem}`;
         console.log(`❌ ${message}`);
-        await slackManager.updateMessage('merge-static-data', `Merging static data files failed: ${message}`, ':x:');
+        await slackManager.updateMessage('merge-static-data', `Merging static data files failed: ${message}. ${docsLink('merging-static-data-files')}`, ':x:');
         return { staticData: data, oldData, success: false, problem: message };
       }
 

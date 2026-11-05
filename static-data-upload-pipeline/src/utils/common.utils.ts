@@ -229,3 +229,7 @@ export function describeError(error: unknown, maxLength = 300): string {
   const short = oneLine.length > maxLength ? `${oneLine.slice(0, maxLength)}…` : oneLine;
   return short.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+// The action's own README; a Slack failure line points at the section that explains the rule
+export const DOCS_URL = 'https://github.com/mobalyticshq/actions/tree/main/static-data-upload-pipeline';
+export const docsLink = (anchor: string) => `<${DOCS_URL}#${anchor}|Docs>`;
