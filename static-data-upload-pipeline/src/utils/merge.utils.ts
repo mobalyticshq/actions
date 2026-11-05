@@ -35,24 +35,23 @@ function mergeGroup(
 
 }
 
-export function isValidDataForMerge(data: StaticData) {
-  //all groups and id's MUST be consistents
+// The first thing that makes a version file unusable as a merge input, or null.
+// Ids are compared as strings, as the merge itself does with ==.
+export function mergeProblem(data: StaticData): string | null {
   for (const group of Object.keys(data)) {
-    if (!Array.isArray(data[group])) {
-      return false;
-    }
-    if (data[group].find(ent => !ent.id)) {
-      return false;
-    }
-  }
-  for (const group of Object.keys(data)) {
+    if (!Array.isArray(data[group])) return `group "${group}" is not an array`;
+    const seen = new Set<string>();
     for (const ent of data[group]) {
-      if (data[group].filter(e => e.id == ent.id).length > 1) {
-        return false;
-      }
+      if (!ent.id) return `an entity in "${group}" has no id`;
+      if (seen.has(String(ent.id))) return `duplicate id "${ent.id}" in "${group}"`;
+      seen.add(String(ent.id));
     }
   }
-  return true;
+  return null;
+}
+
+export function isValidDataForMerge(data: StaticData) {
+  return mergeProblem(data) === null;
 }
 
 export function mergeStaticData(newData: StaticData, oldData: StaticData, deprecateLostData: boolean = true) {

@@ -151,8 +151,14 @@ export async function runPipeline({
 
     // -------- Merge static data files step --------
     logger.group(`:merge: Merge static data files `);
-    let { staticData, oldData, success } = await mergeStaticDataStep(actionUrl, slackManager, versions);
+    let { staticData, oldData, success, problem } = await mergeStaticDataStep(actionUrl, slackManager, versions);
     logger.endGroup();
+    if (!success) {
+      // The unmerged file has no `deprecated` field yet, so validating it reports every entity
+      // as "required field is missing" and buries the real problem (STD-1629)
+      core.setFailed(`Merge failed: ${problem}`);
+      return null;
+    }
 
     // ----------- Validate static data before merge with Spreadshhet step -----------
     logger.group('🔍 Validate merged static data');

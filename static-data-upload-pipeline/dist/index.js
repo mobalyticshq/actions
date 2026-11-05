@@ -856507,17 +856507,18 @@ async function mergeStaticDataStep(actionUrl, slackManager, versions) {
         for (let i = 0; i < versions.length; ++i) {
             currentFile = versions[i];
             const data = JSON.parse((0, fs_1.readFileSync)(versions[i], 'utf8'));
-            const isValidForMerge = (0, merge_utils_1.isValidDataForMerge)(data);
-            if (!isValidForMerge) {
+            const problem = (0, merge_utils_1.mergeProblem)(data);
+            if (problem) {
                 //not for latest data skip invalid data files
                 if (i < versions.length - 1) {
-                    console.log(`❗Skip: ${logger_utils_1.logColors.yellow} ${versions[i]} is not valid for merge ${logger_utils_1.logColors.reset}`);
+                    console.log(`❗Skip: ${logger_utils_1.logColors.yellow} ${versions[i]} is not valid for merge - ${problem} ${logger_utils_1.logColors.reset}`);
                     continue;
                 }
-                if (i === versions.length - 1) {
-                    await slackManager.updateMessage('merge-static-data', `Merging static data files failed. The last static_data file is invalid`, ':x:');
-                    return { staticData: data, oldData, success: false };
-                }
+                // The newest file is the one being shipped - name the problem instead of validating raw data
+                const message = `${path.basename(versions[i])} is not valid for merge - ${problem}`;
+                console.log(`❌ ${message}`);
+                await slackManager.updateMessage('merge-static-data', `Merging static data files failed: ${message}`, ':x:');
+                return { staticData: data, oldData, success: false, problem: message };
             }
             console.log(`✍ Merge: ${logger_utils_1.logColors.green} ${versions[i]} ${logger_utils_1.logColors.reset}`);
             oldData = structuredClone(staticData);
@@ -858242,8 +858243,14 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
         const config = apiSchema ? (0, schema_refs_extractor_1.extractSchemaRefs)(apiSchema) : { refs: [] };
         // -------- Merge static data files step --------
         logger_utils_1.logger.group(`:merge: Merge static data files `);
-        let { staticData, oldData, success } = await (0, merge_static_data_1.mergeStaticDataStep)(actionUrl, slackManager, versions);
+        let { staticData, oldData, success, problem } = await (0, merge_static_data_1.mergeStaticDataStep)(actionUrl, slackManager, versions);
         logger_utils_1.logger.endGroup();
+        if (!success) {
+            // The unmerged file has no `deprecated` field yet, so validating it reports every entity
+            // as "required field is missing" and buries the real problem (STD-1629)
+            core.setFailed(`Merge failed: ${problem}`);
+            return null;
+        }
         // ----------- Validate static data before merge with Spreadshhet step -----------
         logger_utils_1.logger.group('🔍 Validate merged static data');
         const { errors: beforeOverrideErrors, warnings: beforeOverrideWarnings, infos: beforeOverrideInfos, reports: beforeOverrideReports } = await (0, validate_static_data_step_1.validateStaticDataStep)(slackManager, staticData, oldData, config, testsDir, tmpAssetPrefix, apiSchema, true);
@@ -858839,6 +858846,7 @@ exports.logger = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.mergeProblem = mergeProblem;
 exports.isValidDataForMerge = isValidDataForMerge;
 exports.mergeStaticData = mergeStaticData;
 exports.replaceAssets = replaceAssets;
@@ -858870,24 +858878,25 @@ function mergeGroup(mergedData, newDataGroup, oldDataGroup, group, deprecateLost
         }
     });
 }
-function isValidDataForMerge(data) {
-    //all groups and id's MUST be consistents
+// The first thing that makes a version file unusable as a merge input, or null.
+// Ids are compared as strings, as the merge itself does with ==.
+function mergeProblem(data) {
     for (const group of Object.keys(data)) {
-        if (!Array.isArray(data[group])) {
-            return false;
-        }
-        if (data[group].find(ent => !ent.id)) {
-            return false;
-        }
-    }
-    for (const group of Object.keys(data)) {
+        if (!Array.isArray(data[group]))
+            return `group "${group}" is not an array`;
+        const seen = new Set();
         for (const ent of data[group]) {
-            if (data[group].filter(e => e.id == ent.id).length > 1) {
-                return false;
-            }
+            if (!ent.id)
+                return `an entity in "${group}" has no id`;
+            if (seen.has(String(ent.id)))
+                return `duplicate id "${ent.id}" in "${group}"`;
+            seen.add(String(ent.id));
         }
     }
-    return true;
+    return null;
+}
+function isValidDataForMerge(data) {
+    return mergeProblem(data) === null;
 }
 function mergeStaticData(newData, oldData, deprecateLostData = true) {
     const mergedData = {};
