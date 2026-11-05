@@ -3,6 +3,7 @@ import { runPipeline } from './run-pipeline';
 import { schemaValidationStep } from './pipeline-steps/schema-validation/schema-validation';
 import { mergeStaticDataStep } from './pipeline-steps/merge-static-data';
 import { syncStaticDataStep } from './pipeline-steps/sync-static-data-step';
+import { validateStaticDataStep } from './pipeline-steps/validate-static-data/validate-static-data-step';
 import { isValidReport } from './utils/is-valid-report.utils';
 
 jest.mock('@actions/core', () => ({ setFailed: jest.fn() }));
@@ -64,6 +65,18 @@ describe('runPipeline job status', () => {
     counts(1);
     await run();
     expect(core.setFailed).toHaveBeenCalledTimes(1);
+    expect(syncStaticDataStep).not.toHaveBeenCalled();
+  });
+
+  it('stops after a failed merge instead of validating the raw file', async () => {
+    // STD-1629: the unmerged file has no `deprecated` yet, so validating it produced 1371
+    // "required field is missing" errors that buried the real duplicate id
+    (mergeStaticDataStep as jest.Mock).mockResolvedValue({
+      staticData: {}, oldData: {}, success: false, problem: 'static_data_v0.0.9.json is not valid for merge - duplicate id "stacked-sticks" in "items"',
+    });
+    await run();
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('duplicate id "stacked-sticks"'));
+    expect(validateStaticDataStep).not.toHaveBeenCalled();
     expect(syncStaticDataStep).not.toHaveBeenCalled();
   });
 

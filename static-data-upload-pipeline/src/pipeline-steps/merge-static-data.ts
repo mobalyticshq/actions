@@ -1,15 +1,16 @@
 import { logColors } from '../utils/logger.utils';
 import { StaticData } from '../types';
 import { readFileSync } from 'fs';
-import { isValidDataForMerge, mergeStaticData } from '../utils/merge.utils';
+import { mergeProblem, mergeStaticData } from '../utils/merge.utils';
 import { SlackMessageManagerV2 } from '../utils/slack-manager-v2.utils';
-import { describeError } from '../utils/common.utils';
+import { describeError, docsLink } from '../utils/common.utils';
 import * as path from 'path';
 
 interface MergeStaticDataOutput {
   staticData: StaticData;
   oldData: StaticData;
   success: boolean;
+  problem?: string;
 }
 
 export async function mergeStaticDataStep(
@@ -32,17 +33,18 @@ export async function mergeStaticDataStep(
     for (let i = 0; i < versions.length; ++i) {
       currentFile = versions[i];
       const data: StaticData = JSON.parse(readFileSync(versions[i], 'utf8'));
-      const isValidForMerge = isValidDataForMerge(data);
-      if (!isValidForMerge) {
+      const problem = mergeProblem(data);
+      if (problem) {
         //not for latest data skip invalid data files
         if (i < versions.length - 1) {
-          console.log(`❗Skip: ${logColors.yellow} ${versions[i]} is not valid for merge ${logColors.reset}`);
+          console.log(`❗Skip: ${logColors.yellow} ${versions[i]} is not valid for merge - ${problem} ${logColors.reset}`);
           continue;
         }
-        if (i === versions.length - 1) {
-          await slackManager.updateMessage('merge-static-data', `Merging static data files failed. The last static_data file is invalid`, ':x:');
-          return { staticData: data, oldData, success: false }
-        }
+        // The newest file is the one being shipped - name the problem instead of validating raw data
+        const message = `${path.basename(versions[i])} is not valid for merge - ${problem}`;
+        console.log(`❌ ${message}`);
+        await slackManager.updateMessage('merge-static-data', `Merging static data files failed: ${message}. ${docsLink('merging-static-data-files')}`, ':x:');
+        return { staticData: data, oldData, success: false, problem: message };
       }
 
       console.log(`✍ Merge: ${logColors.green} ${versions[i]} ${logColors.reset}`);

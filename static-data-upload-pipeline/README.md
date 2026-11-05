@@ -99,7 +99,7 @@ jobs:
 | `SLACK_BOT_TOKEN_V2` | Slack bot token for pipeline status notifications | — (notifications disabled if unset) |
 | `SLACK_CHANNEL_ID` | Slack channel ID to post notifications to | `C0932450HEF` |
 | `GCP_ASSETS_BUCKET_NAME` | GCS bucket for asset URL validation. Uses the faster GCS listing strategy instead of CDN HEAD requests | `cdn.mobalytics.gg` |
-| `REPORT_DOC_URL` | Full URL to the report spreadsheet, included as a link in Slack notifications | — |
+| `REPORT_DOC_URL` | URL that every message cell in the report spreadsheet links to. The `ngf-configuration` workflow points it at [Validation report messages](#static-data-report-messages) below | — (cells are plain text) |
 
 ## Add a new game
 
@@ -118,7 +118,8 @@ The pipeline will automatically discover or create the required spreadsheets in 
 - `my-game_prod/my-game_prod overrides sheet`
 - `my-game_prod/my-game_prod report sheet`
 
-Make sure the service account (`GOOGLE_CLIENT_EMAIL`) has **Contributor** access to the shared Drive folder.
+<a id="spreadsheet-access" name="spreadsheet-access"></a>
+Make sure the service account (`GOOGLE_CLIENT_EMAIL`) has **Contributor** access to the shared Drive folder. Without it the run posts `Unable to access spreadsheets` (the override sheet is skipped and the data ships without it) or `Can't create mistakes report` (the run goes on, the counts stay in Slack); the Google API error is in the Actions log.
 
 ## Override spreadsheet
 
@@ -151,6 +152,12 @@ Set `INPUT_DRY_RUN=true` while testing locally — this runs all validation and 
 ## Static data file naming
 
 Files must match: `static_data_vX.Y.Z.json` where X, Y, Z are numbers in range `[0, 9999]`.
+
+## Merging static data files
+
+Every run merges all version files in `static_data_path`, oldest first. Entities are matched by `id` within a group: the newer entity's fields are laid over the older one's, so a field the newer file stops emitting keeps its old value (send `null` to clear it). An entity or a whole group missing from the newer file is kept and marked `deprecated: true`; nothing is ever deleted.
+
+A file can be merged only if every root field is an array of entities, every entity has an `id` and no `id` repeats within a group. An older file that breaks this is skipped with a log line. When the newest file breaks it, the run stops red before validation with `<file> is not valid for merge - <reason>` in Slack: validating the raw file would report every entity as missing `deprecated` and bury the real problem.
 
 ## Shadow bucket-base merge
 

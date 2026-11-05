@@ -1,7 +1,7 @@
 // Interface for runPipeline parameters
 import * as core from '@actions/core';
 import { ApiSchema } from './pipeline-steps/schema-validation/types';
-import { describeError, describeGameEnv } from './utils/common.utils';
+import { describeError, describeGameEnv, docsLink } from './utils/common.utils';
 import { logColors, logger } from './utils/logger.utils';
 import { schemaValidationStep } from './pipeline-steps/schema-validation/schema-validation';
 import { createReportStep } from './pipeline-steps/create-report';
@@ -57,7 +57,7 @@ export async function runPipeline({
     const message = [
       {
         id: 'header',
-        content: `There is no static data files for ${gameEnv}`,
+        content: `There is no static data files for ${gameEnv}. ${docsLink('static-data-file-naming')}`,
         emoji: ':x:',
       },
     ];
@@ -151,8 +151,14 @@ export async function runPipeline({
 
     // -------- Merge static data files step --------
     logger.group(`:merge: Merge static data files `);
-    let { staticData, oldData, success } = await mergeStaticDataStep(actionUrl, slackManager, versions);
+    let { staticData, oldData, success, problem } = await mergeStaticDataStep(actionUrl, slackManager, versions);
     logger.endGroup();
+    if (!success) {
+      // The unmerged file has no `deprecated` field yet, so validating it reports every entity
+      // as "required field is missing" and buries the real problem (STD-1629)
+      core.setFailed(`Merge failed: ${problem}`);
+      return null;
+    }
 
     // ----------- Validate static data before merge with Spreadshhet step -----------
     logger.group('🔍 Validate merged static data');
