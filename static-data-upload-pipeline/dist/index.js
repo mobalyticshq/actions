@@ -856325,22 +856325,7 @@ async function run() {
     console.log('ℹ️ folder for tmp assets:', tmpAssetFolder);
     console.log('ℹ️ folder for prod assets:', prodAssetFolder);
     console.log('ℹ️ Dry run mode enabled:', dryRun);
-    // Dots are escaped and the pattern is anchored on purpose: an unescaped `.`
-    // matches any character, so a malformed name like static_data_v0.010.json used
-    // to pass here and then break a later step instead of being rejected outright.
-    const pattern = /^static_data_v\d+\.\d+\.\d+\.json$/;
-    const versionedFiles = new Array();
-    const malformedFiles = new Array();
-    // Read all files from staticDataPath that match the pattern
-    const files = (0, fs_1.readdirSync)(staticDataPath);
-    files.forEach(filename => {
-        if (pattern.test(filename)) {
-            versionedFiles.push(path.join(staticDataPath, filename));
-        }
-        else if (filename.startsWith('static_data_v')) {
-            malformedFiles.push(filename);
-        }
-    });
+    const { versions: sortedFiles, malformed: malformedFiles } = (0, common_utils_1.selectVersionFiles)(staticDataPath);
     // A static_data_v* file that doesn't parse as a version is almost always the one meant
     // to ship. Skipping it would quietly ship the previous version and report success, so
     // stop here - before spreadsheet discovery, merge and validation spend anything.
@@ -856360,10 +856345,6 @@ async function run() {
         core.setFailed(`Not a valid version file name: ${names} - ${expected}`);
         return;
     }
-    const sortedFiles = versionedFiles
-        .map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000)))
-        .sort()
-        .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
     const apiSchemaPath = path.join(staticDataPath, 'schema.json');
     let apiSchema = null;
     // Read schema.json from the staticDataPath if it exists
@@ -858498,6 +858479,7 @@ exports.parseStaticDataPath = parseStaticDataPath;
 exports.describeGameEnv = describeGameEnv;
 exports.versionOf = versionOf;
 exports.compareVersions = compareVersions;
+exports.selectVersionFiles = selectVersionFiles;
 exports.isScopedAssetsFolder = isScopedAssetsFolder;
 exports.describeError = describeError;
 const slugify_ = __importStar(__nccwpck_require__(14952));
@@ -858694,13 +858676,31 @@ function describeGameEnv(staticDataPath) {
     }
     return [exports.gameNamesMap[slug] || slug, exports.gameIconsMap[slug], environment].filter(Boolean).join(' ');
 }
-// static_data_v1.2.3.json -> [1, 2, 3]; null for anything else
+// static_data_v1.2.3.json -> [1, 2, 3]; null for anything else. No leading zeros:
+// static_data_v0.010.json is a typo for 0.0.10, not a version, and must be rejected, not sorted.
 function versionOf(fileName) {
-    const m = fileName.match(/^static_data_v(\d+)\.(\d+)\.(\d+)\.json$/);
+    const m = fileName.match(/^static_data_v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.json$/);
     return m ? [+m[1], +m[2], +m[3]] : null;
 }
 function compareVersions(a, b) {
     return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
+// The version files of a static data folder, oldest first, paths as they are on disk, plus the
+// static_data_v* names that are not a version. Sorted on the parsed version: the previous
+// pad-every-digit-run-by-10000 string sort rewrote the whole path on the way back (010 -> 10),
+// so the pipeline then opened a file that did not exist.
+function selectVersionFiles(staticDataPath) {
+    const found = [];
+    const malformed = [];
+    for (const filename of (0, fs_1.readdirSync)(staticDataPath)) {
+        const version = versionOf(filename);
+        if (version)
+            found.push({ file: path.join(staticDataPath, filename), version });
+        else if (filename.startsWith('static_data_v'))
+            malformed.push(filename);
+    }
+    found.sort((a, b) => compareVersions(a.version, b.version));
+    return { versions: found.map(f => f.file), malformed };
 }
 // gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
 function isScopedAssetsFolder(folder) {
