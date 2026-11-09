@@ -74,7 +74,7 @@ jobs:
 | `spreadsheets_folder_url` | Yes | Google Drive folder URL where override/report spreadsheets are stored or will be created |
 | `tmp_assets_folder` | Yes | GCS path for temporary assets (e.g. `gs://cdn.mobalytics.gg/tmpAssets/example-game`) |
 | `prod_assets_folder` | Yes | GCS path for production assets (e.g. `gs://cdn.mobalytics.gg/prodAssets/example-game`) |
-| `game_specific_tests` | Yes | Path to folder containing game-specific `.js` validation test files |
+| `game_specific_tests` | No | Folder of game-specific `.js` validation tests, see [Game-specific tests](#game-specific-tests). The workflow passes `./tests` when the ini section has no value |
 | `dry_run` | No | If `true`, runs all validation but skips upload to GCS. Default: `false` |
 | `skip_schema_validation` | No | If `true`, skips backward-compatibility schema checks. Default: `false` |
 | `slack_channel_id` | No | Slack channel ID for pipeline notifications. Defaults to `C0932450HEF` |
@@ -120,6 +120,12 @@ The pipeline will automatically discover or create the required spreadsheets in 
 
 <a id="spreadsheet-access" name="spreadsheet-access"></a>
 Make sure the service account (`GOOGLE_CLIENT_EMAIL`) has **Contributor** access to the shared Drive folder. Without it the run posts `Unable to access spreadsheets` (the override sheet is skipped and the data ships without it) or `Can't create mistakes report` (the run goes on, the counts stay in Slack); the Google API error is in the Actions log.
+
+## Game-specific tests
+
+Optional. `game_specific_tests` names a folder of CommonJS `.js` files; each one exports `async (data, oldData) => ValidationReport` and runs after the built-in rules, on the merged data, in both validation passes (before and after the spreadsheet override). A report is `{ errors, warnings, infos, byGroup }`, each a `{ [message]: Set<fieldPath> }`; its errors block the sync like any built-in error, and all three levels count towards the Slack summary and the report spreadsheet. `src/extension.ts` is a template; `npm run ext` compiles it to `dist/tests/index.js`.
+
+Where the folder has to live: the run job checks out only `static_data_path` (sparse checkout, cone mode), so the folder must sit **under** it - e.g. `games/<abbr>/<env>/static_data/tests/` - and the game's ini section must point there: `game_specific_tests = games/<abbr>/<env>/static_data/tests`. A folder next to it (`games/<abbr>/tests/`) or at the repo root is not in the checkout. A missing folder is logged and skipped.
 
 ## Override spreadsheet
 

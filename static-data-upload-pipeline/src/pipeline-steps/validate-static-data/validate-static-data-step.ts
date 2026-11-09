@@ -1,5 +1,5 @@
 import { StaticData, StaticDataConfig, ValidationReport } from '../../types';
-import { readdirSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import path from 'path';
 import { isValidReport } from '../../utils/is-valid-report.utils';
 import { validate } from './utils';
@@ -47,11 +47,19 @@ export async function validateStaticDataStep(
 
 async function runValidationExtensions(extensionsDir: string, data: StaticData, oldData: StaticData) {
   const reports = new Array<ValidationReport>();
+  // No tests folder is the normal case (the workflow defaults to ./tests), not a warning
+  if (!existsSync(extensionsDir)) {
+    console.log(`ℹ️ No game specific tests folder at ${extensionsDir}`);
+    return reports;
+  }
   try {
     const files = readdirSync(extensionsDir).filter(f => f.endsWith('.js'));
 
     for (const file of files) {
-      const test = require(path.join(extensionsDir, file));
+      // resolve, not join: a relative dir joined with a file name is a bare specifier,
+      // which require() looks up in node_modules - so ./tests never loaded anything
+      const test = require(path.resolve(extensionsDir, file));
+      console.log(`🧪 Running game specific test ${file}`);
       reports.push(await test(data, oldData));
     }
   } catch (error) {
