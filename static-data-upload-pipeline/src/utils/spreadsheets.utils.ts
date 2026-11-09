@@ -216,6 +216,15 @@ function getRange(enities: Array<{ [key: string]: any }>) {
   return { rows: enities.length + 1, columns: headerSet.size };
 }
 
+// Google Sheets rejects a cell over 50 000 characters, and one such cell fails the batchUpdate
+// for the whole spreadsheet. Plain columns of known fields are never read back into the data, so
+// the placeholder loses nothing (STD-1435: PoE passiveSkillsGraph.groups, ~190k chars).
+export const SHEET_CELL_LIMIT = 50000;
+export function sheetCell(value: unknown): string {
+  const text = stringify(value);
+  return text.length > SHEET_CELL_LIMIT ? `(too large for a sheet cell: ${text.length} chars)` : text;
+}
+
 function entitiesToRawData(
   knownData: Array<Entity> | undefined, 
   mergedData: Array<Entity>, 
@@ -344,7 +353,7 @@ function entitiesToRawData(
       const fieldName = header[i];
       
       if (ent[fieldName] !== undefined && ent[fieldName] !== null) {
-        newRow.push(stringify(ent[fieldName]));
+        newRow.push(sheetCell(ent[fieldName]));
       } else {
         const oldValue = getOldSpreadsheetValue(entityId, fieldName);
         if (oldValue !== null) {
