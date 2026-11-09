@@ -860210,6 +860210,8 @@ async function discoverSpreadsheetIds(gameEnvSlug, spreadsheetsFolderUrl) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SHEET_CELL_LIMIT = void 0;
+exports.sheetCell = sheetCell;
 exports.addFilterToSheet = addFilterToSheet;
 exports.setColor = setColor;
 exports.removeAllMetadata = removeAllMetadata;
@@ -860410,6 +860412,14 @@ function getRange(enities) {
     });
     return { rows: enities.length + 1, columns: headerSet.size };
 }
+// Google Sheets rejects a cell over 50 000 characters, and one such cell fails the batchUpdate
+// for the whole spreadsheet. Plain columns of known fields are never read back into the data, so
+// the placeholder loses nothing (STD-1435: PoE passiveSkillsGraph.groups, ~190k chars).
+exports.SHEET_CELL_LIMIT = 50000;
+function sheetCell(value) {
+    const text = (0, common_utils_1.stringify)(value);
+    return text.length > exports.SHEET_CELL_LIMIT ? `(too large for a sheet cell: ${text.length} chars)` : text;
+}
 function entitiesToRawData(knownData, mergedData, apiSchema, groupName, oldSpreadsheetData) {
     const knownFields = new Set();
     knownData?.forEach(ent => {
@@ -860512,7 +860522,7 @@ function entitiesToRawData(knownData, mergedData, apiSchema, groupName, oldSprea
         for (let i = 0; i < header.length; i++) {
             const fieldName = header[i];
             if (ent[fieldName] !== undefined && ent[fieldName] !== null) {
-                newRow.push((0, common_utils_1.stringify)(ent[fieldName]));
+                newRow.push(sheetCell(ent[fieldName]));
             }
             else {
                 const oldValue = getOldSpreadsheetValue(entityId, fieldName);

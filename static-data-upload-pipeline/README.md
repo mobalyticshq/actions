@@ -131,7 +131,7 @@ Where the folder has to live: the run job checks out only `static_data_path` (sp
 
 Every successful sync rewrites the `<game_env_slug> overrides sheet` with one tab per group and one row per entity. People edit it to patch data without a new static data file:
 
-- the plain field columns are what the pipeline writes on every sync; editing them does nothing for an existing entity;
+- the plain field columns are what the pipeline writes on every sync; editing them does nothing for an existing entity. A value over 50 000 characters (the Sheets cell limit) is written as `(too large for a sheet cell: N chars)`; the data itself is untouched;
 - a column named `<field>_override` replaces that field's value for the row (`id_override` is not allowed);
 - a column whose name is not a field of the static data is added to the entity as a new field;
 - a row whose `id` is not in the static data is added as a new live entity, built from its plain columns.
