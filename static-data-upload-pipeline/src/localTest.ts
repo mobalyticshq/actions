@@ -1,6 +1,5 @@
-import { readdirSync, writeFileSync } from 'fs';
-import * as path from 'path';
-import { readSchema } from './utils/common.utils';
+import { writeFileSync } from 'fs';
+import { readSchema, selectVersionFiles } from './utils/common.utils';
 import { SlackMessageManagerV2 } from './utils/slack-manager-v2.utils';
 import { runPipeline } from './run-pipeline';
 
@@ -19,21 +18,11 @@ async function run() {
   const apiSchemaPath = '/Users/alexmittsel/WORK/ngf-configuration/borderlands-4/dev/static_data/schema.json'
 
   const apiSchema = readSchema(apiSchemaPath);
-  const pattern = /^static_data_v\d+\.\d+\.\d+\.json$/;
   const slackManager = new SlackMessageManagerV2(chanelId);
 
 
 
-  const files = readdirSync(staticDataPath);
-  const versionedFiles = new Array<string>();
-  files.forEach(filename => {
-    if (!pattern.test(filename)) return null;
-    versionedFiles.push(path.join(staticDataPath, filename));
-  });
-  const sortedFiles = versionedFiles
-    .map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000)))
-    .sort()
-    .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
+  const { versions: sortedFiles } = selectVersionFiles(staticDataPath);
 
 
   const staticData = await runPipeline({

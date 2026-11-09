@@ -2,9 +2,9 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import * as core from '@actions/core';
-import { existsSync, readdirSync } from 'fs';
+import { existsSync } from 'fs';
 import * as path from 'path';
-import { describeGameEnv, docsLink, initSlugify, isScopedAssetsFolder, readSchema } from './utils/common.utils';
+import { describeGameEnv, docsLink, initSlugify, isScopedAssetsFolder, readSchema, selectVersionFiles } from './utils/common.utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './utils/logger.utils';
@@ -68,21 +68,7 @@ async function run() {
   console.log('ℹ️ folder for prod assets:', prodAssetFolder);
   console.log('ℹ️ Dry run mode enabled:', dryRun);
 
-  // Dots are escaped and the pattern is anchored on purpose: an unescaped `.`
-  // matches any character, so a malformed name like static_data_v0.010.json used
-  // to pass here and then break a later step instead of being rejected outright.
-  const pattern = /^static_data_v\d+\.\d+\.\d+\.json$/;
-  const versionedFiles = new Array<string>();
-  const malformedFiles = new Array<string>();
-  // Read all files from staticDataPath that match the pattern
-  const files = readdirSync(staticDataPath);
-  files.forEach(filename => {
-    if (pattern.test(filename)) {
-      versionedFiles.push(path.join(staticDataPath, filename));
-    } else if (filename.startsWith('static_data_v')) {
-      malformedFiles.push(filename);
-    }
-  });
+  const { versions: sortedFiles, malformed: malformedFiles } = selectVersionFiles(staticDataPath);
 
   // A static_data_v* file that doesn't parse as a version is almost always the one meant
   // to ship. Skipping it would quietly ship the previous version and report success, so
@@ -103,12 +89,6 @@ async function run() {
     core.setFailed(`Not a valid version file name: ${names} - ${expected}`);
     return;
   }
-
-  const sortedFiles = versionedFiles
-    .map(a => a.replace(/\d+/g, n => '' + (Number(n) + 10000)))
-    .sort()
-    .map(a => a.replace(/\d+/g, n => '' + (Number(n) - 10000)));
-
 
   const apiSchemaPath = path.join(staticDataPath, 'schema.json');
   let apiSchema: ApiSchema | null = null;

@@ -157,7 +157,7 @@ Set `INPUT_DRY_RUN=true` while testing locally — this runs all validation and 
 
 ## Static data file naming
 
-Files must match: `static_data_vX.Y.Z.json` where X, Y, Z are numbers in range `[0, 9999]`.
+Files must match `static_data_vX.Y.Z.json`, where X, Y, Z are non-negative integers without leading zeros (`v0.0.10`, not `v0.0.010`). They are merged in numeric version order (`v1.2.9` before `v1.2.10`). Any other `static_data_v*` name in the folder stops the run.
 
 ## Merging static data files
 

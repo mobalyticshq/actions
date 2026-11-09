@@ -1,6 +1,6 @@
 import * as slugify_ from 'slugify';
 import { ApiSchema } from '../pipeline-steps/schema-validation/types';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import * as path from 'path';
 
 export const gameIconsMap: Record<string, string> = {
@@ -204,14 +204,31 @@ export function describeGameEnv(staticDataPath: string): string {
   return [gameNamesMap[slug] || slug, gameIconsMap[slug], environment].filter(Boolean).join(' ');
 }
 
-// static_data_v1.2.3.json -> [1, 2, 3]; null for anything else
+// static_data_v1.2.3.json -> [1, 2, 3]; null for anything else. No leading zeros:
+// static_data_v0.010.json is a typo for 0.0.10, not a version, and must be rejected, not sorted.
 export function versionOf(fileName: string): [number, number, number] | null {
-  const m = fileName.match(/^static_data_v(\d+)\.(\d+)\.(\d+)\.json$/);
+  const m = fileName.match(/^static_data_v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.json$/);
   return m ? [+m[1], +m[2], +m[3]] : null;
 }
 
 export function compareVersions(a: [number, number, number], b: [number, number, number]): number {
   return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
+
+// The version files of a static data folder, oldest first, paths as they are on disk, plus the
+// static_data_v* names that are not a version. Sorted on the parsed version: the previous
+// pad-every-digit-run-by-10000 string sort rewrote the whole path on the way back (010 -> 10),
+// so the pipeline then opened a file that did not exist.
+export function selectVersionFiles(staticDataPath: string): { versions: string[]; malformed: string[] } {
+  const found: { file: string; version: [number, number, number] }[] = [];
+  const malformed: string[] = [];
+  for (const filename of readdirSync(staticDataPath)) {
+    const version = versionOf(filename);
+    if (version) found.push({ file: path.join(staticDataPath, filename), version });
+    else if (filename.startsWith('static_data_v')) malformed.push(filename);
+  }
+  found.sort((a, b) => compareVersions(a.version, b.version));
+  return { versions: found.map(f => f.file), malformed };
 }
 
 // gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
