@@ -1,4 +1,4 @@
-import { ApiSchema, SchemaObject } from '../schema-validation/types';
+import { ApiSchema, SchemaGroup, SchemaObject } from '../schema-validation/types';
 import { Entity, StaticData, StaticDataConfig, ValidationEntityReport, ValidationRecords } from '../../types';
 import { readSchema, slugify } from '../../utils/common.utils';
 import { logger } from '../../utils/logger.utils';
@@ -38,6 +38,7 @@ export enum ReportMessages {
   invalidRefTarget = 'invalid ref target',
   refToDeprecated = 'ref points to deprecated entity',
   groupNotInSchema = 'group not found in schema',
+  fieldNotInSchema = 'field not found in schema',
 }
 
 const assetExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.svg', '.avif', '.webm', '.mp4'];
@@ -401,6 +402,25 @@ export function findSlugMoves(oldEntities: Entity[] = [], newEntities: Entity[] 
   return { movedIn, movedOut };
 }
 
+// Set by the pipeline or read by its own id rule, not data meant for the API
+const pipelineFields = new Set(['deprecated', 'gameId']);
+const isEmpty = (v: unknown) => v == null || v === '' || (typeof v === 'object' && Object.keys(v).length === 0);
+
+// `group.field` for every field a live entity has a value in and the group's schema does not declare:
+// it ships green, lands in the bucket and the schema-driven API never serves it (STD-1856).
+// Empty values and retired rows are left out - nobody can act on those.
+// shortcut: top-level fields only, walk `objects` too once undeclared nested fields matter
+export function undeclaredFields(entities: Entity[], group: string, groupSchema: SchemaGroup): string[] {
+  const found = new Set<string>();
+  for (const ent of entities) {
+    if (ent.deprecated) continue;
+    for (const [field, value] of Object.entries(ent)) {
+      if (!Object.hasOwn(groupSchema.fields, field) && !pipelineFields.has(field) && !isEmpty(value)) found.add(`${group}.${field}`);
+    }
+  }
+  return [...found];
+}
+
 export async function validate(
   data: StaticData,
   oldData: StaticData,
@@ -414,7 +434,7 @@ export async function validate(
       unavailableURLs: new Set<string>(),
       [ReportMessages.groupNotInSchema]: new Set<string>(),
     } as ValidationRecords,
-    warnings: {} as ValidationRecords,
+    warnings: { [ReportMessages.fieldNotInSchema]: new Set<string>() } as ValidationRecords,
     infos: {} as ValidationRecords,
     byGroup: {} as { [key: string]: Array<ValidationEntityReport> },
   };
@@ -440,6 +460,9 @@ export async function validate(
     // Check if group exists in schema and skip validation if all entities are deprecated
     if (!groupInSchema && !isAllEntitiesDeprecated && apiSchema) {
       validationReport.errors[ReportMessages.groupNotInSchema].add(group);
+    }
+    if (groupInSchema) {
+      undeclaredFields(data[group], group, groupInSchema).forEach(f => validationReport.warnings[ReportMessages.fieldNotInSchema].add(f));
     }
 
     for (const ent of data[group]) {

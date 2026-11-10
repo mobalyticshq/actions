@@ -143,8 +143,11 @@ function prepareData(reports: ValidationReport[], schemaValidationErrors: any[] 
 
   // Collect all groupNotInSchema errors across all reports
   const apiSchemaErrors = new Set<string>();
+  // One warning per group.field, so it has no entity row to sit on - it goes to the ApiSchema sheet
+  const undeclaredFields = new Set<string>();
   
   for (const report of reports) {
+    report.warnings?.[ReportMessages.fieldNotInSchema]?.forEach(path => undeclaredFields.add(path));
     // Check for groupNotInSchema errors in the main report errors
     if (report.errors && report.errors[ReportMessages.groupNotInSchema]) {
       report.errors[ReportMessages.groupNotInSchema].forEach(groupName => {
@@ -165,7 +168,7 @@ function prepareData(reports: ValidationReport[], schemaValidationErrors: any[] 
   }
 
   // Create ApiSchema sheet if there are groupNotInSchema errors or schema validation errors
-  if (apiSchemaErrors.size > 0 || schemaValidationErrors.length > 0) {
+  if (apiSchemaErrors.size > 0 || undeclaredFields.size > 0 || schemaValidationErrors.length > 0) {
     const apiSchemaSheetName = 'ApiSchema';
     spreadsheetData[apiSchemaSheetName] = [
       ['Path/Group', 'Error Type', 'Description']
@@ -180,6 +183,14 @@ function prepareData(reports: ValidationReport[], schemaValidationErrors: any[] 
       ]);
     });
     
+    undeclaredFields.forEach(path => {
+      spreadsheetData[apiSchemaSheetName].push([
+        path,
+        'fieldNotInSchema (warning)',
+        `Field '${path}' has values in the data but is not declared in schema.json, so the API does not serve it`
+      ]);
+    });
+
     // Add schema validation errors
     schemaValidationErrors.forEach(error => {
       spreadsheetData[apiSchemaSheetName].push([
