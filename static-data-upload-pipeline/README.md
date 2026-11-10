@@ -198,6 +198,7 @@ Every run also computes what a **bucket-based** merge would ship: the highest-ve
 | name changed | WARNING | Name was changed in the latest version of static data |
 | field disappeared | WARNING | Field not present in the latest version of static data |
 | asset changed | WARNING | Asset URL was changed in the latest version of static data |
+| field not found in schema | WARNING | A live entity has a value in a field that the group's `schema.json` does not declare. The API serves declared fields only, so the value never reaches it: declare the field or stop emitting it. One warning per `group.field`, named in Slack and listed in the `ApiSchema` tab of the report. Top-level fields only; empty values, deprecated entities, `deprecated` and `gameId` are not counted |
 | new entity | INFO | New `id` found in the latest version of static data |
 
 **No longer checked:** `slug!=slugify(name)` ("`slug` must equal `slugify(name)`") was an ERROR in the first pipeline version (June 2025). It was switched off on 2025-07-17 (`7c8aaa3`, *update msgs for slugs*) and the rule has not applied since: a slug is free-form and does not have to be derived from `name`. What is still checked about slugs is `slug is not unique`, `slug changed` and `slug moved` above.

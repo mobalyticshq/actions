@@ -8,6 +8,7 @@ import { createReportStep } from './pipeline-steps/create-report';
 import { mergeStaticDataStep } from './pipeline-steps/merge-static-data';
 import { overrideStaticData } from './pipeline-steps/override-static-data';
 import { validateStaticDataStep } from './pipeline-steps/validate-static-data/validate-static-data-step';
+import { ReportMessages } from './pipeline-steps/validate-static-data/utils';
 import { syncStaticDataStep } from './pipeline-steps/sync-static-data-step';
 import { shadowBucketBaseStep } from './pipeline-steps/shadow-bucket-base';
 import { MessageLine, SlackMessageManagerV2 } from './utils/slack-manager-v2.utils';
@@ -203,6 +204,18 @@ export async function runPipeline({
     const allReports = [...beforeOverrideReports, ...afterOverrideReports];
     const reports = deduplicateReports(allReports);
     const { errors, warnings, infos } = isValidReport(reports);
+
+    // A group-level warning is only a number in the report line below, so name the fields here (STD-1856)
+    const undeclared = [...(reports[0]?.warnings[ReportMessages.fieldNotInSchema] ?? [])];
+    if (undeclared.length > 0) {
+      const shown = undeclared.slice(0, 10).map(f => `\`${f}\``).join(', ');
+      const more = undeclared.length > 10 ? ` and ${undeclared.length - 10} more` : '';
+      await slackManager.appendNewLine({
+        id: 'fields-not-in-schema',
+        content: `${undeclared.length} field(s) are in the data but not in schema.json, so the API does not serve them: ${shown}${more}. ${docsLink('static-data-report-messages')}`,
+        emoji: ':warning:',
+      });
+    }
 
     // If errors or warnings or infos - create report
     if (errors > 0 || warnings > 0 || infos > 0) {

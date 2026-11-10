@@ -857498,6 +857498,7 @@ exports.ReportMessages = void 0;
 exports.checkRefTarget = checkRefTarget;
 exports.validateEntityAgainstSchema = validateEntityAgainstSchema;
 exports.findSlugMoves = findSlugMoves;
+exports.undeclaredFields = undeclaredFields;
 exports.validate = validate;
 const common_utils_1 = __nccwpck_require__(59847);
 const logger_utils_1 = __nccwpck_require__(80418);
@@ -857535,6 +857536,7 @@ var ReportMessages;
     ReportMessages["invalidRefTarget"] = "invalid ref target";
     ReportMessages["refToDeprecated"] = "ref points to deprecated entity";
     ReportMessages["groupNotInSchema"] = "group not found in schema";
+    ReportMessages["fieldNotInSchema"] = "field not found in schema";
 })(ReportMessages || (exports.ReportMessages = ReportMessages = {}));
 const assetExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.svg', '.avif', '.webm', '.mp4'];
 const assetSizeLimit = 100 * 1024 * 1024; //100MB
@@ -857854,13 +857856,32 @@ function findSlugMoves(oldEntities = [], newEntities = []) {
     }
     return { movedIn, movedOut };
 }
+// Set by the pipeline or read by its own id rule, not data meant for the API
+const pipelineFields = new Set(['deprecated', 'gameId']);
+const isEmpty = (v) => v == null || v === '' || (typeof v === 'object' && Object.keys(v).length === 0);
+// `group.field` for every field a live entity has a value in and the group's schema does not declare:
+// it ships green, lands in the bucket and the schema-driven API never serves it (STD-1856).
+// Empty values and retired rows are left out - nobody can act on those.
+// shortcut: top-level fields only, walk `objects` too once undeclared nested fields matter
+function undeclaredFields(entities, group, groupSchema) {
+    const found = new Set();
+    for (const ent of entities) {
+        if (ent.deprecated)
+            continue;
+        for (const [field, value] of Object.entries(ent)) {
+            if (!Object.hasOwn(groupSchema.fields, field) && !pipelineFields.has(field) && !isEmpty(value))
+                found.add(`${group}.${field}`);
+        }
+    }
+    return [...found];
+}
 async function validate(data, oldData, config, tmpBucket, apiSchema, isValidationBeforeOverride) {
     const validationReport = {
         errors: {
             unavailableURLs: new Set(),
             [ReportMessages.groupNotInSchema]: new Set(),
         },
-        warnings: {},
+        warnings: { [ReportMessages.fieldNotInSchema]: new Set() },
         infos: {},
         byGroup: {},
     };
@@ -857882,6 +857903,9 @@ async function validate(data, oldData, config, tmpBucket, apiSchema, isValidatio
         // Check if group exists in schema and skip validation if all entities are deprecated
         if (!groupInSchema && !isAllEntitiesDeprecated && apiSchema) {
             validationReport.errors[ReportMessages.groupNotInSchema].add(group);
+        }
+        if (groupInSchema) {
+            undeclaredFields(data[group], group, groupInSchema).forEach(f => validationReport.warnings[ReportMessages.fieldNotInSchema].add(f));
         }
         for (const ent of data[group]) {
             const entityReport = {
@@ -858144,6 +858168,7 @@ const create_report_1 = __nccwpck_require__(12329);
 const merge_static_data_1 = __nccwpck_require__(16612);
 const override_static_data_1 = __nccwpck_require__(49822);
 const validate_static_data_step_1 = __nccwpck_require__(87328);
+const utils_1 = __nccwpck_require__(40294);
 const sync_static_data_step_1 = __nccwpck_require__(78160);
 const shadow_bucket_base_1 = __nccwpck_require__(41855);
 const schema_refs_extractor_1 = __nccwpck_require__(7730);
@@ -858257,6 +858282,17 @@ async function runPipeline({ versions, staticDataPath, overrideSpreadsheetId, re
         const allReports = [...beforeOverrideReports, ...afterOverrideReports];
         const reports = (0, report_deduplication_utils_1.deduplicateReports)(allReports);
         const { errors, warnings, infos } = (0, is_valid_report_utils_1.isValidReport)(reports);
+        // A group-level warning is only a number in the report line below, so name the fields here (STD-1856)
+        const undeclared = [...(reports[0]?.warnings[utils_1.ReportMessages.fieldNotInSchema] ?? [])];
+        if (undeclared.length > 0) {
+            const shown = undeclared.slice(0, 10).map(f => `\`${f}\``).join(', ');
+            const more = undeclared.length > 10 ? ` and ${undeclared.length - 10} more` : '';
+            await slackManager.appendNewLine({
+                id: 'fields-not-in-schema',
+                content: `${undeclared.length} field(s) are in the data but not in schema.json, so the API does not serve them: ${shown}${more}. ${(0, common_utils_1.docsLink)('static-data-report-messages')}`,
+                emoji: ':warning:',
+            });
+        }
         // If errors or warnings or infos - create report
         if (errors > 0 || warnings > 0 || infos > 0) {
             await (0, create_report_1.createReportStep)(actionUrl, slackManager, reports, reportSpreadsheetId, errors, warnings, infos, []);
@@ -859220,7 +859256,10 @@ function prepareData(reports, schemaValidationErrors = []) {
     const coloredCells = {};
     // Collect all groupNotInSchema errors across all reports
     const apiSchemaErrors = new Set();
+    // One warning per group.field, so it has no entity row to sit on - it goes to the ApiSchema sheet
+    const undeclaredFields = new Set();
     for (const report of reports) {
+        report.warnings?.[utils_1.ReportMessages.fieldNotInSchema]?.forEach(path => undeclaredFields.add(path));
         // Check for groupNotInSchema errors in the main report errors
         if (report.errors && report.errors[utils_1.ReportMessages.groupNotInSchema]) {
             report.errors[utils_1.ReportMessages.groupNotInSchema].forEach(groupName => {
@@ -859239,7 +859278,7 @@ function prepareData(reports, schemaValidationErrors = []) {
         }
     }
     // Create ApiSchema sheet if there are groupNotInSchema errors or schema validation errors
-    if (apiSchemaErrors.size > 0 || schemaValidationErrors.length > 0) {
+    if (apiSchemaErrors.size > 0 || undeclaredFields.size > 0 || schemaValidationErrors.length > 0) {
         const apiSchemaSheetName = 'ApiSchema';
         spreadsheetData[apiSchemaSheetName] = [
             ['Path/Group', 'Error Type', 'Description']
@@ -859250,6 +859289,13 @@ function prepareData(reports, schemaValidationErrors = []) {
                 groupName,
                 'groupNotInSchema',
                 `Group '${groupName}' is not defined in the API schema`
+            ]);
+        });
+        undeclaredFields.forEach(path => {
+            spreadsheetData[apiSchemaSheetName].push([
+                path,
+                'fieldNotInSchema (warning)',
+                `Field '${path}' has values in the data but is not declared in schema.json, so the API does not serve it`
             ]);
         });
         // Add schema validation errors
