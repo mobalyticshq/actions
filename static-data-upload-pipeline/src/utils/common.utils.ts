@@ -231,6 +231,40 @@ export function selectVersionFiles(staticDataPath: string): { versions: string[]
   return { versions: found.map(f => f.file), malformed };
 }
 
+// Repo-relative paths this push or pull request adds; a rename adds its new name.
+// null when the run has no range to compare - a manual or a local run.
+// shortcut: GitHub lists at most 300 changed files per comparison, a larger change slips past the check
+export async function addedFiles(token: string): Promise<string[] | null> {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (!eventPath || !existsSync(eventPath)) return null;
+  const event = JSON.parse(readFileSync(eventPath, 'utf8'));
+  const base = event.pull_request?.base?.sha ?? event.before;
+  const head = event.pull_request?.head?.sha ?? event.after;
+  // An all-zero `before` is a branch that did not exist yet
+  if (!base || !head || /^0+$/.test(base)) return null;
+  const api = process.env.GITHUB_API_URL ?? 'https://api.github.com';
+  // per_page pages the commits only; the file list always comes whole on the first page
+  const response = await fetch(`${api}/repos/${process.env.GITHUB_REPOSITORY}/compare/${base}...${head}?per_page=1`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  });
+  if (!response.ok) throw new Error(`GitHub compare ${base}...${head} answered ${response.status}`);
+  const { files = [] } = (await response.json()) as { files?: { filename: string; status: string }[] };
+  return files.filter(f => f.status === 'added' || f.status === 'renamed').map(f => f.filename);
+}
+
+// The version file a change adds that would not ship: the newest file in the folder is one the
+// change did not add, so the added file is merged under it as history and the run still goes
+// green (STD-1871). `versions` is the folder's version files, oldest first.
+export function staleAddedVersion(added: string[], staticDataPath: string, versions: string[]): { added: string; newest: string } | null {
+  const folder = path.posix.normalize(staticDataPath.replace(/\\/g, '/')).replace(/\/$/, '');
+  const addedHere = new Set(added.filter(f => path.posix.dirname(f) === folder).map(f => path.posix.basename(f)));
+  const names = versions.map(v => path.basename(v));
+  const newest = names[names.length - 1];
+  const addedVersions = names.filter(n => addedHere.has(n));
+  if (addedVersions.length === 0 || addedHere.has(newest)) return null;
+  return { added: addedVersions[addedVersions.length - 1], newest };
+}
+
 // gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
 export function isScopedAssetsFolder(folder: string): boolean {
   return /^gs:\/\/[^/]+(\/[^/]+){2,}\/?$/.test(folder);

@@ -856345,6 +856345,25 @@ async function run() {
         core.setFailed(`Not a valid version file name: ${names} - ${expected}`);
         return;
     }
+    // Versions are numbered by hand. A new file that sorts below an existing one is merged as
+    // history, so the run would go green and ship without it. The check fails open: a GitHub API
+    // hiccup must not block a release.
+    try {
+        const stale = (0, common_utils_1.staleAddedVersion)((await (0, common_utils_1.addedFiles)(core.getInput('token'))) ?? [], staticDataPath, sortedFiles);
+        if (stale) {
+            const message = `${stale.added} was added, but ${stale.newest} is newer, so the new file would be merged as history and not ship. Give it a version above ${stale.newest}`;
+            console.log(`❌ ${message}`);
+            logger_utils_1.logger.endGroup();
+            await slackManager.sendMessage([
+                { id: 'header', content: `Static data version is not the newest for ${(0, common_utils_1.describeGameEnv)(staticDataPath)}: ${message}. ${(0, common_utils_1.docsLink)('static-data-file-naming')}`, emoji: ':x:' },
+            ]);
+            core.setFailed(message);
+            return;
+        }
+    }
+    catch (error) {
+        console.log(`⚠️ Could not check which version file this change adds: ${(0, common_utils_1.describeError)(error)}`);
+    }
     const apiSchemaPath = path.join(staticDataPath, 'schema.json');
     let apiSchema = null;
     // Read schema.json from the staticDataPath if it exists
@@ -858517,6 +858536,8 @@ exports.describeGameEnv = describeGameEnv;
 exports.versionOf = versionOf;
 exports.compareVersions = compareVersions;
 exports.selectVersionFiles = selectVersionFiles;
+exports.addedFiles = addedFiles;
+exports.staleAddedVersion = staleAddedVersion;
 exports.isScopedAssetsFolder = isScopedAssetsFolder;
 exports.describeError = describeError;
 const slugify_ = __importStar(__nccwpck_require__(14952));
@@ -858738,6 +858759,42 @@ function selectVersionFiles(staticDataPath) {
     }
     found.sort((a, b) => compareVersions(a.version, b.version));
     return { versions: found.map(f => f.file), malformed };
+}
+// Repo-relative paths this push or pull request adds; a rename adds its new name.
+// null when the run has no range to compare - a manual or a local run.
+// shortcut: GitHub lists at most 300 changed files per comparison, a larger change slips past the check
+async function addedFiles(token) {
+    const eventPath = process.env.GITHUB_EVENT_PATH;
+    if (!eventPath || !(0, fs_1.existsSync)(eventPath))
+        return null;
+    const event = JSON.parse((0, fs_1.readFileSync)(eventPath, 'utf8'));
+    const base = event.pull_request?.base?.sha ?? event.before;
+    const head = event.pull_request?.head?.sha ?? event.after;
+    // An all-zero `before` is a branch that did not exist yet
+    if (!base || !head || /^0+$/.test(base))
+        return null;
+    const api = process.env.GITHUB_API_URL ?? 'https://api.github.com';
+    // per_page pages the commits only; the file list always comes whole on the first page
+    const response = await fetch(`${api}/repos/${process.env.GITHUB_REPOSITORY}/compare/${base}...${head}?per_page=1`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    });
+    if (!response.ok)
+        throw new Error(`GitHub compare ${base}...${head} answered ${response.status}`);
+    const { files = [] } = (await response.json());
+    return files.filter(f => f.status === 'added' || f.status === 'renamed').map(f => f.filename);
+}
+// The version file a change adds that would not ship: the newest file in the folder is one the
+// change did not add, so the added file is merged under it as history and the run still goes
+// green (STD-1871). `versions` is the folder's version files, oldest first.
+function staleAddedVersion(added, staticDataPath, versions) {
+    const folder = path.posix.normalize(staticDataPath.replace(/\\/g, '/')).replace(/\/$/, '');
+    const addedHere = new Set(added.filter(f => path.posix.dirname(f) === folder).map(f => path.posix.basename(f)));
+    const names = versions.map(v => path.basename(v));
+    const newest = names[names.length - 1];
+    const addedVersions = names.filter(n => addedHere.has(n));
+    if (addedVersions.length === 0 || addedHere.has(newest))
+        return null;
+    return { added: addedVersions[addedVersions.length - 1], newest };
 }
 // gs://<bucket>/<dir>/<game folder>[/...]: at least two path segments under the bucket
 function isScopedAssetsFolder(folder) {
