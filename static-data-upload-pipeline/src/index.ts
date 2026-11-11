@@ -4,7 +4,17 @@ dotenv.config();
 import * as core from '@actions/core';
 import { existsSync } from 'fs';
 import * as path from 'path';
-import { describeGameEnv, docsLink, initSlugify, isScopedAssetsFolder, readSchema, selectVersionFiles } from './utils/common.utils';
+import {
+  addedFiles,
+  describeError,
+  describeGameEnv,
+  docsLink,
+  initSlugify,
+  isScopedAssetsFolder,
+  readSchema,
+  selectVersionFiles,
+  staleAddedVersion,
+} from './utils/common.utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './utils/logger.utils';
@@ -88,6 +98,25 @@ async function run() {
     ]);
     core.setFailed(`Not a valid version file name: ${names} - ${expected}`);
     return;
+  }
+
+  // Versions are numbered by hand. A new file that sorts below an existing one is merged as
+  // history, so the run would go green and ship without it. The check fails open: a GitHub API
+  // hiccup must not block a release.
+  try {
+    const stale = staleAddedVersion((await addedFiles(core.getInput('token'))) ?? [], staticDataPath, sortedFiles);
+    if (stale) {
+      const message = `${stale.added} was added, but ${stale.newest} is newer, so the new file would be merged as history and not ship. Give it a version above ${stale.newest}`;
+      console.log(`❌ ${message}`);
+      logger.endGroup();
+      await slackManager.sendMessage([
+        { id: 'header', content: `Static data version is not the newest for ${describeGameEnv(staticDataPath)}: ${message}. ${docsLink('static-data-file-naming')}`, emoji: ':x:' },
+      ]);
+      core.setFailed(message);
+      return;
+    }
+  } catch (error) {
+    console.log(`⚠️ Could not check which version file this change adds: ${describeError(error)}`);
   }
 
   const apiSchemaPath = path.join(staticDataPath, 'schema.json');

@@ -158,7 +158,8 @@ function validateObjectAgainstSchema(
   path: string,
 ): void {
   for (const [fieldName, fieldSchema] of Object.entries(objectSchema.fields)) {
-    const fieldPath = `${groupName}.${path}.${fieldName}`;
+    // `path` already starts with the group; prefixing it again left the report with no column to put the finding in
+    const fieldPath = `${path}.${fieldName}`;
     const fieldValue = obj[fieldName];
 
     // Check required fields
@@ -433,6 +434,7 @@ export async function validate(
     errors: {
       unavailableURLs: new Set<string>(),
       [ReportMessages.groupNotInSchema]: new Set<string>(),
+      [ReportMessages.groupNotArray]: new Set<string>(),
     } as ValidationRecords,
     warnings: { [ReportMessages.fieldNotInSchema]: new Set<string>() } as ValidationRecords,
     infos: {} as ValidationRecords,
@@ -443,10 +445,9 @@ export async function validate(
   //groups are flat array Of entities
   for (const group of Object.keys(data)) {
     validationReport.byGroup[group] = new Array<ValidationEntityReport>();
-    validationReport.errors[ReportMessages.groupNotArray] = new Set();
 
     if (!Array.isArray(data[group])) {
-      validationReport.errors['Group is not array'].add(group);
+      validationReport.errors[ReportMessages.groupNotArray].add(group);
       continue;
     }
     const { movedIn, movedOut } = findSlugMoves(oldData[group], data[group]);

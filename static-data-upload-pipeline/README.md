@@ -159,6 +159,8 @@ Set `INPUT_DRY_RUN=true` while testing locally — this runs all validation and 
 
 Files must match `static_data_vX.Y.Z.json`, where X, Y, Z are non-negative integers without leading zeros (`v0.0.10`, not `v0.0.010`). They are merged in numeric version order (`v1.2.9` before `v1.2.10`). Any other `static_data_v*` name in the folder stops the run.
 
+A version file added by the push or pull request must end up the newest in its folder. If the newest file is an older one the change did not add, the run stops red with `<added> was added, but <newest> is newer`: the added file would be merged as history, its values overridden by the newer file, and the run would still go green. Adding several files at once is fine as long as the newest is among them, and so is editing the newest file in place. The list of added files comes from the GitHub compare API through the action's `token` input; when it cannot be read (a manual or local run, an API error) the check is skipped with a log line.
+
 ## Merging static data files
 
 Every run merges all version files in `static_data_path`, oldest first. Entities are matched by `id` within a group: the newer entity's fields are laid over the older one's, so a field the newer file stops emitting keeps its old value (send `null` to clear it). An entity or a whole group missing from the newer file is kept and marked `deprecated: true`; nothing is ever deleted.
