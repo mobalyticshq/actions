@@ -857629,7 +857629,8 @@ function validateEntityAgainstSchema(entity, groupName, schema, data, entityRepo
 }
 function validateObjectAgainstSchema(obj, objectSchema, groupName, schema, data, report, path) {
     for (const [fieldName, fieldSchema] of Object.entries(objectSchema.fields)) {
-        const fieldPath = `${groupName}.${path}.${fieldName}`;
+        // `path` already starts with the group; prefixing it again left the report with no column to put the finding in
+        const fieldPath = `${path}.${fieldName}`;
         const fieldValue = obj[fieldName];
         // Check required fields
         if (fieldSchema.required && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
@@ -857880,6 +857881,7 @@ async function validate(data, oldData, config, tmpBucket, apiSchema, isValidatio
         errors: {
             unavailableURLs: new Set(),
             [ReportMessages.groupNotInSchema]: new Set(),
+            [ReportMessages.groupNotArray]: new Set(),
         },
         warnings: { [ReportMessages.fieldNotInSchema]: new Set() },
         infos: {},
@@ -857889,9 +857891,8 @@ async function validate(data, oldData, config, tmpBucket, apiSchema, isValidatio
     //groups are flat array Of entities
     for (const group of Object.keys(data)) {
         validationReport.byGroup[group] = new Array();
-        validationReport.errors[ReportMessages.groupNotArray] = new Set();
         if (!Array.isArray(data[group])) {
-            validationReport.errors['Group is not array'].add(group);
+            validationReport.errors[ReportMessages.groupNotArray].add(group);
             continue;
         }
         const { movedIn, movedOut } = findSlugMoves(oldData[group], data[group]);
