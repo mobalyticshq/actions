@@ -1,3 +1,3 @@
-import { CursorGenerationStepType } from '@shared/types/cursor-generation-step.types';
-export declare function generateMapping(options: CursorGenerationStepType): Promise<void>;
+import { LlmGenerationStepType } from '@shared/types/llm-generation-step.types';
+export declare function generateMapping(options: LlmGenerationStepType): Promise<void>;
 //# sourceMappingURL=generate-mapping.d.ts.map

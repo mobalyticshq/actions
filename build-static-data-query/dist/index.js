@@ -1102,15 +1102,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateFragmentsWithLlm = generateFragmentsWithLlm;
-const run_cursor_generation_1 = __webpack_require__(5550);
+const run_claude_generation_1 = __webpack_require__(6870);
 const path_1 = __importDefault(__webpack_require__(6928));
 async function generateFragmentsWithLlm(options) {
     const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-fragments.md');
-    return await (0, run_cursor_generation_1.runCursorGeneration)({
+    return await (0, run_claude_generation_1.runClaudeGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
         model,
+        expectedOutputs: { nonEmptyDirs: ['build/gql'] },
     });
 }
 
@@ -2630,7 +2631,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateQuery = generateQuery;
-const run_cursor_generation_1 = __webpack_require__(5550);
+const run_claude_generation_1 = __webpack_require__(6870);
 const path_1 = __importDefault(__webpack_require__(6928));
 const promises_1 = __webpack_require__(1943);
 const entrypointFileTemplate = `
@@ -2646,10 +2647,13 @@ const outputDir = 'build/gql';
 async function generateQuery(options) {
     const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-query.md');
-    await (0, run_cursor_generation_1.runCursorGeneration)({
+    await (0, run_claude_generation_1.runClaudeGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
         model,
+        expectedOutputs: {
+            files: [path_1.default.join(outputDir, 'static-data-query.gql.ts'), path_1.default.join(outputDir, 'static-data-meta-query.gql.ts')],
+        },
     });
     await (0, promises_1.writeFile)(path_1.default.join(outputDir, 'entrypoint.ts'), entrypointFileTemplate);
 }
@@ -2665,104 +2669,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateWorkerOutputTypes = void 0;
 var generate_worker_output_types_1 = __webpack_require__(6584);
 Object.defineProperty(exports, "generateWorkerOutputTypes", ({ enumerable: true, get: function () { return generate_worker_output_types_1.generateWorkerOutputTypes; } }));
-
-
-/***/ }),
-
-/***/ 5550:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.runCursorGeneration = runCursorGeneration;
-const core = __importStar(__webpack_require__(1659));
-const exec_utils_1 = __webpack_require__(9099);
-async function runCursorGeneration(input) {
-    try {
-        const { timeoutMs, model = 'sonnet-4.5', prompt } = input;
-        core.info(`Cursor-agent generation starts with prompt: ${prompt}`);
-        try {
-            await (0, exec_utils_1.spawnWithTimeout)({ command: 'which cursor-agent', args: [], timeoutMs });
-            core.info('cursor-agent is installed');
-        }
-        catch {
-            core.info('Installing cursor-cli...');
-            await (0, exec_utils_1.spawnWithTimeout)({ command: 'curl -fsSL https://cursor.com/install | bash', args: [], timeoutMs });
-            core.addPath(`${process.env.HOME}/.cursor/bin`);
-            core.info('Installation completed');
-        }
-        // Get CURSOR_API_KEY from environment (GitHub Actions secrets)
-        const cursorApiKey = process.env.CURSOR_API_KEY;
-        if (!cursorApiKey) {
-            throw new Error('CURSOR_API_KEY environment variable is not set');
-        }
-        const command = 'cursor-agent';
-        const args = ['-p', '--force', `--model=${model}`, '--output-format', 'text', prompt];
-        core.info(`Executing cursor-agent with timeout: ${timeoutMs}ms`);
-        // Execute command with timeout
-        try {
-            await (0, exec_utils_1.spawnWithTimeout)({
-                command,
-                args,
-                timeoutMs,
-                env: {
-                    ...process.env,
-                    CURSOR_API_KEY: cursorApiKey,
-                },
-            });
-            core.info(`✓ Generation completed successfully`);
-            return;
-        }
-        catch (error) {
-            const errorMessage = `Failed to execute cursor-agent: ${error instanceof Error ? error.message : String(error)}`;
-            if (error instanceof Error && error.message === exec_utils_1.TimeoutError) {
-                core.setFailed(`cursor-agent execution timed out after ${timeoutMs}ms`);
-            }
-            else {
-                core.setFailed(errorMessage);
-            }
-            throw new Error(errorMessage);
-        }
-    }
-    catch (error) {
-        const errorMessage = `Failed to execute cursor-agent: ${error instanceof Error ? error.message : String(error)}`;
-        core.setFailed(errorMessage);
-        throw new Error(errorMessage);
-    }
-}
 
 
 /***/ }),
@@ -2969,15 +2875,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateWorkerOutputTypes = generateWorkerOutputTypes;
-const run_cursor_generation_1 = __webpack_require__(5550);
+const run_claude_generation_1 = __webpack_require__(6870);
 const path_1 = __importDefault(__webpack_require__(6928));
 async function generateWorkerOutputTypes(options) {
     const { timeoutMs, model } = options;
     const promptFilePath = path_1.default.resolve(__dirname, 'generate-worker-output-types.md');
-    return await (0, run_cursor_generation_1.runCursorGeneration)({
+    return await (0, run_claude_generation_1.runClaudeGeneration)({
         timeoutMs,
         prompt: `"Implement instructions in the file ${promptFilePath}"`,
         model,
+        expectedOutputs: { files: ['build/gql/gql-types/worker-output.types.ts'] },
     });
 }
 
@@ -2988,6 +2895,99 @@ async function generateWorkerOutputTypes(options) {
 /***/ ((module) => {
 
 module.exports = require("webpack");
+
+/***/ }),
+
+/***/ 6870:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.runClaudeGeneration = runClaudeGeneration;
+const core = __importStar(__webpack_require__(1659));
+const exec_utils_1 = __webpack_require__(9099);
+const find_missing_outputs_1 = __webpack_require__(7560);
+const DEFAULT_MODEL = 'sonnet';
+async function runClaudeGeneration(input) {
+    try {
+        const { timeoutMs, prompt, expectedOutputs } = input;
+        const model = input.model || DEFAULT_MODEL;
+        core.info(`Claude Code generation starts with prompt: ${prompt}`);
+        const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+        if (!oauthToken) {
+            throw new Error('CLAUDE_CODE_OAUTH_TOKEN environment variable is not set');
+        }
+        // In print mode an API key or an auth token has priority over the OAuth token.
+        const { ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ...inheritedEnv } = process.env;
+        const command = 'claude';
+        const args = ['-p', '--model', model, '--permission-mode', 'bypassPermissions', '--output-format', 'text', prompt];
+        core.info(`Executing Claude Code (model: ${model}) with timeout: ${timeoutMs}ms`);
+        try {
+            await (0, exec_utils_1.spawnWithTimeout)({
+                command,
+                args,
+                timeoutMs,
+                env: {
+                    ...inheritedEnv,
+                    CLAUDE_CODE_OAUTH_TOKEN: oauthToken,
+                    // Keep the pinned version for all Claude Code runs in the job.
+                    DISABLE_UPDATES: '1',
+                },
+            });
+        }
+        catch (error) {
+            if (error instanceof Error && error.message === exec_utils_1.TimeoutError) {
+                throw new Error(`Claude Code execution timed out after ${timeoutMs}ms`);
+            }
+            throw error;
+        }
+        // Claude Code exits with code 0 also when the agent stops before it does the task.
+        const missingOutputs = (0, find_missing_outputs_1.findMissingOutputs)(expectedOutputs);
+        if (missingOutputs.length > 0) {
+            throw new Error(`Claude Code did not create the expected outputs: ${missingOutputs.join(', ')}`);
+        }
+        core.info(`✓ Generation completed successfully`);
+    }
+    catch (error) {
+        const errorMessage = `Failed to execute Claude Code: ${error instanceof Error ? error.message : String(error)}`;
+        core.setFailed(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
 
 /***/ }),
 
@@ -3016,6 +3016,28 @@ module.exports = require("url");
 /***/ ((module) => {
 
 module.exports = require("@graphql-codegen/cli");
+
+/***/ }),
+
+/***/ 7560:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.findMissingOutputs = findMissingOutputs;
+const fs_1 = __importDefault(__webpack_require__(9896));
+function isNonEmptyDir(dirPath) {
+    return fs_1.default.existsSync(dirPath) && fs_1.default.statSync(dirPath).isDirectory() && fs_1.default.readdirSync(dirPath).length > 0;
+}
+function findMissingOutputs({ files = [], nonEmptyDirs = [] }) {
+    const missingFiles = files.filter(filePath => !fs_1.default.existsSync(filePath));
+    const missingDirs = nonEmptyDirs.filter(dirPath => !isNonEmptyDir(dirPath)).map(dirPath => `${dirPath}/ (empty)`);
+    return [...missingFiles, ...missingDirs];
+}
+
 
 /***/ }),
 

@@ -16,13 +16,13 @@ inputs:
     description: 'GraphQL endpoint URL'
     required: true
   timeout:
-    description: 'Timeout for cursor-agent execution in milliseconds'
+    description: 'Timeout for each Claude Code run in milliseconds'
     required: false
     default: '600000'
   model-version:
-    description: 'LLM model version to use'
+    description: 'Claude model alias or full model id, passed to claude --model'
     required: false
-    default: 'sonnet-4.5'
+    default: 'sonnet'
   gcs-bucket-name:
     description: 'Google Cloud Storage bucket name for uploading build files'
     required: true
@@ -43,10 +43,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install cursor-cli
+    - name: Install Claude Code
       run: |
-        curl -fsSL https://cursor.com/install | bash
-        echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+        curl -fsSL https://claude.ai/install.sh | bash -s 2.1.325
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
       shell: bash
 
     - name: Install dependencies

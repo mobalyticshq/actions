@@ -10,7 +10,7 @@ This GitHub Action automates the process of creating optimized GraphQL queries f
 2. **Schema download** — downloads the current GraphQL schema from the specified endpoint
 3. **Scope generation** — analyzes the schema and determines data scopes for a specific game
 4. **Schema cleaning** — removes unused types and fields, keeping only those necessary for static data
-5. **Fragment generation** — v2: an AI agent (cursor-cli) writes GraphQL fragments for all entity types; v3: fragments are built deterministically from the cleaned schema for every `groups` entity type: all scalar fields, embedded objects expanded recursively, references to other entities selected by their scalar fields only
+5. **Fragment generation** — v2: an AI agent (Claude Code CLI) writes GraphQL fragments for all entity types; v3: fragments are built deterministically from the cleaned schema for every `groups` entity type: all scalar fields, embedded objects expanded recursively, references to other entities selected by their scalar fields only
 6. **Query generation** — creates the main GraphQL query using the generated fragments
 7. **Query compilation** — stitches the query with its fragments and prints it into a plain string
 8. **TypeScript type generation** — creates typed TypeScript types based on the GraphQL schema
@@ -30,6 +30,9 @@ This GitHub Action automates the process of creating optimized GraphQL queries f
     gcs-project-id: 'my-project-id'
     dynamic-modules-env: 'prod'
     gcp-service-account-json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+  env:
+    # Output of `claude setup-token`. Claude Code CLI uses it for the LLM steps.
+    CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 ```
 
 ### All Parameters
@@ -39,7 +42,8 @@ This GitHub Action automates the process of creating optimized GraphQL queries f
 | `game` | Game slug (e.g., 'riftbound') | Yes | - |
 | `graphql-endpoint` | GraphQL endpoint URL | Yes | - |
 | `static-data-field-name` | Name of the static data field in the schema | No | `staticData` |
-| `timeout` | Timeout for cursor-agent execution in milliseconds | No | `600000` (10 minutes) |
+| `timeout` | Timeout for each Claude Code run in milliseconds | No | `600000` (10 minutes) |
+| `model-version` | Claude model alias or full model id for `claude --model` | No | `sonnet` |
 | `gcs-bucket-name` | Google Cloud Storage bucket name | Yes | - |
 | `gcs-project-id` | Google Cloud Project ID | Yes | - |
 | `dynamic-modules-env` | Environment for dynamic modules (prod, staging, dev) | Yes | - |
